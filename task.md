@@ -300,16 +300,17 @@
 
 > Re-architecture note added in Phase 11: all phases 2–11 features audited for mobile UX impact. See implementation_plan.md Phase 14 for the full impact matrix.
 
-- `[ ]` Touch swipe in lightbox (touchstart/touchend X-delta → navigateLightbox(±1))
-- `[ ]` Hover-reveal fallback on touch (first-tap = colour reveal, second tap = deactivate)
-- `[ ]` Canvas expand guard: ensure canvasExpand silently falls back on mobile (lightbox or no-op)
-- `[ ]` Grain overlay `pointer-events: none` audit — verify touch targets not blocked
-- `[ ]` Mobile nav rebuild after hot-reload (buildNav correctly updates mobile `<nav>`)
-- `[ ]` Font size guard: confirm `--ui-text-size` not applied on mobile
-- `[ ]` iOS Safari: safe-area-inset-bottom on footer if needed
-- `[ ]` Android Chrome: pinch-zoom conflict with canvas pan-zoom handler
-- `[ ]` Final `@media (prefers-reduced-motion)` audit across all Phases 3–8 animations
-- `[ ]` Performance audit: no synchronous layout reads blocking main thread
+- `[/]` Touch swipe in lightbox (touchstart/touchend X-delta → navigateLightbox(±1))
+- `[/]` Hover-reveal fallback on touch (first-tap = colour reveal, second tap = deactivate)
+- `[/]` Canvas expand guard: ensure canvasExpand silently falls back on mobile (lightbox or no-op)
+- `[/]` Grain overlay `pointer-events: none` audit — verify touch targets not blocked
+- `[/]` Mobile nav rebuild after hot-reload (buildNav correctly updates mobile `<nav>`)
+- `[/]` Font size guard: confirm `--ui-text-size` not applied on mobile
+- `[/]` iOS Safari: safe-area-inset-bottom on footer if needed
+- `[/]` Android Chrome: pinch-zoom conflict with canvas pan-zoom handler
+- `[/]` Final `@media (prefers-reduced-motion)` audit across all Phases 3–8 animations
+- `[/]` Performance audit: no synchronous layout reads blocking main thread
+- `[/]` No preview iframe in GUI Setup — changes trigger BroadcastChannel refresh in portfolio tab
 - `[ ]` Final GitHub push: tag as `v1.0.0`
 
 ---

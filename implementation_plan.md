@@ -567,7 +567,7 @@ Consolidate the build system:
 | 3 | Theme & visual customisation (CSS + JS) | Claude Sonnet 4.6 (Thinking) | M | ✅ |
 | 4 | Typography system (dynamic font loading) | Gemini 3.5 Flash (High) | S | ✅ |
 | 5 | Image effects system (desat/duotone/sticky) | Claude Sonnet 4.6 (Thinking) | M | ✅ |
-| 6 | Image click: lightbox + canvas expand | Claude Sonnet 4.6 (Thinking) | M | ⬜ |
+| 6 | Image click: lightbox + canvas expand | Claude Sonnet 4.6 (Thinking) | M | ✅ |
 | 7 | Category behaviour (hide-on-click + focus mode) | Claude Sonnet 4.6 (Thinking) | S | ⬜ |
 | 8 | INFO overlay enhancement | Gemini 3.5 Flash (High) | S | ⬜ |
 | 9 | SEO & metadata (static tags in `index.html`) | Gemini 3.5 Flash (High) | S | ⬜ |

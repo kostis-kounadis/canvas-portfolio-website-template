@@ -88,18 +88,42 @@
   // Interaction state
   let spaceDown = false;
 
+  // Phase 6 State
+  let expandedEl = null;
+  let visibleLightboxItems = [];
+  let currentLightboxIndex = -1;
+
   window.addEventListener("keydown", (e) => {
     // Don't fire shortcuts when typing in an input / contenteditable
     if (e.target.matches("input, textarea, [contenteditable]")) return;
 
     if (e.code === "Space") spaceDown = true;
 
-    // ESC — close Info Overlay
+    // Lightbox open override for arrow navigation
+    const lightbox = document.getElementById("lightbox");
+    const isLightboxOpen = lightbox && lightbox.open;
+    if (isLightboxOpen) {
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        navigateLightbox(-1);
+        return;
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        navigateLightbox(1);
+        return;
+      }
+    }
+
+    // ESC — close Info Overlay / Lightbox / expanded canvas view
     if (e.key === "Escape") {
       const overlay = document.getElementById("info-overlay");
       if (overlay && overlay.classList.contains("is-visible")) {
         overlay.classList.remove("is-visible");
         document.getElementById("nav-info-btn")?.setAttribute("aria-pressed", "false");
+      }
+      if (expandedEl) {
+        resetViewSmooth();
       }
     }
 
@@ -524,6 +548,19 @@
     applyTheme(cfg);          // Phase 3: apply theme colours, bg effect, noise, shadow
     applyImageEffects(cfg);   // Phase 5: apply image effects
     buildZoneContainers();    // Phase 2: rebuild zone containers for new positions
+
+    // Phase 6 hot-reload resets
+    if (cfg.imageClick) {
+      if (!cfg.imageClick.lightbox?.enabled) {
+        const dialog = document.getElementById("lightbox");
+        if (dialog && dialog.open) {
+          dialog.close();
+        }
+      }
+      if (!cfg.imageClick.canvasExpand?.enabled && expandedEl) {
+        resetViewSmooth();
+      }
+    }
 
     // Rebuild UI modules that depend on config
     const navRight = document.getElementById("nav-right");
@@ -1397,10 +1434,32 @@
       el.style.zIndex = String(zCounter);
     });
 
-    // Unified click handler (Phase 5)
+    // Unified click handler (Phase 5 + Phase 6)
+    let clickCount = 0;
+    let interactionTimer = null;
     el.addEventListener("click", () => {
       if (el.dataset.preventClick === "true") return;
-      handleItemClick(el, window._siteConfigRaw);
+      handleItemClick(el, window._siteConfigRaw); // Phase 5 visual trigger runs first
+      
+      const cfg = window._siteConfigRaw;
+      const lbEnabled = cfg?.imageClick?.lightbox?.enabled;
+      const ceEnabled = cfg?.imageClick?.canvasExpand?.enabled;
+      
+      if (lbEnabled && ceEnabled) {
+        clickCount++;
+        if (clickCount === 1) {
+          interactionTimer = setTimeout(() => {
+            if (clickCount === 1) handleItemInteraction(el, "single");
+            clickCount = 0;
+          }, 250);
+        } else if (clickCount === 2) {
+          clearTimeout(interactionTimer);
+          handleItemInteraction(el, "double");
+          clickCount = 0;
+        }
+      } else {
+        handleItemInteraction(el, "single");
+      }
     });
 
     return el;
@@ -1491,6 +1550,7 @@
 
     event.preventDefault();
     isPanning = true;
+    expandedEl = null; // Clear expanded element on manual pan
     stage.classList.add("is-interacting");
     stageWrapper.classList.add("is-dragging");
     panStartX = event.clientX;
@@ -1545,6 +1605,7 @@
     if (e.touches.length === 1) {
       isTouchPanning = true;
       isPinchZooming = false;
+      expandedEl = null; // Clear expanded element on manual pan
       stage.classList.add("is-interacting");
       
       touchStartX = e.touches[0].clientX;
@@ -1556,6 +1617,7 @@
     else if (e.touches.length === 2) {
       isTouchPanning = false;
       isPinchZooming = true;
+      expandedEl = null; // Clear expanded element on manual pinch zoom
       stage.classList.add("is-interacting");
 
       initialPinchDistance = getDistance(e.touches);
@@ -2184,6 +2246,230 @@
     
     btn.addEventListener("click", toggleMobileMode);
     document.body.appendChild(btn);
+  }
+
+  // ── Phase 6: Lightbox & Canvas Expand Helpers ──────────────────────────────
+  function _ensureLightbox() {
+    let dialog = document.getElementById("lightbox");
+    if (!dialog) {
+      dialog = document.createElement("dialog");
+      dialog.id = "lightbox";
+      dialog.className = "lightbox-dialog";
+
+      const content = document.createElement("div");
+      content.className = "lightbox-content";
+
+      const closeBtn = document.createElement("button");
+      closeBtn.type = "button";
+      closeBtn.className = "lightbox-close";
+      closeBtn.textContent = "[×]";
+      closeBtn.setAttribute("aria-label", "Close lightbox");
+      closeBtn.addEventListener("click", () => dialog.close());
+
+      const prevBtn = document.createElement("button");
+      prevBtn.type = "button";
+      prevBtn.className = "lightbox-nav lightbox-prev";
+      prevBtn.textContent = "◁";
+      prevBtn.setAttribute("aria-label", "Previous item");
+      prevBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        navigateLightbox(-1);
+      });
+
+      const nextBtn = document.createElement("button");
+      nextBtn.type = "button";
+      nextBtn.className = "lightbox-nav lightbox-next";
+      nextBtn.textContent = "▷";
+      nextBtn.setAttribute("aria-label", "Next item");
+      nextBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        navigateLightbox(1);
+      });
+
+      content.appendChild(prevBtn);
+      content.appendChild(nextBtn);
+      dialog.appendChild(content);
+      dialog.appendChild(closeBtn);
+
+      document.body.appendChild(dialog);
+
+      // Close lightbox on backdrop click
+      dialog.addEventListener("click", (e) => {
+        if (e.target === dialog) {
+          dialog.close();
+        }
+      });
+
+      // Handle close cleanup (pause videos, etc.)
+      dialog.addEventListener("close", () => {
+        const activeVideo = dialog.querySelector("video");
+        if (activeVideo) {
+          activeVideo.pause();
+          activeVideo.src = "";
+        }
+        dialog.querySelector(".lightbox-media-container")?.remove();
+      });
+    }
+
+    const cfg = window._siteConfigRaw;
+    const effect = cfg?.imageClick?.lightbox?.backdropEffect || "darken";
+    dialog.classList.remove("backdrop-darken", "backdrop-blur", "backdrop-none");
+    dialog.classList.add(`backdrop-${effect}`);
+
+    return dialog;
+  }
+
+  function updateLightboxContent() {
+    const dialog = document.getElementById("lightbox");
+    if (!dialog) return;
+
+    dialog.querySelector(".lightbox-media-container")?.remove();
+
+    if (currentLightboxIndex < 0 || currentLightboxIndex >= visibleLightboxItems.length) {
+      dialog.close();
+      return;
+    }
+
+    const activeEl = visibleLightboxItems[currentLightboxIndex];
+    const mediaItem = activeEl._mediaItem;
+    if (!mediaItem) return;
+
+    const container = document.createElement("div");
+    container.className = "lightbox-media-container";
+
+    if (mediaItem.type === "image") {
+      const img = document.createElement("img");
+      img.src = mediaItem.src;
+      img.className = "lightbox-image";
+      img.alt = "";
+      container.appendChild(img);
+    } else if (mediaItem.type === "video-local") {
+      const video = document.createElement("video");
+      video.src = mediaItem.src;
+      video.className = "lightbox-video";
+      video.autoplay = true;
+      video.loop = true;
+      video.muted = false;
+      video.controls = true;
+      video.playsInline = true;
+      container.appendChild(video);
+    } else if (mediaItem.type === "video-embed") {
+      const iframe = document.createElement("iframe");
+      const videoId = mediaItem.videoId;
+      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1`;
+      iframe.className = "lightbox-video";
+      iframe.style.border = "none";
+      iframe.style.aspectRatio = "16/9";
+      iframe.style.width = "80vw";
+      iframe.style.height = "45vw";
+      iframe.style.maxWidth = "90vw";
+      iframe.style.maxHeight = "90vh";
+      iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+      iframe.allowFullscreen = true;
+      container.appendChild(iframe);
+    }
+
+    dialog.querySelector(".lightbox-content").appendChild(container);
+  }
+
+  function navigateLightbox(dir) {
+    if (visibleLightboxItems.length === 0) return;
+    currentLightboxIndex = (currentLightboxIndex + dir + visibleLightboxItems.length) % visibleLightboxItems.length;
+    updateLightboxContent();
+  }
+
+  function openLightbox(el) {
+    visibleLightboxItems = Array.from(document.querySelectorAll(".media-item"))
+      .filter(item => item.style.display !== "none");
+    currentLightboxIndex = visibleLightboxItems.indexOf(el);
+
+    if (currentLightboxIndex === -1) {
+      visibleLightboxItems = [el];
+      currentLightboxIndex = 0;
+    }
+
+    const dialog = _ensureLightbox();
+    dialog.showModal();
+    updateLightboxContent();
+  }
+
+  function zoomToElementSmooth(el) {
+    if (!el) return;
+    if (!stage.classList.contains("stage-animating")) {
+      stage.classList.add("stage-animating");
+    }
+
+    const vw = stageWrapper.clientWidth;
+    const vh = stageWrapper.clientHeight;
+    const ew = el.offsetWidth || 520;
+    const eh = el.offsetHeight || 340;
+
+    const scaleX = (vw * 0.7) / ew;
+    const scaleY = (vh * 0.7) / eh;
+    const targetZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.min(scaleX, scaleY)));
+
+    const elCenterX = parseFloat(el.style.left || "0") + ew / 2;
+    const elCenterY = parseFloat(el.style.top || "0") + eh / 2;
+
+    zoomLevel = targetZoom;
+    stageX = vw / 2 - elCenterX * targetZoom;
+    stageY = vh / 2 - elCenterY * targetZoom;
+
+    updateStageTransform();
+
+    expandedEl = el;
+
+    window.clearTimeout(zoomToElementSmooth._t);
+    zoomToElementSmooth._t = window.setTimeout(() => {
+      stage.classList.remove("stage-animating");
+    }, 600);
+  }
+
+  function resetViewSmooth() {
+    if (!stage.classList.contains("stage-animating")) {
+      stage.classList.add("stage-animating");
+    }
+    zoomLevel = initialZoom;
+    stageX = initialStageX;
+    stageY = initialStageY;
+    updateStageTransform();
+
+    expandedEl = null;
+
+    window.clearTimeout(resetViewSmooth._t);
+    resetViewSmooth._t = window.setTimeout(() => {
+      stage.classList.remove("stage-animating");
+    }, 600);
+  }
+
+  function handleItemInteraction(el, type) {
+    const cfg = window._siteConfigRaw;
+    const lbEnabled = cfg?.imageClick?.lightbox?.enabled;
+    const ceEnabled = cfg?.imageClick?.canvasExpand?.enabled;
+
+    if (lbEnabled && ceEnabled) {
+      if (type === "single") {
+        openLightbox(el);
+      } else if (type === "double") {
+        if (expandedEl === el) {
+          resetViewSmooth();
+        } else {
+          zoomToElementSmooth(el);
+        }
+      }
+    } else if (lbEnabled) {
+      if (type === "single") {
+        openLightbox(el);
+      }
+    } else if (ceEnabled) {
+      if (type === "single") {
+        if (expandedEl === el) {
+          resetViewSmooth();
+        } else {
+          zoomToElementSmooth(el);
+        }
+      }
+    }
   }
 
   // Initialization

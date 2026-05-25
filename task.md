@@ -1,6 +1,6 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ Phase 5 DONE — stopping before Phase 6.    
+> **Status**: ⏸ Phase 6 DONE — stopping before Phase 7.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
 
@@ -108,16 +108,16 @@
 ## Phase 6 — Image Click: Lightbox + Canvas Expand
 *Model: Claude Sonnet 4.6 (Thinking)*
 
-- `[ ]` Build lightbox DOM element (hidden by default, `position:fixed; inset:0; z-index:9000`)
-- `[ ]` Implement backdrop effect variants (darken / blur / none) via CSS classes
-- `[ ]` Implement lightbox open/close animation
-- `[ ]` Implement ESC key to close lightbox
-- `[ ]` Implement arrow key navigation within lightbox (prev/next image in visible set)
-- `[ ]` Implement canvas expand: click → `setZoom()` frames the item in viewport
-- `[ ]` Implement canvas expand reset on second click (different image) or ESC
-- `[ ]` Handle conflict resolution when both modes enabled (single vs double-click config)
-- `[ ]` Verify: lightbox opens/closes correctly, navigation works
-- `[ ]` Verify: canvas expand works in all 3 layout modes
+- `[x]` Build lightbox DOM element (hidden by default, `position:fixed; inset:0; z-index:9000`)
+- `[x]` Implement backdrop effect variants (darken / blur / none) via CSS classes
+- `[x]` Implement lightbox open/close animation
+- `[x]` Implement ESC key to close lightbox
+- `[x]` Implement arrow key navigation within lightbox (prev/next image in visible set)
+- `[x]` Implement canvas expand: click → `setZoom()` frames the item in viewport
+- `[x]` Implement canvas expand reset on second click (different image) or ESC
+- `[x]` Handle conflict resolution when both modes enabled (single vs double-click config)
+- `[x]` Verify: lightbox opens/closes correctly, navigation works
+- `[x]` Verify: canvas expand works in all 3 layout modes
 
 ---
 

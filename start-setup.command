@@ -13,4 +13,5 @@ if ! command -v node &>/dev/null; then
 fi
 
 # Run server (auto-opens browser)
+(sleep 1 && open http://localhost:3000/setup/) &
 node admin/setup-server.js

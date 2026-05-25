@@ -84,32 +84,22 @@ function switchTab(tabId) {
 }
 
 function renderPanel(tabId) {
-  const previewArea = document.getElementById('preview-area');
-  let panelContainer = document.getElementById('panel-container');
-
-  if (!panelContainer) {
-    panelContainer = document.createElement('div');
-    panelContainer.id = 'panel-container';
-    panelContainer.style.cssText = [
-      'position:absolute', 'inset:40px 0 0 0', 'z-index:10',
-      'overflow-y:auto', 'background:var(--bg-0)',
-      'padding:20px', 'display:flex', 'flex-direction:column', 'gap:16px',
-      'scrollbar-width:thin', 'scrollbar-color:var(--bg-4) transparent',
-      'max-width:580px', // Phase 12.5 Bug 2: constrain panel width
-    ].join(';');
-    previewArea.appendChild(panelContainer);
-  }
-
-  // Help tab: show full-width, no preview split needed
-  panelContainer.style.display = 'flex';
-
-  const tpl = document.getElementById(`tpl-${tabId}`);
-  if (!tpl) return;
+  const panelContainer = document.getElementById('panel-container');
+  if (!panelContainer) return;
 
   panelContainer.innerHTML = '';
+
+  const tpl = document.getElementById(`tpl-${tabId}`);
+  if (!tpl) {
+    const ph = document.createElement('div');
+    ph.className = 'panel-placeholder';
+    ph.textContent = 'Settings panel not found.';
+    panelContainer.appendChild(ph);
+    return;
+  }
+
   panelContainer.appendChild(tpl.content.cloneNode(true));
 
-  // Wire controls specific to this tab
   wireTab(tabId);
 }
 
@@ -305,16 +295,18 @@ function wireColourPair(colorInputId, hexInputId, path) {
 function handleConditionalVisibility() {
   const t = _cfg?.theme;
   const ie = _cfg?.imageEffects;
-  const ic = _cfg?.imageClick;
-  const cat = _cfg?.categories;
 
   maybe('gradient-controls',   t && (t.backgroundEffect === 'gradient-static' || t.backgroundEffect === 'gradient-animated'));
   maybe('noise-controls',      t?.noiseGrain?.enabled);
   maybe('shadow-controls',     t?.imageShadow?.enabled);
-  maybe('duotone-controls',    ie?.initialState === 'duotone');
-  maybe('lightbox-controls',   ic?.lightbox?.enabled);
-  maybe('ic-trigger-card',     ic?.lightbox?.enabled && ic?.canvasExpand?.enabled);
-  maybe('focus-effect-group',  cat?.behaviour === 'focus-on-click');
+  
+  const icMode = _cfg?.imageClick?.mode;
+  maybe('ic-lightbox-card', icMode === 'lightbox');
+  maybe('ic-expand-card', icMode === 'canvasExpand');
+
+  // Categories
+  const catBehaviour = _cfg?.categories?.behaviour;
+  maybe('cat-focus-effect-field', catBehaviour === 'focus-on-click');
   // Phase 12.5 Bug 5: text animation trigger visibility
   maybe('text-anim-trigger-group', t?.textAnimation && t.textAnimation !== 'none');
 }
@@ -453,8 +445,29 @@ function buildModulesPanel() {
         const isLogo = modeEl.value === 'svg' || modeEl.value === 'svg_text' || modeEl.value === 'text_svg';
         logoRow.style.display = isLogo ? '' : 'none';
         textRow.style.display = modeEl.value === 'svg' ? 'none' : '';
+
+        const isTextOnly = modeEl.value === 'text';
+        const iconControlsEl = document.getElementById('mod-title-icon-controls');
+        const iconRow = document.getElementById('mod-title-icon-row');
+        
+        if (iconRow) {
+          iconRow.style.display = isTextOnly ? '' : 'none';
+          if (!isTextOnly) {
+            const iconEnabledEl = document.getElementById('mod-title-icon-enabled');
+            if (iconEnabledEl && iconEnabledEl.checked) {
+              iconEnabledEl.checked = false;
+              deepSet(_cfg, 'ui.modules.title.icon.enabled', false);
+            }
+            if (iconControlsEl) iconControlsEl.style.display = 'none';
+          } else {
+            // Re-check conditional visibility for the nested controls
+            const iconEnabledEl = document.getElementById('mod-title-icon-enabled');
+            if (iconControlsEl) {
+              iconControlsEl.style.display = (iconEnabledEl && iconEnabledEl.checked) ? '' : 'none';
+            }
+          }
+        }
       };
-      toggleTitleMode();
 
       modeEl.addEventListener('change', () => {
         deepSet(_cfg, 'ui.modules.title.mode', modeEl.value);
@@ -481,13 +494,15 @@ function buildModulesPanel() {
       iconFileEl.value = icon.file || '';
       iconPosEl.value = icon.position || 'before';
       iconControlsEl.style.display = icon.enabled ? '' : 'none';
-
-      iconEnabledEl.addEventListener('change', () => {
-        if (!_cfg.ui.modules.title.icon) _cfg.ui.modules.title.icon = {};
-        deepSet(_cfg, 'ui.modules.title.icon.enabled', iconEnabledEl.checked);
-        iconControlsEl.style.display = iconEnabledEl.checked ? '' : 'none';
-        markDirty(); scheduleHotReload();
-      });
+      
+      if (iconEnabledEl) {
+        iconEnabledEl.addEventListener('change', () => {
+          if (!_cfg.ui.modules.title.icon) _cfg.ui.modules.title.icon = {};
+          deepSet(_cfg, 'ui.modules.title.icon.enabled', iconEnabledEl.checked);
+          iconControlsEl.style.display = iconEnabledEl.checked ? '' : 'none';
+          markDirty(); scheduleHotReload();
+        });
+      }
       iconFileEl.addEventListener('input', () => {
         if (!_cfg.ui.modules.title.icon) _cfg.ui.modules.title.icon = {};
         deepSet(_cfg, 'ui.modules.title.icon.file', iconFileEl.value);
@@ -498,6 +513,8 @@ function buildModulesPanel() {
         deepSet(_cfg, 'ui.modules.title.icon.position', iconPosEl.value);
         markDirty(); scheduleHotReload();
       });
+      
+      toggleTitleMode();
     }
   });
 
@@ -734,6 +751,14 @@ function wireTab(tabId) {
 
     case 'categories':
       handleConditionalVisibility();
+      const catViewAllEl = document.getElementById('cat-viewall-enabled');
+      const catViewAllLabelEl = document.getElementById('cat-viewall-label-field');
+      if (catViewAllEl && catViewAllLabelEl) {
+         catViewAllLabelEl.style.display = catViewAllEl.checked ? '' : 'none';
+         catViewAllEl.addEventListener('change', () => {
+             catViewAllLabelEl.style.display = catViewAllEl.checked ? '' : 'none';
+         });
+      }
       break;
 
     case 'imageeffects':

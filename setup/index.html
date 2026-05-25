@@ -28,19 +28,32 @@
     <nav id="sidebar-tabs" role="tablist" aria-label="Setup sections">
       <button class="tab-btn active" data-tab="identity"     role="tab"><span class="tab-icon">👤</span> Identity</button>
       <button class="tab-btn"        data-tab="modules"      role="tab"><span class="tab-icon">⊞</span> Modules</button>
-      <button class="tab-btn"        data-tab="theme"        role="tab"><span class="tab-icon">🎨</span> Theme</button>
-      <button class="tab-btn"        data-tab="typography"   role="tab"><span class="tab-icon">Aa</span> Typography</button>
-      <button class="tab-btn"        data-tab="layouts"      role="tab"><span class="tab-icon">⊟</span> Layouts</button>
-      <button class="tab-btn"        data-tab="categories"   role="tab"><span class="tab-icon">⊛</span> Categories</button>
-      <button class="tab-btn"        data-tab="imageeffects" role="tab"><span class="tab-icon">✦</span> Image Effects</button>
-      <button class="tab-btn"        data-tab="imageclick"   role="tab"><span class="tab-icon">↗</span> Image Click</button>
-      <button class="tab-btn"        data-tab="info"         role="tab"><span class="tab-icon">ℹ</span> INFO Panel</button>
-      <button class="tab-btn"        data-tab="seo"          role="tab"><span class="tab-icon">🔍</span> SEO</button>
-      <button class="tab-btn"        data-tab="favicon"      role="tab"><span class="tab-icon">🖼</span> Favicon</button>
-      <button class="tab-btn"        data-tab="help"         role="tab"><span class="tab-icon">❓</span> Help</button>
-    </nav>
-    <div id="sidebar-footer">
-      <button class="btn btn-primary btn-full" id="btn-save-footer">💾 Save Config</button>
+    <div id="sidebar-nav">
+      <nav id="sidebar-tabs" role="tablist" aria-label="Setup sections">
+        <div class="tab-group-title">General</div>
+        <button class="tab-btn active" data-tab="site" role="tab" aria-selected="true">Site Identity</button>
+        <button class="tab-btn" data-tab="modules" role="tab" aria-selected="false">Modules</button>
+        
+        <div class="tab-group-title">Theme</div>
+        <button class="tab-btn" data-tab="theme" role="tab" aria-selected="false">Colours</button>
+        <button class="tab-btn" data-tab="effects" role="tab" aria-selected="false">Background</button>
+        <button class="tab-btn" data-tab="shadows" role="tab" aria-selected="false">Shadows</button>
+
+        <div class="tab-group-title">Interaction</div>
+        <button class="tab-btn" data-tab="imageclick" role="tab" aria-selected="false">Image Click</button>
+        <button class="tab-btn" data-tab="categories" role="tab" aria-selected="false">Categories</button>
+        <button class="tab-btn" data-tab="info" role="tab" aria-selected="false">Info Overlay</button>
+
+        <div class="tab-group-title">Layout & Mobile</div>
+        <button class="tab-btn" data-tab="layouts" role="tab" aria-selected="false">Layouts</button>
+        <button class="tab-btn" data-tab="mobile" role="tab" aria-selected="false">Mobile</button>
+      </nav>
+      <div id="sidebar-footer">
+        <button class="btn btn-primary btn-full" id="btn-save-footer">💾 Save Config</button>
+      </div>
+    </div>
+    <div id="panel-container">
+      <div class="panel-placeholder">Select a category from the left menu to start editing.</div>
     </div>
   </aside>
 
@@ -409,28 +422,29 @@
 <!-- Categories -->
 <template id="tpl-categories">
   <div class="section-card">
-    <div class="section-header"><h3>⊛ Category Behaviour</h3></div>
+    <div class="section-header"><h3>↗ Category Filter Details</h3></div>
     <div class="section-body">
       <div class="field">
         <label>Behaviour on click</label>
-        <div class="radio-group">
-          <label class="radio-option"><input type="radio" name="cat-behaviour" value="hide-on-click" data-path="categories.behaviour" /><span>Hide on click</span><span class="radio-desc">Toggle category visibility</span></label>
-          <label class="radio-option"><input type="radio" name="cat-behaviour" value="focus-on-click" data-path="categories.behaviour" /><span>Focus on click</span><span class="radio-desc">Highlight one, treat others</span></label>
-        </div>
+        <select id="cat-behaviour" data-path="categories.behaviour">
+          <option value="hide-on-click">Hide clicked category</option>
+          <option value="focus-on-click">Focus clicked category (hide others)</option>
+        </select>
       </div>
-      <div id="focus-effect-group" class="sub-panel" style="display:none;">
-        <div class="field">
-          <label>Non-focused items effect</label>
-          <div class="radio-group">
-            <label class="radio-option"><input type="radio" name="cat-focus-effect" value="hide" data-path="categories.focusEffect" /><span>Hide</span></label>
-            <label class="radio-option"><input type="radio" name="cat-focus-effect" value="blur" data-path="categories.focusEffect" /><span>Blur</span></label>
-          </div>
-        </div>
+      <div class="field" id="cat-focus-effect-field">
+        <label>Unfocused items effect</label>
+        <select id="cat-focus-effect" data-path="categories.focusEffect">
+          <option value="hide">Hide completely</option>
+          <option value="blur">Blur & fade</option>
+        </select>
       </div>
-      <div class="field">
+      <div class="toggle-row" id="cat-viewall-row">
+        <label>Show "View All" button</label>
+        <label class="toggle"><input type="checkbox" id="cat-viewall-enabled" data-path="categories.viewAllEnabled" /><span class="toggle-track"></span></label>
+      </div>
+      <div class="field" id="cat-viewall-label-field">
         <label for="cat-viewall-label">"View All" button label</label>
-        <input type="text" id="cat-viewall-label" data-path="categories.viewAllLabel" placeholder="ALL" />
-        <span class="hint">Shown in the category panel when a category is focused.</span>
+        <input type="text" id="cat-viewall-label" data-path="categories.viewAllLabel" />
       </div>
     </div>
   </div>
@@ -504,14 +518,23 @@
 
 <!-- Image Click -->
 <template id="tpl-imageclick">
-  <div class="section-card">
-    <div class="section-header"><h3>↗ Lightbox</h3></div>
-    <div class="section-body">
-      <div class="toggle-row">
-        <label>Enable lightbox</label>
-        <label class="toggle"><input type="checkbox" id="ic-lightbox-enabled" data-path="imageClick.lightbox.enabled" /><span class="toggle-track"></span></label>
+    <div class="section-card">
+      <div class="section-header"><h3>↗ Image Click Mode</h3></div>
+      <div class="section-body">
+        <div class="field">
+          <label>Click Action</label>
+          <select id="ic-mode" data-path="imageClick.mode">
+            <option value="none">Off (No action)</option>
+            <option value="lightbox">Lightbox (Full-screen)</option>
+            <option value="canvasExpand">Canvas Expand (Zoom)</option>
+          </select>
+        </div>
       </div>
-      <div id="lightbox-controls" class="sub-panel" style="display:none;">
+    </div>
+    
+    <div class="section-card" id="ic-lightbox-card" style="display:none;">
+      <div class="section-header"><h3>↗ Lightbox Settings</h3></div>
+      <div class="section-body">
         <div class="field">
           <label>Backdrop effect</label>
           <select id="ic-lightbox-backdrop" data-path="imageClick.lightbox.backdropEffect">
@@ -522,13 +545,6 @@
         </div>
       </div>
     </div>
-  </div>
-  <div class="section-card">
-    <div class="section-header"><h3>↗ Canvas Expand</h3></div>
-    <div class="section-body">
-      <div class="toggle-row">
-        <label>Enable canvas expand (zoom to image)</label>
-        <label class="toggle"><input type="checkbox" id="ic-expand-enabled" data-path="imageClick.canvasExpand.enabled" /><span class="toggle-track"></span></label>
       </div>
     </div>
   </div>

@@ -1,6 +1,6 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: 🔨 Phase 13.5 IN PROGRESS — GUI Setup Tool Bug Fixes & UX Polish.    
+> **Status**: ✅ Phase 13.5 COMPLETED. Next: Phase 14 — Mobile Polish & Final QA.
 > **Known issues logged**: Phase 12.5 added to capture GUI Setup Tool bugs found after Phase 11.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
@@ -270,26 +270,26 @@
 ## Phase 13.5 — GUI Setup Tool: Further Bug Fixes & UX Polish
 *Model: Gemini 3.5 Flash (Medium)*
 
-- `[ ]` **Fix: Remove "Preview only" toggle / live preview is in-tab directly**
+- `[x]` **Fix: Remove "Preview only" toggle / live preview is in-tab directly**
   - Problem: Separate preview mode is redundant. Active panel controls must sit in the left sidebar, and the right pane must always show the live iframe preview updating in real-time, eliminating the overlay toggle.
-- `[ ]` **Fix: start-setup.command permissions and server startup**
+- `[x]` **Fix: start-setup.command permissions and server startup**
   - Problem: Double-clicking `start-setup.command` results in: `The file “start-setup.command” could not be executed because you do not have appropriate access privileges.`
   - Solution: Set executable permissions (`chmod +x start-setup.command`) and improve double-click shell launch script to boot the server and open the browser.
-- `[ ]` **Fix: Conflict between Title Display Mode and Decorative SVG Icon selector**
+- `[x]` **Fix: Conflict between Title Display Mode and Decorative SVG Icon selector**
   - Problem: Title display mode dropdown and Decorative SVG Icon options/switch conflict or allow invalid state combinations.
-- `[ ]` **Fix: Scrollability of panel option blocks**
+- `[x]` **Fix: Scrollability of panel option blocks**
   - Problem: Option blocks (e.g. Module Positions list, Theme parameters, etc.) are cut off or non-scrollable when contents exceed the viewport height.
   - Solution: Restructure setup.css panel styles to enable proper scroll context within the panel area.
-- `[ ]` **Fix/Feature: View All category button switch configuration**
+- `[x]` **Fix/Feature: View All category button switch configuration**
   - Problem: Hardcoded "View All" categories button is not optional.
   - Spec: Turn "View All" into a switch: If ON, the button appears below categories when one is selected. If OFF, the button is omitted; instead, clicking the active focused category re-shows all items. If nothing is selected, clicking another category brings it into focus.
-- `[ ]` **Fix/Feature: Image Click mode consolidation**
+- `[x]` **Fix/Feature: Image Click mode consolidation**
   - Problem: Separate toggles for Lightbox and Canvas Expand allow invalid configurations.
   - Spec: Combine these controls into a single 3-way dropdown: **Lightbox**, **Canvas Expand**, or **Off** (the default state).
-- `[ ]` **Feature Option: Canvas Expand physical resizing and centering**
+- `[x]` **Feature Option: Canvas Expand physical resizing and centering**
   - Problem: Canvas Expand currently zooms the entire canvas viewport to the image.
   - Spec: Add a setting for Canvas Expand to physically scale the media container relative to other items and center on the screen using canvas panning (instead of zooming the canvas). Clicking it again shrinks it back. If the user manually zooms out the canvas, the expanded image remains physically larger than all others.
-- `[ ]` **Fix: Live preview preloader stuck loading on the first image**
+- `[x]` **Fix: Live preview preloader stuck loading on the first image**
   - Problem: When opening the live preview iframe inside the GUI Setup Tool, the preloader remains stuck loading on the first image, making the preview non-functional.
   - Solution: Investigate preloader/resource loading logic in main.js/data.js when executed in the iframe. Ensure that config fetches or postMessage configurations do not interrupt the resource loader sequence.
 

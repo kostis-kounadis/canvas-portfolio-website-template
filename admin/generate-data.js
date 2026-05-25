@@ -224,6 +224,18 @@ async function main() {
     fs.writeFileSync(indexHtmlPath, html, 'utf8');
     console.log('Successfully updated index.html with static SEO tags.');
 
+    // 7. Phase 10: Update favicon/site.webmanifest from config.site.title
+    const manifestPath = path.join(rootDir, 'favicon', 'site.webmanifest');
+    if (fs.existsSync(manifestPath)) {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      manifest.name = siteTitle;
+      manifest.short_name = siteTitle;
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+      console.log(`Successfully updated favicon/site.webmanifest with name/short_name: "${siteTitle}"`);
+    } else {
+      console.warn('Warning: favicon/site.webmanifest not found, skipping manifest update.');
+    }
+
     // sitemap.xml update
     const today = new Date().toISOString().split('T')[0];
     const sitemapXmlPath = path.join(rootDir, 'sitemap.xml');

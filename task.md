@@ -1,6 +1,6 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ Phase 8 DONE — stopping before Phase 9.    
+> **Status**: ⏸ Phase 10 DONE — stopping before Phase 11.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
 
@@ -153,29 +153,29 @@
 ## Phase 9 — SEO & Metadata
 *Model: Gemini 3.5 Flash (High)*
 
-- `[ ]` Update `admin/generate-data.js` to read `config.json`
-- `[ ]` Write `<title>` from `config.site.title`
-- `[ ]` Write `<meta name="description">` from `config.seo.metaDescription`
-- `[ ]` Write `<meta name="keywords">` from `config.seo.keywords`
-- `[ ]` Write all OG tags from `config.seo`
-- `[ ]` Write all Twitter card tags from `config.seo`
-- `[ ]` Write `<link rel="canonical">` from `config.seo.canonicalUrl`
-- `[ ]` Write Schema.org `<script type="application/ld+json">` from `config.seo` (Person or Organization)
-- `[ ]` Update `sitemap.xml` with canonical URL and build date
-- `[ ]` Verify: `index.html` contains correct static SEO tags after build run
+- `[x]` Update `admin/generate-data.js` to read `config.json`
+- `[x]` Write `<title>` from `config.site.title`
+- `[x]` Write `<meta name="description">` from `config.seo.metaDescription`
+- `[x]` Write `<meta name="keywords">` from `config.seo.keywords`
+- `[x]` Write all OG tags from `config.seo`
+- `[x]` Write all Twitter card tags from `config.seo`
+- `[x]` Write `<link rel="canonical">` from `config.seo.canonicalUrl`
+- `[x]` Write Schema.org `<script type="application/ld+json">` from `config.seo` (Person or Organization)
+- `[x]` Update `sitemap.xml` with canonical URL and build date
+- `[x]` Verify: `index.html` contains correct static SEO tags after build run
 
 ---
 
 ## Phase 10 — Favicon & OG Image Workflow
 *Model: Gemini 3.5 Flash (Medium)*
 
-- `[ ]` Ensure placeholder `favicon/` folder exists with working placeholder icons
-- `[ ]` Update `admin/generate-data.js` to update `favicon/site.webmanifest` from `config.site.title`
-- `[ ]` Prepare GUI help text + link for realfavicongenerator.net (for Phase 11)
-- `[ ]` Verify: webmanifest `name`/`short_name` update correctly after build
-- `[ ]` Open Graph image (og-image.jpg) workflow:
-  - `[ ]` Document og-image creation best-practices (1200x630px template, why & how to use it)
-  - `[ ]` Specify GUI SEO tab instructions & text input field mapping for `config.seo.ogImage`
+- `[x]` Ensure placeholder `favicon/` folder exists with working placeholder icons
+- `[x]` Update `admin/generate-data.js` to update `favicon/site.webmanifest` from `config.site.title`
+- `[x]` Prepare GUI help text + link for realfavicongenerator.net (for Phase 11)
+- `[x]` Verify: webmanifest `name`/`short_name` update correctly after build
+- `[x]` Open Graph image (og-image.jpg) workflow:
+  - `[x]` Document og-image creation best-practices (1200x630px template, why & how to use it)
+  - `[x]` Specify GUI SEO tab instructions & text input field mapping for `config.seo.ogImage`
 
 ---
 

@@ -1,6 +1,6 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ Phases 2 & 3 DONE — awaiting model switch to Gemini 3.5 Flash (High) for Phase 4.    
+> **Status**: ⏸ Phase 4 DONE — stopping before Phase 5.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
 
@@ -78,12 +78,12 @@
 ## Phase 4 — Typography System
 *Model: Gemini 3.5 Flash (High)*
 
-- `[ ]` Remove hardcoded JetBrains Mono `<link>` tags from `index.html`
-- `[ ]` Add `--font-family` CSS variable (replaces hardcoded `font-family` on `body`)
-- `[ ]` Add font-family injection logic to `applyTheme()` in `main.js`
-- `[ ]` Add font embed code `<link>` tag injection logic (parse from `config.ui.fontEmbedCode`)
-- `[ ]` Fallback to `"JetBrains Mono", monospace` if `fontEmbedCode` is empty
-- `[ ]` Verify: custom Google Font loads and applies site-wide
+- `[x]` Remove hardcoded JetBrains Mono `<link>` tags from `index.html`
+- `[x]` Add `--font-family` CSS variable (replaces hardcoded `font-family` on `body`)
+- `[x]` Add font-family injection logic to `applyTheme()` in `main.js`
+- `[x]` Add font embed code `<link>` tag injection logic (parse from `config.ui.fontEmbedCode`)
+- `[x]` Fallback to `"JetBrains Mono", monospace` if `fontEmbedCode` is empty
+- `[x]` Verify: custom Google Font loads and applies site-wide
 
 ---
 

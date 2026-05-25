@@ -650,6 +650,119 @@
     if (textFx === "color-cycle")  document.body.classList.add("text-fx-color-cycle");
     else if (textFx === "gradient") document.body.classList.add("text-fx-gradient");
     else if (textFx === "hue-rotate") document.body.classList.add("text-fx-hue-rotate");
+
+    // ─ Typography Dynamic Font Loading (Phase 4) ─
+    const ui = cfg.ui || {};
+    const fontEmbedCode = ui.fontEmbedCode || "";
+
+    // Clean up existing dynamic font elements
+    const oldEmbeds = document.querySelectorAll(".dynamic-font-embed");
+    oldEmbeds.forEach(el => el.remove());
+
+    const DEFAULT_FONT_EMBED = `<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">`;
+    let embedToUse = fontEmbedCode.trim();
+    const isDefault = !embedToUse;
+
+    if (isDefault) {
+      embedToUse = DEFAULT_FONT_EMBED;
+    }
+
+    // Convert raw URL or raw @import into HTML tags
+    if (embedToUse && !embedToUse.startsWith("<")) {
+      if (embedToUse.startsWith("http")) {
+        embedToUse = `<link href="${embedToUse}" rel="stylesheet">`;
+      } else if (embedToUse.includes("@import")) {
+        embedToUse = `<style>${embedToUse}</style>`;
+      }
+    }
+
+    // Inject into head
+    if (embedToUse) {
+      const container = document.createElement("div");
+      container.innerHTML = embedToUse;
+      Array.from(container.children).forEach(child => {
+        child.classList.add("dynamic-font-embed");
+        document.head.appendChild(child);
+      });
+    }
+
+    // Parse font-family from the embed code
+    const parsedFamily = parseFontFamilyFromEmbed(embedToUse);
+    if (parsedFamily && !isDefault) {
+      root.style.setProperty("--font-family", parsedFamily);
+    } else {
+      root.style.setProperty("--font-family", '"JetBrains Mono", "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace');
+    }
+  }
+
+  // Helper to extract font family name from a Google Fonts embed code or style tag URL
+  function parseFontFamilyFromEmbed(embedCode) {
+    if (!embedCode) return null;
+    const urls = [];
+    
+    // Method 1: Extract from <link href="...">
+    const hrefRegex = /href=["']([^"']+)["']/g;
+    let match;
+    while ((match = hrefRegex.exec(embedCode)) !== null) {
+      urls.push(match[1]);
+    }
+    
+    // Method 2: Extract from @import url('...') or @import "..."
+    const importRegex = /@import\s+(?:url\()?['"]([^'"]+)['"]\)?/g;
+    while ((match = importRegex.exec(embedCode)) !== null) {
+      urls.push(match[1]);
+    }
+    
+    // If no URLs found but there's a raw URL in text
+    if (urls.length === 0) {
+      const urlRegex = /(https?:\/\/[^\s'"]+)/g;
+      while ((match = urlRegex.exec(embedCode)) !== null) {
+        urls.push(match[1]);
+      }
+    }
+    
+    const families = [];
+    
+    for (const urlStr of urls) {
+      try {
+        const url = new URL(urlStr);
+        const searchParams = new URLSearchParams(url.search);
+        const familyParams = searchParams.getAll('family');
+        for (const fp of familyParams) {
+          const parts = fp.split(':');
+          const familyName = decodeURIComponent(parts[0].replace(/\+/g, ' '));
+          if (familyName && !families.includes(familyName)) {
+            families.push(familyName);
+          }
+        }
+      } catch (e) {
+        const famRegex = /[?&]family=([^&:#"'\s]+)/g;
+        let famMatch;
+        while ((famMatch = famRegex.exec(urlStr)) !== null) {
+          const familyName = decodeURIComponent(famMatch[1].replace(/\+/g, ' '));
+          if (familyName && !families.includes(familyName)) {
+            families.push(familyName);
+          }
+        }
+      }
+    }
+
+    if (families.length === 0) {
+      const famRegex = /[?&]family=([^&:#"'\s]+)/g;
+      let famMatch;
+      while ((famMatch = famRegex.exec(embedCode)) !== null) {
+        const familyName = decodeURIComponent(famMatch[1].replace(/\+/g, ' '));
+        if (familyName && !families.includes(familyName)) {
+          families.push(familyName);
+        }
+      }
+    }
+
+    if (families.length > 0) {
+      return families.map(f => f.includes(' ') ? `"${f}"` : f).join(', ');
+    }
+    
+    return null;
   }
 
   // Injects the SVG feTurbulence grain filter once.

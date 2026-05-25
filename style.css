@@ -52,6 +52,7 @@ body {
   font-weight: 400;
   text-transform: uppercase;
   font-size: var(--ui-text-size, 18px);
+  font-size-adjust: from-font;
 }
 
 body {

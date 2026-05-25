@@ -289,6 +289,9 @@
 - `[ ]` **Feature Option: Canvas Expand physical resizing and centering**
   - Problem: Canvas Expand currently zooms the entire canvas viewport to the image.
   - Spec: Add a setting for Canvas Expand to physically scale the media container relative to other items and center on the screen using canvas panning (instead of zooming the canvas). Clicking it again shrinks it back. If the user manually zooms out the canvas, the expanded image remains physically larger than all others.
+- `[ ]` **Fix: Live preview preloader stuck loading on the first image**
+  - Problem: When opening the live preview iframe inside the GUI Setup Tool, the preloader remains stuck loading on the first image, making the preview non-functional.
+  - Solution: Investigate preloader/resource loading logic in main.js/data.js when executed in the iframe. Ensure that config fetches or postMessage configurations do not interrupt the resource loader sequence.
 
 ---
 

@@ -630,6 +630,10 @@ This phase addresses critical issues and regressions identified in the GUI Setup
 7. **Canvas Expand Physical Resizing and Centering**:
    - Add a configuration option for Canvas Expand to physically scale the image relative to other items and center on the viewport via canvas panning (instead of zooming the entire canvas). If the user then manually zooms out the canvas, the expanded image remains physically larger than all other items.
 
+8. **Fix Preview Preloader Stuck Loading**:
+   - Resolve the issue where opening the live preview iframe in the GUI Setup Tool causes the preloader to get permanently stuck loading on the first image.
+   - Investigate preloader sequences and dynamic resource fetch boundaries in `main.js`/`data.js` to ensure the config initialization flow does not interrupt or break the image loading signals in the iframe context.
+
 ---
 
 ### Phase 14 — Mobile Polish & Final QA

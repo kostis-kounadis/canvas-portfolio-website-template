@@ -16,14 +16,14 @@
 ## Phase 0 — Repository Bootstrap
 *Model: Gemini 3.5 Flash (Low)*
 
-- `[ ]` Create private GitHub repo: `canvas-portfolio-website-template`
-- `[ ]` Copy source files from `_portfolio_v7_DEPLOYED` (exclude `assets/images/` actual photos, `node_modules`)
-- `[ ]` Set up `.gitignore` (`node_modules/`, `.DS_Store`, `assets/images/*/` real content)
-- `[ ]` Write initial `README.md` (what it is, live demo link, template philosophy, quick-start outline)
-- `[ ]` Create 3 placeholder solid-colour PNG images (different aspect ratios: landscape, portrait, square)
-- `[ ]` Create 3 example category folders: `assets/images/work/`, `assets/images/personal/`, `assets/images/experiments/`
-- `[ ]` Copy placeholder images across categories (5–8 copies each, to fill the canvas meaningfully)
-- `[ ]` Initial commit & push to GitHub
+- `[x]` Create private GitHub repo: `canvas-portfolio-website-template`
+- `[x]` Copy source files from `_portfolio_v7_DEPLOYED` (exclude `assets/images/` actual photos, `node_modules`)
+- `[x]` Set up `.gitignore` (`node_modules/`, `.DS_Store`, `assets/images/*/` real content)
+- `[x]` Write initial `README.md` (what it is, live demo link, template philosophy, quick-start outline)
+- `[x]` Create 3 placeholder solid-colour PNG images (different aspect ratios: landscape, portrait, square)
+- `[x]` Create 3 example category folders: `assets/images/work/`, `assets/images/personal/`, `assets/images/experiments/`
+- `[x]` Copy placeholder images across categories (5–8 copies each, to fill the canvas meaningfully)
+- `[x]` Initial commit & push to GitHub
 
 ---
 

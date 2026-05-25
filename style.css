@@ -1,6 +1,7 @@
 /* 
-  Global layout: white/off-white brutalist canvas, full-viewport, no scrollbars.
-  Typography: JetBrains Mono, light weights.
+  Global layout: brutalist canvas, full-viewport, no scrollbars.
+  Typography: JetBrains Mono, light weights (default — overridable via config).
+  Design tokens: all visual properties as CSS variables for runtime theming.
 */
 
 *,
@@ -9,16 +10,45 @@
   box-sizing: border-box;
 }
 
+/* ── Design Tokens ─────────────────────────────────────────────────────────── */
+
+:root {
+  --bg-colour:          #f7f5f0;
+  --text-colour:        #ffff00;
+  --ui-text-size:       18px;
+  --font-family:        "JetBrains Mono", "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace;
+
+  /* Theme gradient (used by bg-gradient-static and bg-gradient-animated) */
+  --bg-from:            #f7f5f0;
+  --bg-to:              #e0e0e0;
+
+  /* Noise/grain overlay */
+  --noise-opacity:      0;
+
+  /* Image shadows */
+  --shadow-enabled:     1;   /* set to 0 via body.no-shadow */
+  --shadow-blur:        30px;
+  --shadow-color:       rgba(0, 0, 0, 0.06);
+
+  /* Duotone image filter */
+  --duotone-hue:        200deg;
+  --duotone-sat:        2;
+
+  /* Zone layout spacing */
+  --zone-edge:          32px;
+  --zone-mid-y:         50%;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* no native scrollbars; we pan the stage instead */
-  background: var(--bg-colour, #f7f5f0); /* slightly off-white for tactile feel */
+  overflow: hidden;
+  background: var(--bg-colour);
   color: #111111;
-  font-family: "JetBrains Mono", "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace;
+  font-family: var(--font-family);
   font-weight: 400;
   text-transform: uppercase;
   font-size: var(--ui-text-size, 18px);
@@ -170,13 +200,12 @@ figure {
   padding: 0;
   margin: 0;
   background: transparent;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 var(--shadow-blur, 30px) calc(var(--shadow-blur, 30px) * 2) var(--shadow-color, rgba(0,0,0,0.06));
   border-radius: 2px;
   overflow: hidden;
   cursor: grab;
   transition: box-shadow 0.15s ease-out;
   will-change: left, top;
-  position: absolute;
 }
 
 .media-item.is-dragging {
@@ -576,12 +605,10 @@ figure {
 }
 
 /* ── Category Panel ─────────────────────────────────────────────────────────── */
+/* Position is now handled by .zone-* containers injected by JS.
+   These rules only set the visual / display properties. */
 
 #category-panel {
-  position: fixed;
-  left: 32px;
-  top: 50%;
-  transform: translateY(-50%);
   z-index: 1000;
   pointer-events: none;
   mix-blend-mode: difference;
@@ -597,12 +624,9 @@ figure {
 }
 
 /* ── Layout Panel ───────────────────────────────────────────────────────────── */
+/* Position is now handled by .zone-* containers injected by JS. */
 
 #layout-panel {
-  position: fixed;
-  right: 32px;
-  top: 50%;
-  transform: translateY(-50%);
   z-index: 1000;
   pointer-events: none;
   mix-blend-mode: difference;
@@ -645,16 +669,273 @@ figure {
 body.no-blend-mode .info-overlay,
 body.no-blend-mode #layout-panel,
 body.no-blend-mode #category-panel,
+body.no-blend-mode .nav,
 body.no-blend-mode .nav-btn,
 body.no-blend-mode .layout-title,
 body.no-blend-mode .site-title,
+body.no-blend-mode .zone-container,
 body.no-blend-mode .media-item .play-badge-text,
 body.no-blend-mode .yt-reset-btn {
   mix-blend-mode: normal !important;
 }
 
+body.no-shadow .media-item {
+  box-shadow: none;
+}
+
+/* ── 8-Zone Container System ────────────────────────────────────────────────── */
+/* Injected by buildZoneContainers() in main.js.
+   Each zone is a fixed-positioned flex column.
+   pointer-events: none on container; pointer-events: auto re-enabled on children. */
+
+.zone-container {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  color: var(--text-colour, #ffff00);
+  font-family: inherit;
+  font-size: var(--ui-text-size, 18px);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  /* Ensure children can still get pointer events */
+}
+
+/* Horizontal alignment per zone column */
+.zone-top-left,
+.zone-middle-left,
+.zone-bottom-left    { align-items: flex-start; }
+
+.zone-top-center,
+.zone-bottom-center  { align-items: center; }
+
+.zone-top-right,
+.zone-middle-right,
+.zone-bottom-right   { align-items: flex-end; }
+
+/* Positioning per zone */
+.zone-top-left     { top: var(--zone-edge, 32px); left: var(--zone-edge, 32px); }
+.zone-top-center   { top: var(--zone-edge, 32px); left: 50%; transform: translateX(-50%); }
+.zone-top-right    { top: var(--zone-edge, 32px); right: var(--zone-edge, 32px); }
+.zone-middle-left  { top: 50%; left: var(--zone-edge, 32px); transform: translateY(-50%); }
+.zone-middle-right { top: 50%; right: var(--zone-edge, 32px); transform: translateY(-50%); }
+.zone-bottom-left  { bottom: calc(var(--zone-edge, 32px) + 48px); left: var(--zone-edge, 32px); }
+.zone-bottom-center{ bottom: calc(var(--zone-edge, 32px) + 48px); left: 50%; transform: translateX(-50%); }
+.zone-bottom-right { bottom: calc(var(--zone-edge, 32px) + 48px); right: var(--zone-edge, 32px); }
+
+/* Mobile: hide all zone containers (the legacy <nav> handles mobile layout) */
+@media (max-width: 768px) {
+  .zone-container { display: none !important; }
+}
+
 .layout-option.is-active:hover {
   text-decoration: underline;
+}
+
+/* ── Background Effect System ────────────────────────────────────────────────── */
+/* Five body classes, all toggled by applyTheme() from config.theme.backgroundEffect */
+
+/* Default: solid (body background is just --bg-colour, set in html,body above) */
+body.bg-solid {
+  background: var(--bg-colour);
+}
+
+/* Two-colour static gradient */
+body.bg-gradient-static {
+  background: linear-gradient(135deg, var(--bg-from, var(--bg-colour)), var(--bg-to, #e0e0e0));
+}
+
+/* Slow animated gradient */
+body.bg-gradient-animated {
+  background: linear-gradient(135deg, var(--bg-from, var(--bg-colour)), var(--bg-to, #e0e0e0), var(--bg-from, var(--bg-colour)));
+  background-size: 400% 400%;
+  animation: bg-shift 30s ease infinite;
+}
+
+@keyframes bg-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Two drifting blurred radial blobs (mesh gradient feel) */
+body.bg-blob-mesh::before,
+body.bg-blob-mesh::after {
+  content: "";
+  position: fixed;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.bg-blob-mesh::before {
+  background: var(--bg-from, var(--bg-colour));
+  top: -20vmax;
+  left: -10vmax;
+  animation: blob-drift-a 25s ease-in-out alternate infinite;
+}
+
+body.bg-blob-mesh::after {
+  background: var(--bg-to, #e0e0e0);
+  bottom: -20vmax;
+  right: -10vmax;
+  animation: blob-drift-b 28s ease-in-out alternate infinite;
+}
+
+@keyframes blob-drift-a {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(8vw, 6vh) scale(1.1); }
+}
+
+@keyframes blob-drift-b {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(-6vw, -8vh) scale(1.15); }
+}
+
+/* Noise/grain overlay — layered on top of any background effect.
+   The SVG grain filter is injected into <body> by JS (applyTheme).
+   body.bg-noise activates the ::before pseudo-element. */
+body.bg-noise::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;            /* above bg blobs (z:0), below stage-wrapper */
+  pointer-events: none;
+  filter: url(#grain);
+  opacity: var(--noise-opacity, 0);
+  will-change: opacity;
+  /* Ensure blob-mesh ::before/::after don't conflict (they are on body, this is too) */
+}
+
+/* When blob-mesh + noise are both active, we can't use body::before for both.
+   The blob uses ::before/::after; noise needs its own element.
+   JS injects a <div id="grain-overlay"> instead when blob-mesh is active. */
+#grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  filter: url(#grain);
+  opacity: var(--noise-opacity, 0);
+  will-change: opacity;
+}
+
+/* ── Text Animation System ───────────────────────────────────────────────────── */
+/* Applied as class on the .zone-container and .nav elements */
+
+body.text-fx-color-cycle .zone-container,
+body.text-fx-color-cycle .nav {
+  animation: text-color-cycle 8s linear infinite;
+}
+
+@keyframes text-color-cycle {
+  0%   { color: var(--text-colour); }
+  33%  { color: hsl(60, 100%, 70%); }
+  66%  { color: hsl(30, 100%, 70%); }
+  100% { color: var(--text-colour); }
+}
+
+body.text-fx-gradient .zone-container *,
+body.text-fx-gradient .nav * {
+  background: linear-gradient(90deg, var(--text-colour), hsl(30, 100%, 70%), var(--text-colour));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-gradient-shift 5s linear infinite;
+}
+
+@keyframes text-gradient-shift {
+  from { background-position: 0% center; }
+  to   { background-position: 200% center; }
+}
+
+/* hue-rotate: works best in Chromium. Graceful fallback = no animation. */
+body.text-fx-hue-rotate .zone-container,
+body.text-fx-hue-rotate .nav {
+  animation: text-hue-rotate 6s linear infinite;
+}
+
+@keyframes text-hue-rotate {
+  from { filter: hue-rotate(0deg); }
+  to   { filter: hue-rotate(360deg); }
+}
+
+/* ── Accessibility: Reduced Motion ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  body.bg-gradient-animated,
+  body.bg-blob-mesh::before,
+  body.bg-blob-mesh::after {
+    animation: none;
+  }
+
+  body.text-fx-color-cycle .zone-container,
+  body.text-fx-color-cycle .nav,
+  body.text-fx-gradient .zone-container *,
+  body.text-fx-gradient .nav *,
+  body.text-fx-hue-rotate .zone-container,
+  body.text-fx-hue-rotate .nav {
+    animation: none;
+    filter: none;
+    -webkit-text-fill-color: unset;
+    background-clip: unset;
+    -webkit-background-clip: unset;
+    background: transparent;
+  }
+}
+
+/* ── Image Effects System ────────────────────────────────────────────────────── */
+/* Toggled by applyImageEffects() in Phase 5; CSS hooks defined here. */
+
+body.fx-desaturated .media-item img,
+body.fx-desaturated .media-item video {
+  filter: grayscale(1);
+  transition: filter 0.4s ease;
+}
+
+body.fx-duotone .media-item img,
+body.fx-duotone .media-item video {
+  filter: grayscale(1) sepia(1) hue-rotate(var(--duotone-hue, 200deg)) saturate(var(--duotone-sat, 2));
+  transition: filter 0.4s ease;
+}
+
+/* Hover reveal: show full colour on hover (when fx mode is active) */
+body.fx-hover-reveal.fx-desaturated .media-item:hover img,
+body.fx-hover-reveal.fx-desaturated .media-item:hover video,
+body.fx-hover-reveal.fx-duotone .media-item:hover img,
+body.fx-hover-reveal.fx-duotone .media-item:hover video {
+  filter: none;
+}
+
+/* Click-sticky: is-coloured = item shown in full colour */
+body[class*="fx-"] .media-item.is-coloured img,
+body[class*="fx-"] .media-item.is-coloured video {
+  filter: none;
+}
+
+/* Blur others on click */
+.media-item.is-blurred img,
+.media-item.is-blurred video {
+  filter: blur(6px) opacity(0.4);
+  transition: filter 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.fx-desaturated .media-item img,
+  body.fx-desaturated .media-item video,
+  body.fx-duotone .media-item img,
+  body.fx-duotone .media-item video,
+  .media-item.is-blurred img,
+  .media-item.is-blurred video {
+    transition: none;
+  }
 }
 
 /* Brutalist linear transition for layout changes — no easing */

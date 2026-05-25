@@ -520,6 +520,8 @@
     window._siteConfigRaw = cfg;
     mapConfig(cfg);
     applyConfigCSS();
+    applyTheme(cfg);          // Phase 3: apply theme colours, bg effect, noise, shadow
+    buildZoneContainers();    // Phase 2: rebuild zone containers for new positions
 
     // Rebuild UI modules that depend on config
     const navRight = document.getElementById("nav-right");
@@ -542,6 +544,139 @@
       window.applyConfig(event.data.config);
     }
   });
+
+  // ── Zone Container System (Phase 2) ──────────────────────────────────────────
+  // Creates (or re-creates) 8 fixed div zone containers used on desktop.
+  // On mobile, zone containers are hidden by CSS; the legacy <nav> handles layout.
+
+  const ZONE_IDS = [
+    "top-left", "top-center", "top-right",
+    "middle-left", "middle-right",
+    "bottom-left", "bottom-center", "bottom-right",
+  ];
+
+  function buildZoneContainers() {
+    if (isMobile) return; // zones not used on mobile
+
+    // Remove any existing zone containers
+    document.querySelectorAll(".zone-container").forEach((el) => el.remove());
+
+    ZONE_IDS.forEach((zone) => {
+      const div = document.createElement("div");
+      div.className = `zone-container zone-${zone}`;
+      div.id = `zone-${zone}`;
+      document.body.appendChild(div);
+    });
+  }
+
+  // Returns the zone container element for a given zone string (e.g. "top-left").
+  // Falls back to document.body if the zone doesn't exist.
+  function getZone(zoneName) {
+    return document.getElementById(`zone-${zoneName}`) || document.body;
+  }
+
+  // ── Theme System (Phase 3) ──────────────────────────────────────────────────────
+  // Reads the full config object (window._siteConfigRaw) and applies:
+  // • CSS custom properties for colours, gradients, noise, shadow
+  // • Body classes for background effect and text animation
+  // • Injects the SVG feTurbulence grain filter if noise is enabled
+
+  const BG_EFFECT_CLASSES = ["bg-solid", "bg-gradient-static", "bg-gradient-animated", "bg-blob-mesh", "bg-noise"];
+  const TEXT_FX_CLASSES   = ["text-fx-color-cycle", "text-fx-gradient", "text-fx-hue-rotate"];
+
+  function applyTheme(cfg) {
+    if (!cfg || !cfg.theme) return;
+    const t   = cfg.theme;
+    const root = document.documentElement;
+
+    // ─ Colours ─
+    if (t.backgroundColor) {
+      root.style.setProperty("--bg-colour",   t.backgroundColor);
+      root.style.setProperty("--bg-from",     t.backgroundColor);
+    }
+    if (t.backgroundGradientFrom) root.style.setProperty("--bg-from", t.backgroundGradientFrom);
+    if (t.backgroundGradientTo)   root.style.setProperty("--bg-to",   t.backgroundGradientTo);
+    if (t.textColor) root.style.setProperty("--text-colour", t.textColor);
+
+    // ─ Shadow ─
+    const shadow = t.imageShadow || {};
+    if (shadow.enabled === false) {
+      document.body.classList.add("no-shadow");
+    } else {
+      document.body.classList.remove("no-shadow");
+      if (shadow.blur  != null) root.style.setProperty("--shadow-blur",  shadow.blur + "px");
+      if (shadow.color != null) {
+        // Convert hex + opacity to rgba
+        const hex = shadow.color || "#000000";
+        const op  = shadow.opacity != null ? shadow.opacity : 0.06;
+        const r   = parseInt(hex.slice(1, 3), 16);
+        const g   = parseInt(hex.slice(3, 5), 16);
+        const b   = parseInt(hex.slice(5, 7), 16);
+        root.style.setProperty("--shadow-color", `rgba(${r},${g},${b},${op})`);
+      }
+    }
+
+    // ─ Blend mode ─
+    if (t.blendMode === false) {
+      document.body.classList.add("no-blend-mode");
+    } else {
+      document.body.classList.remove("no-blend-mode");
+    }
+
+    // ─ Background effect ─
+    document.body.classList.remove(...BG_EFFECT_CLASSES);
+    const effect = t.backgroundEffect || "solid";
+    if (effect === "solid")             document.body.classList.add("bg-solid");
+    else if (effect === "gradient-static")   document.body.classList.add("bg-gradient-static");
+    else if (effect === "gradient-animated") document.body.classList.add("bg-gradient-animated");
+    else if (effect === "blob-mesh")    document.body.classList.add("bg-blob-mesh");
+
+    // ─ Noise/grain ─
+    const noise = t.noiseGrain || {};
+    if (noise.enabled) {
+      root.style.setProperty("--noise-opacity", String(noise.opacity != null ? noise.opacity : 0.04));
+      _ensureGrainFilter(effect === "blob-mesh"); // blob-mesh needs #grain-overlay div
+      document.body.classList.add("bg-noise");
+    } else {
+      root.style.setProperty("--noise-opacity", "0");
+      document.body.classList.remove("bg-noise");
+      const go = document.getElementById("grain-overlay");
+      if (go) go.remove();
+    }
+
+    // ─ Text animation ─
+    document.body.classList.remove(...TEXT_FX_CLASSES);
+    const textFx = t.textAnimation || "none";
+    if (textFx === "color-cycle")  document.body.classList.add("text-fx-color-cycle");
+    else if (textFx === "gradient") document.body.classList.add("text-fx-gradient");
+    else if (textFx === "hue-rotate") document.body.classList.add("text-fx-hue-rotate");
+  }
+
+  // Injects the SVG feTurbulence grain filter once.
+  // When blob-mesh is active, injects a #grain-overlay div instead of relying on body::before.
+  function _ensureGrainFilter(useDivOverlay) {
+    if (!document.getElementById("grain-filter-svg")) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.id = "grain-filter-svg";
+      svg.setAttribute("style", "display:none");
+      svg.innerHTML = `
+        <defs>
+          <filter id="grain" x="0%" y="0%" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3"
+              stitchTiles="stitch" result="noise"/>
+            <feColorMatrix type="saturate" values="0" in="noise" result="grey"/>
+            <feBlend in="SourceGraphic" in2="grey" mode="multiply"/>
+          </filter>
+        </defs>`;
+      document.body.appendChild(svg);
+    }
+    // When blob-mesh is active body::before is used by the blobs, so inject a div overlay
+    if (useDivOverlay && !document.getElementById("grain-overlay")) {
+      const div = document.createElement("div");
+      div.id = "grain-overlay";
+      document.body.appendChild(div);
+    }
+  }
 
   function openInfoOverlay(overlayEl, textEl) {
     overlayEl.classList.add("is-visible");
@@ -599,127 +734,180 @@
   });
 
   function buildNav() {
-    const navRight = document.getElementById("nav-right");
-    if (!navRight || !Array.isArray(window.mediaItems)) return;
+    // On desktop: hide the legacy <nav> and use zone containers instead.
+    // On mobile: the <nav> remains visible and unchanged.
+    const legacyNav   = document.querySelector(".nav");
+    const legacyLeft  = document.querySelector(".nav-left");
+    const legacyRight = document.getElementById("nav-right");
 
-    // Apply site name to nav-left
-    const navLeft = document.querySelector(".nav-left");
-    if (navLeft) {
+    if (!isMobile) {
+      // Hide legacy nav elements — zones take over
+      if (legacyLeft)  legacyLeft.style.display  = "none";
+      if (legacyRight) legacyRight.style.display = "none";
+      if (legacyNav)   legacyNav.style.pointerEvents = "none";
+    } else {
+      // Restore legacy nav (mobile)
+      if (legacyLeft)  legacyLeft.style.display  = "";
+      if (legacyRight) legacyRight.style.display = "";
+    }
+
+    // ─ Title module ─
+    const cfg      = window._siteConfigRaw || {};
+    const uiMods   = (cfg.ui && cfg.ui.modules) || {};
+    const titleCfg = uiMods.title || {};
+
+    if (!isMobile && titleCfg.visible !== false) {
+      const titleZone = getZone(titleCfg.position || "top-left");
+
+      // Remove any existing title module in any zone
+      document.querySelectorAll(".zone-title-module").forEach((el) => el.remove());
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "zone-title-module nav-left";
+      titleEl.style.display = "flex";
+      titleEl.style.gap = "8px";
+      titleEl.style.alignItems = "center";
+      titleEl.style.pointerEvents = "auto";
+
+      const titleMode = siteConfig.title_mode || "text";
+
+      const buildSvg = () => {
+        if (!siteConfig.logo_file) return;
+        const container = document.createElement("div");
+        container.className = "site-logo";
+        fetch(siteConfig.logo_file)
+          .then(r => {
+            if (!r.ok) throw new Error("Logo fetch failed");
+            return r.text();
+          })
+          .then(svgText => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(svgText, "image/svg+xml");
+            const svgEl = doc.querySelector("svg");
+            if (svgEl) {
+              svgEl.removeAttribute("width");
+              svgEl.removeAttribute("height");
+              svgEl.style.display = "block";
+              svgEl.style.height = "1em";
+              svgEl.style.width = "auto";
+              svgEl.style.fill = "currentColor";
+              svgEl.querySelectorAll("path, circle, rect, polygon, ellipse").forEach(shape => {
+                shape.style.fill = "currentColor";
+              });
+              container.innerHTML = svgEl.outerHTML;
+            } else {
+              throw new Error("Invalid SVG content");
+            }
+          })
+          .catch(err => {
+            console.error("[nav] Logo error:", err);
+            const img = document.createElement("img");
+            img.src = siteConfig.logo_file;
+            img.style.height = "1em";
+            img.style.width = "auto";
+            container.appendChild(img);
+          });
+        titleEl.appendChild(container);
+      };
+
+      const buildText = () => {
+        if (!siteConfig.name) return;
+        const span = document.createElement("span");
+        span.textContent = siteConfig.name;
+        titleEl.appendChild(span);
+      };
+
+      if (titleMode === "text")       buildText();
+      else if (titleMode === "svg")       buildSvg();
+      else if (titleMode === "svg_text") { buildSvg(); buildText(); }
+      else if (titleMode === "text_svg") { buildText(); buildSvg(); }
+
+      titleZone.appendChild(titleEl);
+    }
+
+    // Mobile title fallback (still updates the legacy nav-left text)
+    if (isMobile && legacyLeft) {
       if (siteConfig.show_title === false) {
-        navLeft.style.display = "none";
+        legacyLeft.style.display = "none";
       } else {
-        navLeft.style.display = "flex";
-        navLeft.style.gap = "8px"; // add spacing between logo and text
-        navLeft.style.alignItems = "center";
-        navLeft.innerHTML = "";
-        const titleMode = siteConfig.title_mode || "text";
-        
-        const buildSvg = () => {
-          if (!siteConfig.logo_file) return;
-          const container = document.createElement("div");
-          container.className = "site-logo";
-          // We inline the SVG to allow css currentColor to recolour it
-          fetch(siteConfig.logo_file)
-            .then(r => {
-              if (!r.ok) throw new Error("Logo fetch failed");
-              return r.text();
-            })
-            .then(svgText => {
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(svgText, "image/svg+xml");
-              const svgEl = doc.querySelector("svg");
-              
-              if (svgEl) {
-                // Clean up the SVG for inlining
-                svgEl.removeAttribute("width");
-                svgEl.removeAttribute("height");
-                svgEl.style.display = "block";
-                svgEl.style.height = "1em";
-                svgEl.style.width = "auto";
-                svgEl.style.fill = "currentColor";
-                
-                // Force all paths/shapes to inherit color
-                svgEl.querySelectorAll("path, circle, rect, polygon, ellipse").forEach(shape => {
-                  shape.style.fill = "currentColor";
-                });
+        legacyLeft.innerHTML = "";
+        const span = document.createElement("span");
+        span.textContent = siteConfig.name;
+        legacyLeft.appendChild(span);
+      }
+    }
 
-                container.innerHTML = svgEl.outerHTML;
-              } else {
-                throw new Error("Invalid SVG content");
-              }
-            })
-            .catch(err => {
-              console.error("[nav] Logo error:", err);
-              // Fallback to img tag if fetch or parsing fails
-              const img = document.createElement("img");
-              img.src = siteConfig.logo_file;
-              img.style.height = "1em";
-              img.style.width = "auto";
-              container.appendChild(img);
-            });
-          navLeft.appendChild(container);
-        };
+    // ─ Email + Info modules ─
+    const emailCfg = uiMods.email || {};
+    const infoCfg  = uiMods.info  || {};
+    const email     = siteConfig.email || "";
 
-        const buildText = () => {
-          if (!siteConfig.name) return;
-          const span = document.createElement("span");
-          span.textContent = siteConfig.name;
-          navLeft.appendChild(span);
-        };
+    if (!Array.isArray(window.mediaItems)) return;
 
-        if (titleMode === "text") {
-          buildText();
-        } else if (titleMode === "svg") {
-          buildSvg();
-        } else if (titleMode === "svg_text") {
-          buildSvg();
-          buildText();
-        } else if (titleMode === "text_svg") {
-          buildText();
-          buildSvg();
+    if (!isMobile) {
+      // Remove any existing email/info modules in zones
+      document.querySelectorAll(".zone-email-module, .zone-info-module").forEach((el) => el.remove());
+
+      // Email module
+      if (email && emailCfg.visible !== false && siteConfig.show_email !== false) {
+        const emailZone = getZone(emailCfg.position || "top-right");
+        const emailEl   = document.createElement("a");
+        emailEl.className = "nav-btn nav-email zone-email-module";
+        emailEl.href = "mailto:" + email;
+        emailEl.textContent = "[" + email.toUpperCase() + "]";
+        emailEl.style.pointerEvents = "auto";
+        emailZone.appendChild(emailEl);
+      }
+
+      // Info module
+      if (infoCfg.visible !== false && siteConfig.show_info !== false) {
+        const infoZone = getZone(infoCfg.position || "top-right");
+        const infoBtn  = document.createElement("button");
+        infoBtn.type = "button";
+        infoBtn.id = "nav-info-btn";
+        infoBtn.className = "nav-btn nav-info zone-info-module";
+        infoBtn.textContent = "[INFO ▷]";
+        infoBtn.style.pointerEvents = "auto";
+        infoBtn.addEventListener("click", toggleInfo);
+        infoZone.appendChild(infoBtn);
+      }
+    } else {
+      // Mobile: populate legacy nav-right
+      if (legacyRight) {
+        legacyRight.innerHTML = "";
+        const navItems = [];
+        if (email && siteConfig.show_email !== false) {
+          navItems.push({ type: "email", label: email.toUpperCase() });
         }
+        if (siteConfig.show_info !== false) {
+          navItems.push({ type: "info", label: "INFO" });
+        }
+        navItems.forEach((item, i) => {
+          if (i > 0) {
+            const sep = document.createElement("span");
+            sep.className = "nav-sep";
+            sep.setAttribute("aria-hidden", "true");
+            sep.textContent = " | ";
+            legacyRight.appendChild(sep);
+          }
+          let el;
+          if (item.type === "info") {
+            el = document.createElement("button");
+            el.type = "button";
+            el.id = "nav-info-btn";
+            el.className = "nav-btn nav-info";
+            el.textContent = "[INFO ▷]";
+            el.addEventListener("click", toggleInfo);
+          } else {
+            el = document.createElement("a");
+            el.href = "mailto:" + email;
+            el.className = "nav-btn nav-email";
+            el.textContent = "[" + item.label + "]";
+          }
+          legacyRight.appendChild(el);
+        });
       }
     }
-
-    const email = siteConfig.email || "";
-    const emailLabel = email.toUpperCase();
-
-    const navItems = [];
-    if (email && siteConfig.show_email !== false) {
-      navItems.push({ type: "email", label: emailLabel });
-    }
-    if (siteConfig.show_info !== false) {
-      navItems.push({ type: "info", label: "INFO" });
-    }
-
-    navRight.innerHTML = "";
-
-    navItems.forEach((item, i) => {
-      if (i > 0) {
-        const sep = document.createElement("span");
-        sep.className = "nav-sep";
-        sep.setAttribute("aria-hidden", "true");
-        sep.textContent = " | ";
-        navRight.appendChild(sep);
-      }
-
-      let el;
-      if (item.type === "info") {
-        el = document.createElement("button");
-        el.type = "button";
-        el.id = "nav-info-btn";
-        el.className = "nav-btn nav-info";
-        el.textContent = "[INFO ▷]";
-        el.addEventListener("click", toggleInfo);
-      } else if (item.type === "email") {
-        el = document.createElement("a");
-        el.href = "mailto:" + email;
-        el.className = "nav-btn nav-email";
-        el.textContent = "[" + item.label + "]";
-      }
-
-      navRight.appendChild(el);
-    });
   }
 
 
@@ -1645,7 +1833,12 @@
       panel.appendChild(el);
     });
 
-    document.body.appendChild(panel);
+    // Append into configured zone (or body fallback)
+    const cfg = window._siteConfigRaw || {};
+    const catPos = (cfg.ui && cfg.ui.modules && cfg.ui.modules.categories)
+      ? (cfg.ui.modules.categories.position || "middle-left")
+      : "middle-left";
+    getZone(catPos).appendChild(panel);
   }
 
   function buildLayoutPanel() {
@@ -1685,7 +1878,11 @@
       panel.appendChild(btn);
     });
 
-    document.body.appendChild(panel);
+    // Append into configured zone (or body fallback)
+    const layoutPos = (cfg && cfg.ui && cfg.ui.modules && cfg.ui.modules.layouts)
+      ? (cfg.ui.modules.layouts.position || "middle-right")
+      : "middle-right";
+    getZone(layoutPos).appendChild(panel);
   }
 
   function toggleMobileMode() {
@@ -1750,13 +1947,19 @@
 
   // Initialization
   async function init() {
-    // Load config.json first so buildNav() and buildLayoutPanel() reflect it
+    // Load config.json first so all build functions reflect it
     await loadSiteConfig();
 
     // Apply default layout from config
     if (siteConfig.default_layout && siteConfig.default_layout !== "random") {
       currentLayout = siteConfig.default_layout;
     }
+
+    // Phase 3: apply theme immediately after config is loaded
+    applyTheme(window._siteConfigRaw);
+
+    // Phase 2: build zone containers before any UI panels
+    buildZoneContainers();
 
     const isSlideshow = isMobile && siteConfig.mobile_mode === "slideshow";
     if (isSlideshow) {

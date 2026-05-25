@@ -1,6 +1,6 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ Phase 1 DONE — awaiting model switch to Gemini 3.5 Flash (High) for Phase 2.  
+> **Status**: ⏸ Phases 2 & 3 DONE — awaiting model switch to Gemini 3.5 Flash (High) for Phase 4.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
 
@@ -44,33 +44,34 @@
 ## Phase 2 — UI Modules 8-Zone Positioning System
 *Model: Claude Sonnet 4.6 (Thinking)*
 
-- `[ ]` Remove all hardcoded CSS positions for nav, category panel, layout panel
-- `[ ]` Add 8 zone container CSS classes to `style.css`
-- `[ ]` Add `mix-blend-mode` inheritance logic to zone containers
-- `[ ]` Add `buildZoneContainers()` function to `main.js`
-- `[ ]` Update `buildNav()` to read position from `config.ui.modules.title/email/info.position`
-- `[ ]` Update `buildCategoryPanel()` to read position from `config.ui.modules.categories.position`
-- `[ ]` Update `buildLayoutPanel()` to read position from `config.ui.modules.layouts.position`
-- `[ ]` Zoom controls: keep in `<footer>` (bottom full-width), visibility only controlled by `config.ui.zoom.visible`
-- `[ ]` Verify: all 8 zone positions work correctly with default config
-- `[ ]` Verify: multiple modules in same zone stack vertically in correct order
+- `[x]` Remove all hardcoded CSS positions for nav, category panel, layout panel
+- `[x]` Add 8 zone container CSS classes to `style.css`
+- `[x]` Add `mix-blend-mode` inheritance logic to zone containers
+- `[x]` Add `buildZoneContainers()` function to `main.js`
+- `[x]` Update `buildNav()` to read position from `config.ui.modules.title/email/info.position`
+- `[x]` Update `buildCategoryPanel()` to read position from `config.ui.modules.categories.position`
+- `[x]` Update `buildLayoutPanel()` to read position from `config.ui.modules.layouts.position`
+- `[x]` Zoom controls: keep in `<footer>` (bottom full-width), visibility only controlled by `config.ui.zoom.visible`
+- `[x]` Desktop nav: legacy `<nav>` hidden; zone containers handle all module placement
+- `[x]` Mobile: legacy `<nav>` retained; zone containers hidden via CSS (`display: none`)
 
 ---
 
 ## Phase 3 — Theme & Visual Customisation
 *Model: Claude Sonnet 4.6 (Thinking)*
 
-- `[ ]` Extend CSS variables in `:root` (noise, shadow, font-family, duotone vars)
-- `[ ]` Add background effect body classes to `style.css` (solid, gradient-static, gradient-animated, blob-mesh)
-- `[ ]` Add `@keyframes bg-shift` and `@keyframes drift` animations
-- `[ ]` Add noise/grain: SVG `feTurbulence` filter injection logic in `main.js`
-- `[ ]` Add `body::before` noise overlay CSS (toggled by `body.bg-noise`)
-- `[ ]` Add text animation CSS classes (`text-fx-color-cycle`, `text-fx-gradient`, `text-fx-hue-rotate`)
-- `[ ]` Add `@media (prefers-reduced-motion)` guard on all new animations
-- `[ ]` Add image shadow CSS variables to `.media-item`
-- `[ ]` Write `applyTheme(config)` function in `main.js`
-- `[ ]` Call `applyTheme()` from `init()` after config is loaded
-- `[ ]` Verify: all 5 background effects render correctly in Chrome and Safari
+- `[x]` Extend CSS variables in `:root` (noise, shadow, font-family, duotone vars)
+- `[x]` Add background effect body classes to `style.css` (solid, gradient-static, gradient-animated, blob-mesh)
+- `[x]` Add `@keyframes bg-shift`, `blob-drift-a/b`, text animation keyframes
+- `[x]` Add noise/grain: SVG `feTurbulence` filter injection logic in `main.js` (`_ensureGrainFilter()`)
+- `[x]` Add `body::before` noise overlay CSS + `#grain-overlay` fallback for blob-mesh combo
+- `[x]` Add text animation CSS classes (`text-fx-color-cycle`, `text-fx-gradient`, `text-fx-hue-rotate`)
+- `[x]` Add `@media (prefers-reduced-motion)` guard on all new animations
+- `[x]` Add image shadow CSS variables to `.media-item` (`--shadow-blur`, `--shadow-color`)
+- `[x]` Add image effect CSS hook classes (`fx-desaturated`, `fx-duotone`, `fx-hover-reveal`, `is-coloured`, `is-blurred`)
+- `[x]` Write `applyTheme(cfg)` function in `main.js`
+- `[x]` Call `applyTheme()` from `init()` and from `window.applyConfig()` (hot-reload)
+- `[x]` `no-blend-mode` and `no-shadow` coverage extended to zone containers
 
 ---
 

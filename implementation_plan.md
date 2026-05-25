@@ -563,8 +563,8 @@ Consolidate the build system:
 |---|---|---|---|---|
 | 0 | Repo bootstrap | Gemini 3.5 Flash (Low) | XS | ✅ |
 | 1 | Config migration: `setup.md` → `config.json` | Claude Sonnet 4.6 (Thinking) | M | ✅ |
-| 2 | UI Modules 8-zone positioning system | Claude Sonnet 4.6 (Thinking) | M | ⬜ |
-| 3 | Theme & visual customisation (CSS + JS) | Claude Sonnet 4.6 (Thinking) | M | ⬜ |
+| 2 | UI Modules 8-zone positioning system | Claude Sonnet 4.6 (Thinking) | M | ✅ |
+| 3 | Theme & visual customisation (CSS + JS) | Claude Sonnet 4.6 (Thinking) | M | ✅ |
 | 4 | Typography system (dynamic font loading) | Gemini 3.5 Flash (High) | S | ⬜ |
 | 5 | Image effects system (desat/duotone/sticky) | Claude Sonnet 4.6 (Thinking) | M | ⬜ |
 | 6 | Image click: lightbox + canvas expand | Claude Sonnet 4.6 (Thinking) | M | ⬜ |

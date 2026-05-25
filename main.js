@@ -54,13 +54,32 @@
   // Current layout mode: "random" | "rows" | "stacks"
   let currentLayout = "random";
 
-  // Site config parsed from setup.md front matter
+  // Site config loaded from config.json
+  // Keys mirror the config.json schema; defaults match template defaults.
   let siteConfig = {
-    name: "[K.]",
-    email: "",
+    // site
+    name:            "My Portfolio",
+    email:           "",
+    infoText:        "",
+    // ui.modules
+    show_title:      true,
+    title_mode:      "text",
+    logo_file:       "",
+    show_email:      true,
+    show_info:       true,
     show_categories: true,
-    show_layout: true,
-    show_zoom: true,
+    show_layout:     true,
+    show_zoom:       true,
+    // theme
+    text_colour:      "#ffff00",
+    background_colour: "#f7f5f0",
+    blend_mode:       true,
+    // layouts
+    layout_names:    ["\u2569\u2569\u2569", "\u2564\u2564\u2564", "\u2567\u2567\u2567"],
+    default_layout:  "random",
+    // misc
+    mobile_mode:     "canvas",
+    ui_text_size:    "18px",
   };
 
   // Active stack objects built by layoutStacks(); cleared on exit.
@@ -404,61 +423,125 @@
   }
 
   let infoLoaded = false;
-  let infoBodyText = ""; // body portion of setup.md (without front matter)
+  let infoBodyText = ""; // info body text from config.json
 
-  // ── setup.md front matter parser ─────────────────────────────────────────
-  function parseFrontMatter(text) {
-    const config = {};
-    let body = text;
-    const match = text.match(/^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)/);
-    if (match) {
-      match[1].split("\n").forEach((line) => {
-        const colon = line.indexOf(":");
-        if (colon === -1) return;
-        const key = line.slice(0, colon).trim();
-        const val = line.slice(colon + 1).trim();
-        try {
-          config[key] = JSON.parse(val);
-        } catch {
-          if (val === "true")       config[key] = true;
-          else if (val === "false") config[key] = false;
-          else                      config[key] = val;
-        }
-      });
-      body = match[2];
+  // ── Map config.json → flat siteConfig ─────────────────────────────────────
+  // Converts the nested config.json structure into the flat siteConfig object
+  // that the rest of main.js uses internally. Safe-access every key.
+  function mapConfig(cfg) {
+    if (!cfg || typeof cfg !== "object") return;
+
+    // site identity
+    if (cfg.site) {
+      if (cfg.site.title   != null) siteConfig.name      = cfg.site.title;
+      if (cfg.site.email   != null) siteConfig.email     = cfg.site.email;
+      if (cfg.site.infoText != null) {
+        infoBodyText = cfg.site.infoText.replace(/\\n/g, "\n").trim();
+        infoLoaded = true;
+      }
     }
-    return { config, body };
+
+    // ui modules visibility + title mode
+    if (cfg.ui) {
+      const mods = cfg.ui.modules || {};
+      if (mods.title != null) {
+        siteConfig.show_title = mods.title.visible !== false;
+        siteConfig.title_mode = mods.title.mode || "text";
+        siteConfig.logo_file  = mods.title.logoFile || "";
+        // Allow overriding display text separately from site.title
+        if (mods.title.text) siteConfig.name = mods.title.text;
+      }
+      if (mods.email    != null) siteConfig.show_email      = mods.email.visible    !== false;
+      if (mods.info     != null) siteConfig.show_info       = mods.info.visible     !== false;
+      if (mods.categories != null) siteConfig.show_categories = mods.categories.visible !== false;
+      if (mods.layouts  != null) siteConfig.show_layout     = mods.layouts.visible  !== false;
+      if (cfg.ui.zoom   != null) siteConfig.show_zoom       = cfg.ui.zoom.visible   !== false;
+      if (cfg.ui.textSize)       siteConfig.ui_text_size    = cfg.ui.textSize;
+    }
+
+    // theme
+    if (cfg.theme) {
+      if (cfg.theme.textColor        != null) siteConfig.text_colour       = cfg.theme.textColor;
+      if (cfg.theme.backgroundColor  != null) siteConfig.background_colour = cfg.theme.backgroundColor;
+      if (cfg.theme.blendMode        != null) siteConfig.blend_mode        = cfg.theme.blendMode;
+    }
+
+    // layouts
+    if (cfg.layouts) {
+      if (Array.isArray(cfg.layouts.labels)) siteConfig.layout_names  = cfg.layouts.labels;
+      if (cfg.layouts.default)               siteConfig.default_layout = cfg.layouts.default;
+    }
+
+    // mobile
+    if (cfg.mobile && cfg.mobile.defaultMode) {
+      siteConfig.mobile_mode = cfg.mobile.defaultMode;
+    }
   }
 
-  // Fetches setup.md once and populates siteConfig + infoBodyText.
+  // Applies CSS custom properties from siteConfig to the document root.
+  function applyConfigCSS() {
+    if (siteConfig.text_colour) {
+      document.documentElement.style.setProperty("--text-colour", siteConfig.text_colour);
+    }
+    if (siteConfig.background_colour) {
+      document.documentElement.style.setProperty("--bg-colour", siteConfig.background_colour);
+    }
+    if (siteConfig.ui_text_size && !isMobile) {
+      document.documentElement.style.setProperty("--ui-text-size", siteConfig.ui_text_size);
+    }
+    if (siteConfig.blend_mode === false) {
+      document.body.classList.add("no-blend-mode");
+    } else {
+      document.body.classList.remove("no-blend-mode");
+    }
+  }
+
+  // Fetches config.json once and populates siteConfig + infoBodyText.
   // Called from init() before buildNav() so the nav reflects config immediately.
   async function loadSiteConfig() {
     try {
-      const r = await fetch("setup.md");
+      const r = await fetch("config.json");
       if (!r.ok) return;
-      const text = await r.text();
-      const { config, body } = parseFrontMatter(text);
-      Object.assign(siteConfig, config);
-      infoBodyText = body.trim();
-      infoLoaded = true; // body ready; no second fetch needed in openInfoOverlay
-
-      // Apply CSS variables dynamically
-      if (siteConfig.text_colour) {
-        document.documentElement.style.setProperty("--text-colour", siteConfig.text_colour);
-      }
-      if (siteConfig.background_colour) {
-        document.documentElement.style.setProperty("--bg-colour", siteConfig.background_colour);
-      }
-      if (siteConfig.ui_text_size && !isMobile) {
-        document.documentElement.style.setProperty("--ui-text-size", siteConfig.ui_text_size);
-      }
-      if (siteConfig.blend_mode === false) {
-        document.body.classList.add("no-blend-mode");
-      }
+      const cfg = await r.json();
+      // Store full config for window.applyConfig access
+      window._siteConfigRaw = cfg;
+      mapConfig(cfg);
+      applyConfigCSS();
     } catch (_) {
       // best-effort; fall back to defaults
     }
   }
+
+  // ── window.applyConfig — GUI hot-reload entry point ────────────────────────
+  // Called by the setup GUI via postMessage to update the live preview
+  // without a full page reload. Accepts the full config.json object.
+  window.applyConfig = function applyConfig(cfg) {
+    if (!cfg || typeof cfg !== "object") return;
+    window._siteConfigRaw = cfg;
+    mapConfig(cfg);
+    applyConfigCSS();
+
+    // Rebuild UI modules that depend on config
+    const navRight = document.getElementById("nav-right");
+    if (navRight) {
+      navRight.innerHTML = "";
+      buildNav();
+    }
+    // Refresh info text if overlay is open
+    const overlay = document.getElementById("info-overlay");
+    const textEl  = document.getElementById("info-text");
+    if (overlay && textEl && overlay.classList.contains("is-visible")) {
+      textEl.innerHTML = renderMarkdown(infoBodyText);
+      requestAnimationFrame(() => autoscaleText(overlay, textEl));
+    }
+  };
+
+  // Listen for postMessage from GUI setup iframe parent
+  window.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "config-update" && event.data.config) {
+      window.applyConfig(event.data.config);
+    }
+  });
 
   function openInfoOverlay(overlayEl, textEl) {
     overlayEl.classList.add("is-visible");
@@ -469,29 +552,13 @@
     }
 
     if (!infoLoaded) {
-      // Config wasn't pre-loaded (unusual); fetch now
-      fetch("setup.md")
-        .then((r) => { if (!r.ok) throw new Error(); return r.text(); })
-        .then((text) => {
-          const { config, body } = parseFrontMatter(text);
-          Object.assign(siteConfig, config);
-          infoBodyText = body.trim();
-          infoLoaded = true;
-
-          // Apply CSS variables dynamically
-          if (siteConfig.text_colour) {
-            document.documentElement.style.setProperty("--text-colour", siteConfig.text_colour);
-          }
-          if (siteConfig.background_colour) {
-            document.documentElement.style.setProperty("--bg-colour", siteConfig.background_colour);
-          }
-          if (siteConfig.ui_text_size && !isMobile) {
-            document.documentElement.style.setProperty("--ui-text-size", siteConfig.ui_text_size);
-          }
-          if (siteConfig.blend_mode === false) {
-            document.body.classList.add("no-blend-mode");
-          }
-
+      // Config wasn't pre-loaded (unusual); fetch config.json now
+      fetch("config.json")
+        .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+        .then((cfg) => {
+          window._siteConfigRaw = cfg;
+          mapConfig(cfg);
+          applyConfigCSS();
           textEl.innerHTML = renderMarkdown(infoBodyText);
           requestAnimationFrame(() => autoscaleText(overlayEl, textEl));
         })
@@ -1549,6 +1616,10 @@
     if (isMobile) return;
     if (siteConfig.show_categories === false) return; // config toggle
 
+    // Remove any existing panel (for hot-reload)
+    const existing = document.getElementById("category-panel");
+    if (existing) existing.remove();
+
     const panel = document.createElement("div");
     panel.id = "category-panel";
 
@@ -1581,20 +1652,34 @@
     if (isMobile) return;
     if (siteConfig.show_layout === false) return; // config toggle
 
+    // Remove any existing panel (for hot-reload)
+    const existing = document.getElementById("layout-panel");
+    if (existing) existing.remove();
+
     const panel = document.createElement("div");
     panel.id = "layout-panel";
 
-    ["random", "rows", "stacks"].forEach((mode, idx) => {
+    // Use available layouts from config; fall back to all three
+    const cfg = window._siteConfigRaw;
+    const available = (cfg && cfg.layouts && Array.isArray(cfg.layouts.available))
+      ? cfg.layouts.available
+      : ["random", "rows", "stacks"];
+    const allModes = ["random", "rows", "stacks"];
+    const defaultLayout = siteConfig.default_layout || "random";
+
+    available.forEach((mode) => {
+      if (!allModes.includes(mode)) return;
+      const idx = allModes.indexOf(mode);
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "layout-option" + (mode === "random" ? " is-active" : "");
+      btn.className = "layout-option" + (mode === defaultLayout ? " is-active" : "");
       btn.dataset.layout = mode;
-      
+
       let label = mode.toUpperCase();
       if (Array.isArray(siteConfig.layout_names) && siteConfig.layout_names[idx]) {
         label = siteConfig.layout_names[idx].toUpperCase();
       }
-      
+
       btn.textContent = "[" + label + "]";
       btn.addEventListener("click", () => applyLayout(mode));
       panel.appendChild(btn);
@@ -1665,8 +1750,13 @@
 
   // Initialization
   async function init() {
-    // Load setup.md config first so buildNav() and buildLayoutPanel() reflect it
+    // Load config.json first so buildNav() and buildLayoutPanel() reflect it
     await loadSiteConfig();
+
+    // Apply default layout from config
+    if (siteConfig.default_layout && siteConfig.default_layout !== "random") {
+      currentLayout = siteConfig.default_layout;
+    }
 
     const isSlideshow = isMobile && siteConfig.mobile_mode === "slideshow";
     if (isSlideshow) {

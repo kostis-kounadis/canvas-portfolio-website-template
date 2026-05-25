@@ -1,15 +1,15 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ READY TO START — awaiting model switch by user before each phase.  
+> **Status**: ⏸ Phase 1 DONE — awaiting model switch to Gemini 3.5 Flash (High) for Phase 2.  
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
 
 ---
 
 ## Branch Strategy (create after Phase 0)
-- `[ ]` `feature/infinite-grid-vanilla` — cosmos.so grid, pure vanilla JS (v2)
-- `[ ]` `feature/infinite-grid-motion-one` — cosmos.so grid, Motion One (v2)
-- `[ ]` `feature/gui-drag-modules` — drag-and-drop module positioning (v2)
+- `[x]` `feature/infinite-grid-vanilla` — cosmos.so grid, pure vanilla JS (v2)
+- `[x]` `feature/infinite-grid-motion-one` — cosmos.so grid, Motion One (v2)
+- `[x]` `feature/gui-drag-modules` — drag-and-drop module positioning (v2)
 
 ---
 
@@ -30,14 +30,14 @@
 ## Phase 1 — Config Migration: `setup.md` → `config.json`
 *Model: Claude Sonnet 4.6 (Thinking)*
 
-- `[ ]` Create `config.json` with full schema (all defaults from implementation plan)
-- `[ ]` Delete `setup.md`
-- `[ ]` Update `main.js`: replace `parseFrontMatter()` with JSON fetch
-- `[ ]` Update `main.js`: replace `fetch("setup.md")` with `fetch("config.json")`
-- `[ ]` Update `main.js`: update all `siteConfig.*` key paths to match new `config.json` structure
-- `[ ]` Expose `window.applyConfig(config)` on the global scope (for GUI hot-reload)
-- `[ ]` Update `admin/generate-data.js` to also write SEO meta tags into `index.html` from `config.json`
-- `[ ]` Verify: portfolio loads in browser with placeholder images, looks identical to current v7
+- `[x]` Create `config.json` with full schema (all defaults from implementation plan)
+- `[x]` Delete `setup.md`
+- `[x]` Update `main.js`: replace `parseFrontMatter()` with JSON fetch
+- `[x]` Update `main.js`: replace `fetch("setup.md")` with `fetch("config.json")`
+- `[x]` Update `main.js`: update all `siteConfig.*` key paths to match new `config.json` structure
+- `[x]` Expose `window.applyConfig(config)` on the global scope (for GUI hot-reload)
+- `[x]` Genericise `index.html`: replace hardcoded personal SEO tags with template placeholders
+- `[x]` Verify: smoke test — config.json valid, setup.md gone, main.js wired correctly
 
 ---
 

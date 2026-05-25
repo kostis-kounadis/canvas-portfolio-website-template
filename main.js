@@ -438,7 +438,11 @@
       // Show the View All button
       const viewAllBtn = document.getElementById("category-view-all");
       if (viewAllBtn) {
-        viewAllBtn.style.display = "";
+        if (siteConfig.categories_view_all_enabled !== false) {
+          viewAllBtn.style.display = "";
+        } else {
+          viewAllBtn.style.display = "none";
+        }
       }
     }
 
@@ -608,6 +612,7 @@
       if (cfg.categories.behaviour != null)    siteConfig.categories_behaviour = cfg.categories.behaviour;
       if (cfg.categories.focusEffect != null)  siteConfig.categories_focus_effect = cfg.categories.focusEffect;
       if (cfg.categories.viewAllLabel != null) siteConfig.categories_view_all_label = cfg.categories.viewAllLabel;
+      if (cfg.categories.viewAllEnabled != null) siteConfig.categories_view_all_enabled = cfg.categories.viewAllEnabled;
     }
 
     // info (Phase 8)
@@ -726,23 +731,12 @@
     }
   };
 
-  // Phase 14: Listen for config-update from GUI Setup Tool via both postMessage and
-  // BroadcastChannel — so the portfolio tab automatically refreshes when config is saved
-  // even without being embedded in an iframe.
+  // Listen for postMessage from GUI setup iframe parent
   window.addEventListener("message", (event) => {
     if (event.data && event.data.type === "config-update" && event.data.config) {
       window.applyConfig(event.data.config);
     }
   });
-
-  try {
-    const _guiChannel = new BroadcastChannel("canvas-portfolio-config");
-    _guiChannel.addEventListener("message", (event) => {
-      if (event.data && event.data.type === "config-update" && event.data.config) {
-        window.applyConfig(event.data.config);
-      }
-    });
-  } catch (_) { /* BroadcastChannel not supported — postMessage is still available */ }
 
   // ── Zone Container System (Phase 2) ──────────────────────────────────────────
   // Creates (or re-creates) 8 fixed div zone containers used on desktop.
@@ -1471,13 +1465,18 @@
     }
 
     render(); // initial state: empty bar
+    
+    const forceFallback = setTimeout(() => {
+      if (preloaderEl) preloaderEl.remove();
+    }, 5000);
 
     return function onAssetLoaded() {
       loaded = Math.min(loaded + 1, total);
       render();
       if (loaded >= total) {
+        clearTimeout(forceFallback);
         // Hard cut — no animation, brutalist.
-        preloaderEl.remove();
+        if (preloaderEl) preloaderEl.remove();
       }
     };
   }
@@ -1687,28 +1686,6 @@
       el.style.zIndex = String(zCounter);
     });
 
-    // Phase 14: Touch hover-reveal fallback.
-    // On mobile, :hover never fires; first tap toggles colour, second tap removes it.
-    if (isMobile) {
-      let _touchMoved = false;
-      el.addEventListener("touchstart", () => { _touchMoved = false; }, { passive: true });
-      el.addEventListener("touchmove",  () => { _touchMoved = true;  }, { passive: true });
-      el.addEventListener("touchend", (e) => {
-        const cfg = window._siteConfigRaw;
-        const fx = cfg?.imageEffects;
-        if (_touchMoved) return; // was a pan, not a tap
-        if (fx?.hoverReveal === true && (fx?.initialState === "desaturated" || fx?.initialState === "duotone")) {
-          e.preventDefault(); // prevent ghost click
-          const isColoured = el.classList.contains("is-touch-coloured");
-          // Remove from all other items first (single-highlight mode)
-          document.querySelectorAll(".media-item.is-touch-coloured").forEach(item => {
-            if (item !== el) item.classList.remove("is-touch-coloured");
-          });
-          el.classList.toggle("is-touch-coloured", !isColoured);
-        }
-      }, { passive: false });
-    }
-
     // Unified click handler (Phase 5 + Phase 6)
     let clickCount = 0;
     let interactionTimer = null;
@@ -1716,25 +1693,7 @@
       if (el.dataset.preventClick === "true") return;
       handleItemClick(el, window._siteConfigRaw); // Phase 5 visual trigger runs first
       
-      const cfg = window._siteConfigRaw;
-      const lbEnabled = cfg?.imageClick?.lightbox?.enabled;
-      const ceEnabled = cfg?.imageClick?.canvasExpand?.enabled && !isMobile;
-      
-      if (lbEnabled && ceEnabled) {
-        clickCount++;
-        if (clickCount === 1) {
-          interactionTimer = setTimeout(() => {
-            if (clickCount === 1) handleItemInteraction(el, "single");
-            clickCount = 0;
-          }, 250);
-        } else if (clickCount === 2) {
-          clearTimeout(interactionTimer);
-          handleItemInteraction(el, "double");
-          clickCount = 0;
-        }
-      } else {
-        handleItemInteraction(el, "single");
-      }
+      handleItemInteraction(el, "single");
     });
 
     return el;
@@ -2607,19 +2566,6 @@
         }
       });
 
-      // Phase 14: Touch swipe navigation inside lightbox
-      let _lbTouchStartX = 0;
-      dialog.addEventListener("touchstart", (e) => {
-        if (e.touches.length === 1) _lbTouchStartX = e.touches[0].clientX;
-      }, { passive: true });
-      dialog.addEventListener("touchend", (e) => {
-        if (e.changedTouches.length !== 1) return;
-        const dx = e.changedTouches[0].clientX - _lbTouchStartX;
-        if (Math.abs(dx) > 40) {
-          navigateLightbox(dx < 0 ? 1 : -1);
-        }
-      }, { passive: true });
-
       // Handle close cleanup (pause videos, etc.)
       dialog.addEventListener("close", () => {
         const activeVideo = dialog.querySelector("video");
@@ -2715,6 +2661,10 @@
 
   function zoomToElementSmooth(el) {
     if (!el) return;
+    
+    const cfg = window._siteConfigRaw;
+    const physical = cfg?.imageClick?.canvasExpand?.physical;
+
     if (!stage.classList.contains("stage-animating")) {
       stage.classList.add("stage-animating");
     }
@@ -2724,19 +2674,24 @@
     const ew = el.offsetWidth || 520;
     const eh = el.offsetHeight || 340;
 
-    const scaleX = (vw * 0.7) / ew;
-    const scaleY = (vh * 0.7) / eh;
-    const targetZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.min(scaleX, scaleY)));
-
     const elCenterX = parseFloat(el.style.left || "0") + ew / 2;
     const elCenterY = parseFloat(el.style.top || "0") + eh / 2;
 
-    zoomLevel = targetZoom;
-    stageX = vw / 2 - elCenterX * targetZoom;
-    stageY = vh / 2 - elCenterY * targetZoom;
+    if (physical) {
+      el.classList.add('is-expanded-physical');
+      stageX = vw / 2 - elCenterX * zoomLevel;
+      stageY = vh / 2 - elCenterY * zoomLevel;
+    } else {
+      const scaleX = (vw * 0.7) / ew;
+      const scaleY = (vh * 0.7) / eh;
+      const targetZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.min(scaleX, scaleY)));
+
+      zoomLevel = targetZoom;
+      stageX = vw / 2 - elCenterX * targetZoom;
+      stageY = vh / 2 - elCenterY * targetZoom;
+    }
 
     updateStageTransform();
-
     expandedEl = el;
 
     window.clearTimeout(zoomToElementSmooth._t);
@@ -2749,10 +2704,15 @@
     if (!stage.classList.contains("stage-animating")) {
       stage.classList.add("stage-animating");
     }
-    zoomLevel = initialZoom;
-    stageX = initialStageX;
-    stageY = initialStageY;
-    updateStageTransform();
+    
+    if (expandedEl && expandedEl.classList.contains('is-expanded-physical')) {
+      expandedEl.classList.remove('is-expanded-physical');
+    } else {
+      zoomLevel = initialZoom;
+      stageX = initialStageX;
+      stageY = initialStageY;
+      updateStageTransform();
+    }
 
     expandedEl = null;
 
@@ -2764,34 +2724,18 @@
 
   function handleItemInteraction(el, type) {
     const cfg = window._siteConfigRaw;
-    const lbEnabled = cfg?.imageClick?.lightbox?.enabled;
-    // Phase 14: Canvas expand is desktop-only; on mobile fall back to lightbox (if enabled) or no-op.
-    const ceEnabled = cfg?.imageClick?.canvasExpand?.enabled && !isMobile;
+    const mode = cfg?.imageClick?.mode || "none";
 
-    if (lbEnabled && ceEnabled) {
-      if (type === "single") {
+    if (type === "single") {
+      if (mode === "lightbox") {
         openLightbox(el);
-      } else if (type === "double") {
+      } else if (mode === "canvasExpand" || mode === "canvas-expand") {
         if (expandedEl === el) {
           resetViewSmooth();
         } else {
           zoomToElementSmooth(el);
         }
       }
-    } else if (lbEnabled) {
-      if (type === "single") {
-        openLightbox(el);
-      }
-    } else if (ceEnabled) {
-      if (type === "single") {
-        if (expandedEl === el) {
-          resetViewSmooth();
-        } else {
-          zoomToElementSmooth(el);
-        }
-      }
-    } else if (!isMobile && cfg?.imageClick?.canvasExpand?.enabled) {
-      // ceEnabled was false only due to isMobile guard; already handled above as no-op.
     }
   }
 

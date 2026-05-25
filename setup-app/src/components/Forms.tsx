@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
@@ -25,7 +24,7 @@ export function LayoutsForm() {
           <Label>Default Layout</Label>
           <Select 
             value={config.layouts.default} 
-            onValueChange={(v) => updateConfig(c => { c.layouts.default = v })}
+            onValueChange={(v) => updateConfig(c => { c.layouts.default = v as string })}
           >
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -73,7 +72,7 @@ export function ModulesForm() {
               <div className="flex items-center gap-4">
                 <Select 
                   value={mod.position} 
-                  onValueChange={(v) => updateConfig(c => { c.ui.modules[modKey as keyof typeof config.ui.modules].position = v })}
+                  onValueChange={(v) => updateConfig(c => { c.ui.modules[modKey as keyof typeof config.ui.modules].position = v as string })}
                 >
                   <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>

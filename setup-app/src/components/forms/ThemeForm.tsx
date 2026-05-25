@@ -153,7 +153,7 @@ export function ThemeForm() {
                   className="flex-1"
                   min={0.01} max={0.2} step={0.01}
                   value={[config.theme.noiseGrain.opacity]}
-                  onValueChange={(vals) => updateConfig(c => { c.theme.noiseGrain.opacity = vals[0] })}
+                  onValueChange={(vals) => updateConfig(c => { c.theme.noiseGrain.opacity = (vals as number[])[0] })}
                 />
                 <span className="w-12 text-sm font-mono">{config.theme.noiseGrain.opacity}</span>
               </div>

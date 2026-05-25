@@ -1,10 +1,5 @@
 import { create } from 'zustand';
 
-// Deep Partial helper for updating nested objects
-type DeepPartial<T> = T extends object ? {
-    [P in keyof T]?: DeepPartial<T[P]>;
-} : T;
-
 export interface SiteConfig {
   site: {
     title: string;

@@ -726,12 +726,23 @@
     }
   };
 
-  // Listen for postMessage from GUI setup iframe parent
+  // Phase 14: Listen for config-update from GUI Setup Tool via both postMessage and
+  // BroadcastChannel — so the portfolio tab automatically refreshes when config is saved
+  // even without being embedded in an iframe.
   window.addEventListener("message", (event) => {
     if (event.data && event.data.type === "config-update" && event.data.config) {
       window.applyConfig(event.data.config);
     }
   });
+
+  try {
+    const _guiChannel = new BroadcastChannel("canvas-portfolio-config");
+    _guiChannel.addEventListener("message", (event) => {
+      if (event.data && event.data.type === "config-update" && event.data.config) {
+        window.applyConfig(event.data.config);
+      }
+    });
+  } catch (_) { /* BroadcastChannel not supported — postMessage is still available */ }
 
   // ── Zone Container System (Phase 2) ──────────────────────────────────────────
   // Creates (or re-creates) 8 fixed div zone containers used on desktop.
@@ -1676,6 +1687,28 @@
       el.style.zIndex = String(zCounter);
     });
 
+    // Phase 14: Touch hover-reveal fallback.
+    // On mobile, :hover never fires; first tap toggles colour, second tap removes it.
+    if (isMobile) {
+      let _touchMoved = false;
+      el.addEventListener("touchstart", () => { _touchMoved = false; }, { passive: true });
+      el.addEventListener("touchmove",  () => { _touchMoved = true;  }, { passive: true });
+      el.addEventListener("touchend", (e) => {
+        const cfg = window._siteConfigRaw;
+        const fx = cfg?.imageEffects;
+        if (_touchMoved) return; // was a pan, not a tap
+        if (fx?.hoverReveal === true && (fx?.initialState === "desaturated" || fx?.initialState === "duotone")) {
+          e.preventDefault(); // prevent ghost click
+          const isColoured = el.classList.contains("is-touch-coloured");
+          // Remove from all other items first (single-highlight mode)
+          document.querySelectorAll(".media-item.is-touch-coloured").forEach(item => {
+            if (item !== el) item.classList.remove("is-touch-coloured");
+          });
+          el.classList.toggle("is-touch-coloured", !isColoured);
+        }
+      }, { passive: false });
+    }
+
     // Unified click handler (Phase 5 + Phase 6)
     let clickCount = 0;
     let interactionTimer = null;
@@ -1685,7 +1718,7 @@
       
       const cfg = window._siteConfigRaw;
       const lbEnabled = cfg?.imageClick?.lightbox?.enabled;
-      const ceEnabled = cfg?.imageClick?.canvasExpand?.enabled;
+      const ceEnabled = cfg?.imageClick?.canvasExpand?.enabled && !isMobile;
       
       if (lbEnabled && ceEnabled) {
         clickCount++;
@@ -2574,6 +2607,19 @@
         }
       });
 
+      // Phase 14: Touch swipe navigation inside lightbox
+      let _lbTouchStartX = 0;
+      dialog.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) _lbTouchStartX = e.touches[0].clientX;
+      }, { passive: true });
+      dialog.addEventListener("touchend", (e) => {
+        if (e.changedTouches.length !== 1) return;
+        const dx = e.changedTouches[0].clientX - _lbTouchStartX;
+        if (Math.abs(dx) > 40) {
+          navigateLightbox(dx < 0 ? 1 : -1);
+        }
+      }, { passive: true });
+
       // Handle close cleanup (pause videos, etc.)
       dialog.addEventListener("close", () => {
         const activeVideo = dialog.querySelector("video");
@@ -2719,7 +2765,8 @@
   function handleItemInteraction(el, type) {
     const cfg = window._siteConfigRaw;
     const lbEnabled = cfg?.imageClick?.lightbox?.enabled;
-    const ceEnabled = cfg?.imageClick?.canvasExpand?.enabled;
+    // Phase 14: Canvas expand is desktop-only; on mobile fall back to lightbox (if enabled) or no-op.
+    const ceEnabled = cfg?.imageClick?.canvasExpand?.enabled && !isMobile;
 
     if (lbEnabled && ceEnabled) {
       if (type === "single") {
@@ -2743,6 +2790,8 @@
           zoomToElementSmooth(el);
         }
       }
+    } else if (!isMobile && cfg?.imageClick?.canvasExpand?.enabled) {
+      // ceEnabled was false only due to isMobile guard; already handled above as no-op.
     }
   }
 

@@ -990,6 +990,12 @@ body[class*="fx-"] .media-item.is-coloured video {
   filter: none;
 }
 
+/* Phase 14: Touch-reveal on mobile (tap to colour) */
+body[class*="fx-"] .media-item.is-touch-coloured img,
+body[class*="fx-"] .media-item.is-touch-coloured video {
+  filter: none;
+}
+
 /* Blur others on click */
 .media-item.is-blurred img,
 .media-item.is-blurred video {
@@ -1014,6 +1020,11 @@ body[class*="fx-"] .media-item.is-coloured video {
   .media-item.is-focus-blurred img,
   .media-item.is-focus-blurred video {
     transition: none;
+  }
+  /* Phase 14: also disable canvas-level animated transitions */
+  .stage-animating #stage,
+  .media-item.is-layouting {
+    transition: none !important;
   }
 }
 

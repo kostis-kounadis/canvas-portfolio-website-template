@@ -143,6 +143,8 @@ async function saveConfig() {
     }
     setStatus('✅ Saved to config.json', 'success');
     markDirty(false);
+    // Phase 14: Broadcast to any open portfolio tab so it hot-reloads automatically.
+    hotReload();
     setTimeout(() => setStatus('Ready.'), 3000);
   } catch (e) {
     setStatus('❌ Save failed: ' + e.message, 'error');
@@ -189,13 +191,20 @@ async function triggerBuild() {
 }
 
 // ── Hot-reload ───────────────────────────────────────────────────────────────
+// Phase 14: No longer uses an iframe. Broadcasts config via BroadcastChannel
+// so any open portfolio tab at localhost:3000 automatically picks up changes.
+
+let _guiChannel = null;
+try {
+  _guiChannel = new BroadcastChannel('canvas-portfolio-config');
+} catch (_) { /* BroadcastChannel unsupported — live preview won't work */ }
 
 function hotReload() {
-  const iframe = document.getElementById('preview-iframe');
-  if (!iframe || !iframe.contentWindow) return;
-  try {
-    iframe.contentWindow.postMessage({ type: 'config-update', config: _cfg }, '*');
-  } catch (_) { /* cross-origin fallback — noop */ }
+  if (_guiChannel) {
+    try {
+      _guiChannel.postMessage({ type: 'config-update', config: _cfg });
+    } catch (_) { /* noop */ }
+  }
 }
 
 function scheduleHotReload() {

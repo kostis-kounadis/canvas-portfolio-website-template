@@ -676,8 +676,8 @@ Consolidate the build system:
 | 10 | Favicon & OG Image Workflow | Gemini 3.5 Flash (Medium) | XS | ✅ |
 | 11 | GUI setup tool (Node.js server + full UI) | Claude Sonnet 4.6 (Thinking) | XL | ✅ |
 | 12 | Build script consolidation | Gemini 3.5 Flash (High) | S | ✅ |
-| 12.5 | GUI bug fixes & UX corrections | Claude Sonnet 4.6 (Thinking) | L | ⚪ |
-| 13 | Documentation (in-GUI help + README) | Gemini 3.5 Flash (High) | M | ⚪ |
+| 12.5 | GUI bug fixes & UX corrections | Claude Sonnet 4.6 (Thinking) | L | ✅ |
+| 13 | Documentation (in-GUI help + README) | Gemini 3.5 Flash (High) | M | ✅ |
 | 14 | Mobile polish & final QA | Gemini 3.5 Flash (High) | M | ⚪ |
 
 **v2 branches** (post-v1, no model assigned yet):

@@ -317,9 +317,9 @@
 
 ## Post-v1: Feature Branches
 
-- `[ ]` Create branch `feature/infinite-grid-vanilla` from `main@v1.0.0`
-- `[ ]` Create branch `feature/infinite-grid-motion-one` from `main@v1.0.0`
-- `[ ]` Create branch `feature/gui-drag-modules` from `main@v1.0.0`
-- `[ ]` Create branch `feature/gui-redesign` from `main@v1.0.0` — full visual redesign of the GUI Setup Tool (see Post-v1 notes in implementation_plan.md)
+- `[x]` Create branch `feature/infinite-grid-vanilla` from `main@v1.0.0`
+- `[x]` Create branch `feature/infinite-grid-motion-one` from `main@v1.0.0`
+- `[x]` Create branch `feature/gui-drag-modules` from `main@v1.0.0`
+- `[x]` Create branch `feature/gui-redesign` from `main@v1.0.0` — full visual redesign of the GUI Setup Tool (see Post-v1 notes in implementation_plan.md)
 - `[ ]` Develop each branch independently
 - `[ ]` Owner manual testing of both grid branches → merge winner into `main`

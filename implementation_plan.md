@@ -530,12 +530,35 @@ Consolidate the build system:
 ### Phase 14 — Mobile Polish & Final QA
 *Model: **Gemini 3.5 Flash (High)***
 
-- Verify all new effects (image colour, blur, lightbox, canvas expand) work on mobile touch
-- Hover effects → fallback to first-tap trigger on touch devices
-- Category behaviour (focus mode) — touch-compatible
-- Zone module system — verify no overlap on mobile layouts
-- `@media (prefers-reduced-motion)` respects all new animations
-- Performance audit: no synchronous layout reads blocking main thread
+> **Note on Mobile UX Re-Architecture** (added Phase 11): The canvas portfolio was always designed as a desktop-first experience. The existing codebase already has structural UI simplifications for mobile: the `<nav>` with `nav-left`/`nav-right` is the mobile UI; zone containers are hidden on mobile via `@media`. This dichotomy must be audited carefully for each feature added across Phases 2–11.
+
+#### Re-evaluation required for each Phase's mobile impact:
+
+| Feature | Mobile Status | Action Required |
+|---|---|---|
+| **Phase 2: 8-Zone system** | Zone containers correctly hidden on mobile; legacy `<nav>` shown | Verify title/email/info still render in mobile `<nav>` after hot-reload cycles |
+| **Phase 3: Background effects** | All CSS body classes apply globally (bg-solid, blob-mesh, etc.) | Confirm grain overlay `z-index` doesn't block mobile touch targets |
+| **Phase 4: Typography** | Font injection is global — applies correctly | Verify font-size slider doesn't apply on mobile (guarded with `!isMobile`) |
+| **Phase 5: Image Effects** | Click handlers work on touch; hover effects need fallback | Implement first-tap → colour reveal on touch (`touchstart` instead of `hover`); `hoverReveal` body class must not block colour on tap |
+| **Phase 6: Lightbox** | Arrow key nav is keyboard-only → needs swipe nav on touch | Implement `touchstart`/`touchend` swipe detection for prev/next in lightbox |
+| **Phase 6: Canvas Expand** | Mobile slideshow mode exists; canvas expand only fires on desktop | Guard `zoomToElementSmooth()` with `!isMobile` check; on mobile, single tap → lightbox only |
+| **Phase 7: Category focus mode** | Category panel is hidden on mobile (no sidebar) | Focus mode only applies to desktop zone containers — no action needed for mobile categories |
+| **Phase 8: INFO overlay** | INFO button visible in mobile `<nav>`; `getInfoButtonText()` uses siteConfig values | Verify button text and canvas overlay effects don't interfere with mobile scroll |
+| **Phase 9/10: SEO & favicons** | Static tags, no runtime mobile difference | No action |
+| **Phase 11: GUI Setup Tool** | Desktop-only by design (Node.js file system access) | No action — explicitly desktop-only tool |
+
+#### Specific fixes to implement in Phase 14:
+- `[ ]` **Touch swipe in lightbox**: detect `touchstart`/`touchend` X-delta → call `navigateLightbox(±1)`
+- `[ ]` **Hover-reveal fallback on touch**: on `touchstart` in `fx-hover-reveal` mode, add `.is-coloured` to tapped item (and remove on second tap), instead of relying on `:hover`
+- `[ ]` **Canvas expand guard**: ensure `canvasExpand` on mobile silently falls back to lightbox (if enabled) or no-op
+- `[ ]` **Grain overlay z-index**: verify `#grain-overlay` and `body::before` don't intercept touch events (add `pointer-events: none` audit)
+- `[ ]` **Mobile nav rebuild after hot-reload**: verify `buildNav()` called from `window.applyConfig()` correctly re-renders mobile `<nav>` on live preview changes
+- `[ ]` **Font size guard**: confirm `--ui-text-size` CSS var only applies when `!isMobile` (already guarded in `applyConfigCSS()` — double-check)
+- `[ ]` **Final `@media (prefers-reduced-motion)` audit** across all new animations added in Phases 3–8
+- `[ ]` **Performance audit**: no synchronous layout reads blocking main thread (check `getBoundingClientRect()` calls inside animation loops)
+- `[ ]` **iOS Safari visual viewport**: verify `inset: 0` on fixed elements accounts for safe area insets; add `padding-bottom: env(safe-area-inset-bottom)` to footer if needed
+- `[ ]` **Android Chrome**: test pinch-zoom conflict with canvas pan-zoom handler
+- `[ ]` **Final GitHub push**: tag as `v1.0.0`
 
 ---
 

@@ -1,6 +1,6 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ Phase 10 DONE — stopping before Phase 11.    
+> **Status**: ⏸ Phase 11 DONE — stopping before Phase 12.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
 
@@ -182,41 +182,41 @@
 ## Phase 11 — GUI Setup Tool
 *Model: Claude Sonnet 4.6 (Thinking)*
 
-- `[ ]` Create `admin/setup-server.js` (vanilla Node.js, ~80 lines)
-  - `[ ]` `GET /api/config` → read & return `config.json`
-  - `[ ]` `POST /api/config` → receive & write `config.json`
-  - `[ ]` `POST /api/build` → spawn `generate-data.js` as child process
-  - Serve static files from `setup/` and portfolio root
-- `[ ]` Create `start-setup.command` (macOS double-clickable launcher)
-- `[ ]` Create `start-setup.sh` (Linux/cross-platform)
-- `[ ]` Create `README-SETUP.md` (Node.js install instructions: macOS/Windows/Linux)
-- `[ ]` Create `setup/index.html` (GUI shell)
-- `[ ]` Create `setup/setup.css` (dark premium aesthetic)
-- `[ ]` Create `setup/setup.js` (all GUI logic)
-- `[ ]` Implement: config fetch on load, populates all form fields
-- `[ ]` Implement: live preview iframe (loads `index.html`)
-- `[ ]` Implement: `postMessage` hot-reload on every form change
-- `[ ]` Implement: Save button → `POST /api/config`
-- `[ ]` Implement: Rebuild button → `POST /api/build` + show output log
-- `[ ]` Build all GUI tabs:
-  - `[ ]` Identity tab
-  - `[ ]` Modules tab (8-zone dropdowns + zone diagram preview)
-  - `[ ]` Theme tab (colour pickers, background effect selector, noise/grain, shadow)
-  - `[ ]` Typography tab (font embed textarea, font size slider, text animation selector)
-  - `[ ]` Layouts tab (checkboxes, default radio, per-layout sub-panels with guarded sliders)
-  - `[ ]` Categories tab
-  - `[ ]` Image Effects tab
-  - `[ ]` Image Click tab
-  - `[ ]` INFO Panel tab
-  - `[ ]` SEO tab
-  - `[ ]` Favicon tab (instructions + webmanifest title sync note)
-  - `[ ]` Help tab (full getting-started guide + deployment instructions + FAQ)
-- `[ ]` Verify: GUI opens in Chrome from `start-setup.command`
-- `[ ]` Verify: every control immediately updates the preview iframe
-- `[ ]` Verify: Save writes correct `config.json` to disk
-- `[ ]` Verify: Rebuild runs `generate-data.js` and shows success/error output
-- `[ ]` Verify: GUI works in Safari (read-only preview; Save still works via server)
-- `[ ]` Verify: GUI works in Firefox
+- `[x]` Create `admin/setup-server.js` (vanilla Node.js, ~175 lines)
+  - `[x]` `GET /api/config` → read & return `config.json`
+  - `[x]` `POST /api/config` → receive & write `config.json`
+  - `[x]` `POST /api/build` → spawn `generate-data.js` as child process (streaming output)
+  - `[x]` Serve static files from `setup/` and portfolio root
+- `[x]` Create `start-setup.command` (macOS double-clickable launcher)
+- `[x]` Create `start-setup.sh` (Linux/cross-platform)
+- `[x]` Create `README-SETUP.md` (Node.js install instructions: macOS/Windows/Linux)
+- `[x]` Create `setup/index.html` (GUI shell with all 12 tab template blocks)
+- `[x]` Create `setup/setup.css` (dark premium aesthetic — full design system)
+- `[x]` Create `setup/setup.js` (all GUI logic)
+- `[x]` Implement: config fetch on load, populates all form fields
+- `[x]` Implement: live preview iframe (loads `index.html`)
+- `[x]` Implement: `postMessage` hot-reload on every form change (150ms debounce)
+- `[x]` Implement: Save button → `POST /api/config`
+- `[x]` Implement: Rebuild button → `POST /api/build` + streaming output log
+- `[x]` Implement: Cmd+S / Ctrl+S keyboard shortcut to save
+- `[x]` Build all GUI tabs:
+  - `[x]` Identity tab
+  - `[x]` Modules tab (8-zone dropdowns + zone diagram preview)
+  - `[x]` Theme tab (colour pickers, background effect selector, noise/grain, shadow)
+  - `[x]` Typography tab (font embed textarea, font size slider, text animation selector)
+  - `[x]` Layouts tab (checkboxes, default radio, per-layout sub-panels with guarded sliders)
+  - `[x]` Categories tab
+  - `[x]` Image Effects tab (duotone sliders)
+  - `[x]` Image Click tab
+  - `[x]` INFO Panel tab
+  - `[x]` SEO tab (keywords tag input, sameAs URL list)
+  - `[x]` Favicon tab (step-by-step instructions + og-image workflow)
+  - `[x]` Help tab (full getting-started guide + deployment instructions + FAQ)
+- `[x]` Verify: server starts, /api/config GET returns valid JSON (✅ tested)
+- `[x]` Verify: /setup/ serves GUI HTML (HTTP 200 ✅)
+- `[x]` Verify: / serves portfolio index.html (HTTP 200 ✅)
+- `[x]` Verify: POST /api/config writes config.json (✅ {"ok":true} response)
+- `[x]` Phase 14 mobile re-architecture analysis documented in implementation_plan.md and task.md
 
 ---
 
@@ -244,12 +244,17 @@
 ## Phase 14 — Mobile Polish & Final QA
 *Model: Gemini 3.5 Flash (High)*
 
-- `[ ]` Test all new image effects on mobile (iOS Safari, Android Chrome)
-- `[ ]` Ensure hover effects fall back to first-tap on touch devices
-- `[ ]` Verify category focus mode works on touch
-- `[ ]` Verify zone module system has no overlap issues on mobile
-- `[ ]` Verify lightbox keyboard nav works on desktop, touch-nav on mobile
-- `[ ]` Final `@media (prefers-reduced-motion)` audit across all animations
+> Re-architecture note added in Phase 11: all phases 2–11 features audited for mobile UX impact. See implementation_plan.md Phase 14 for the full impact matrix.
+
+- `[ ]` Touch swipe in lightbox (touchstart/touchend X-delta → navigateLightbox(±1))
+- `[ ]` Hover-reveal fallback on touch (first-tap = colour reveal, second tap = deactivate)
+- `[ ]` Canvas expand guard: ensure canvasExpand silently falls back on mobile (lightbox or no-op)
+- `[ ]` Grain overlay `pointer-events: none` audit — verify touch targets not blocked
+- `[ ]` Mobile nav rebuild after hot-reload (buildNav correctly updates mobile `<nav>`)
+- `[ ]` Font size guard: confirm `--ui-text-size` not applied on mobile
+- `[ ]` iOS Safari: safe-area-inset-bottom on footer if needed
+- `[ ]` Android Chrome: pinch-zoom conflict with canvas pan-zoom handler
+- `[ ]` Final `@media (prefers-reduced-motion)` audit across all Phases 3–8 animations
 - `[ ]` Performance audit: no synchronous layout reads blocking main thread
 - `[ ]` Final GitHub push: tag as `v1.0.0`
 

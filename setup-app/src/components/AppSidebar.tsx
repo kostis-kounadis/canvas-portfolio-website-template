@@ -1,4 +1,4 @@
-import { Home, FileText, Database, Users, Settings } from "lucide-react"
+import { Fingerprint, Palette, LayoutTemplate, Layers, MousePointerClick, Globe, Rocket } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -9,16 +9,21 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useConfigStore } from "@/lib/store"
 
 const navItems = [
-  { title: "Dashboard", icon: Home, url: "#" },
-  { title: "Pages", icon: FileText, url: "#" },
-  { title: "Data", icon: Database, url: "#" },
-  { title: "Team", icon: Users, url: "#" },
-  { title: "Settings", icon: Settings, url: "#" },
+  { id: "identity", title: "Identity", icon: Fingerprint },
+  { id: "theme", title: "Theme & Styling", icon: Palette },
+  { id: "layouts", title: "Layouts", icon: LayoutTemplate },
+  { id: "modules", title: "Modules", icon: Layers },
+  { id: "interactions", title: "Interactions", icon: MousePointerClick },
+  { id: "seo", title: "SEO", icon: Globe },
+  { id: "deployment", title: "Deployment", icon: Rocket },
 ]
 
 export function AppSidebar() {
+  const { activeSection, setActiveSection } = useConfigStore()
+
   return (
     <Sidebar className="border-r border-zinc-200 bg-white">
       <SidebarContent className="bg-white">
@@ -29,14 +34,16 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton 
+                    isActive={activeSection === item.id}
+                    onClick={() => setActiveSection(item.id)}
                     className="rounded-md hover:bg-zinc-50 transition-colors text-sm text-zinc-900 tracking-[-0.02em] py-2 px-3 h-auto"
                     render={
-                      <a href={item.url} className="flex items-center gap-2">
+                      <button className="flex w-full items-center gap-2">
                         <item.icon className="h-4 w-4 stroke-[1.5px] text-zinc-500" />
                         <span>{item.title}</span>
-                      </a>
+                      </button>
                     }
                   />
                 </SidebarMenuItem>

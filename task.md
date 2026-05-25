@@ -35,6 +35,17 @@
 - `[x]` Delete `setup.md`
 - `[x]` Update `main.js`: replace `parseFrontMatter()` with JSON fetch
 - `[x]` Update `main.js`: replace `fetch("setup.md")` with `config.json`
+- `[x]` Update `App.tsx` to render the new layout
+
+## Phase 13.6 — React GUI Logic & Feature Migration
+- `[x]` Install additional Shadcn components (accordion, switch, slider, select, radio-group, form, sonner)
+- `[x]` Create `src/lib/config.ts` state management and API syncing
+- `[x]` Implement `BroadcastChannel` for live preview hot-reloading
+- `[x]` Re-implement Identity & Modules forms in React
+- `[x]` Re-implement Theme & Layouts forms in React
+- `[x]` Re-implement Interactions & Image Effects forms in React
+- `[x]` Re-implement SEO & Deployment forms in React
+- `[x]` Remove preview iframe from React layout and finalize Vercel Light Dashboard aesthetic
 - `[x]` Update `main.js`: update all `siteConfig.*` key paths to match new `config.json` structure
 - `[x]` Expose `window.applyConfig(config)` on the global scope (for GUI hot-reload)
 - `[x]` Genericise `index.html`: replace hardcoded personal SEO tags with template placeholders

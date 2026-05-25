@@ -463,13 +463,12 @@ All three platforms: browser auto-opens to `http://localhost:3000/setup/`
 **Visual design**:
 - Dark premium aesthetic (distinct from the portfolio)
 - Left sidebar (tabbed navigation, ~280px)
-- Right panel: live iframe preview of the actual `index.html` portfolio
-- Changes are instantly hot-reloaded into the preview iframe via `postMessage` (no page reload)
-- A sticky "Save" button writes `config.json` to disk; "Rebuild Site" runs the build script
+- Main content area: A centralized, max-width settings dashboard containing the actual form controls.
+- Changes are broadcast via `BroadcastChannel` to the portfolio tab for hot-reloading (no page reload).
 
 **Hot-reload mechanism**:
-- `setup.js` listens for form changes → serialises to `config` object → `previewIframe.contentWindow.postMessage({ type: 'config-update', config }, '*')`
-- `main.js` exposes `window.applyConfig(config)` which re-runs `applyTheme()`, `buildZoneContainers()`, etc. without page reload
+- `setup.js` listens for form changes → serialises to `config` object → `BroadcastChannel("canvas-portfolio-config").postMessage(config)`
+- `main.js` listens for channel messages and calls `window.applyConfig(config)` which re-runs `applyTheme()`, `buildZoneContainers()`, etc. without page reload.
 
 #### GUI Tabs:
 
@@ -490,149 +489,32 @@ All three platforms: browser auto-opens to `http://localhost:3000/setup/`
 
 ---
 
-### Phase 12 — `admin/generate-data.js` Enhancement & Build Script
-*Model: **Gemini 3.5 Flash (High)***
+### Phase 13.6: React GUI Logic & Feature Migration (IMPLEMENTATION)
 
-Consolidate the build system:
-- `generate-data.js` now reads `config.json` and performs all build tasks in sequence:
-  1. Scan `assets/images/` → write `data.js`
-  2. Read `config.json` → update `index.html` SEO tags
-  3. Update `favicon/site.webmanifest` from `config.site.title`
-  4. Update `sitemap.xml` from `config.seo.canonicalUrl`
-- `build-website.command` (existing macOS launcher) updated to call the unified script
-- `admin/package.json` updated with any new deps
+**Context**: The React + Shadcn foundation (Vercel Light Theme) is built, but the actual GUI functionality (config parsing, form controls) from the old Vanilla JS implementation is missing.
 
----
+**Goal**: Port all Vanilla JS logic into the React app. The user requested that the GUI Setup Tool no longer includes a live preview iframe. Instead, it will be a dedicated settings dashboard. Changes made here will be broadcast via `BroadcastChannel`, and the separate portfolio tab will automatically refresh.
 
-### Phase 12.5 — GUI Setup Tool: Bug Fixes & UX Corrections
-*Model: **Claude Sonnet 4.6 (Thinking)*** (complex JS + CSS debugging)
+#### Proposed Changes
 
-> Must be completed before Phase 13 (Documentation). All five issues below render the GUI unusable in its current state.
+1. **Global State & API (`src/lib/config.ts` & `src/App.tsx`)**:
+   - Fetch `config.json` via `/api/config` on load.
+   - Hold live `config` state in React.
+   - Broadcast config updates via `BroadcastChannel("canvas-portfolio-config")` for hot-reloading the portfolio tab.
+   - Implement `Save Config` (POST `/api/config`) and `Rebuild Site` (POST `/api/build`) actions.
 
-#### Bug 1: Live preview unavailable
+2. **Dashboard Layout (`src/components/Layout.tsx`)**:
+   - Left Pane: `<AppSidebar>` acting as navigation (Identity, Theme, Modules, etc.).
+   - Main Content Area: A centralized, max-width settings page divided into sections (or accordions) containing the actual form controls.
 
-**Root cause analysis:**
-- The `preview-iframe` is loaded at `src="/"` which is served by the Node.js server. However, `main.js` calls `window.applyConfig()` on `DOMContentLoaded` inside the iframe — if the postMessage from `setup.js` arrives *before* `window.applyConfig` is defined on the iframe's `window`, it is silently dropped.
-- Secondary risk: `data.js` may be empty or missing (template has placeholder images, but if the user hasn't run a rebuild, `data.js` may not exist or may export `[]`), causing the canvas to be empty with no feedback.
+3. **Form Controls (`src/components/forms/*`)**:
+   - Create controlled React components using Shadcn UI (Input, Switch, Slider, Select, RadioGroup) mapping directly to the `config` state.
+   - Re-implement conditional form logic (e.g., hiding Title Logo fields when Title Mode is "Text").
 
-**Fix approach:**
-1. In `main.js`, after `init()` completes (or after the canvas first renders), add: `window.parent.postMessage({ type: 'canvas-ready' }, '*')`. This signals `setup.js` that the iframe is ready to receive config updates.
-2. In `setup.js`, replace the immediate `hotReload()` in the iframe `load` handler with: wait for `canvas-ready` message, *then* fire the first `hotReload()`. Set a 3-second timeout fallback in case the message never arrives (e.g. cross-origin restriction or old browser).
-3. If `data.js` is empty/missing: detect this inside the iframe (`window.portfolioData === undefined || portfolioData.length === 0`) and postMessage a `{ type: 'data-missing' }` signal. In `setup.js`, if this signal is received, display a non-blocking banner over the iframe: *“No images found. Click Rebuild Site to scan your assets/images/ folder.”* with a direct Rebuild button.
-
-#### Bug 2: Modules tab — oversized layout, not compact
-
-**Root cause analysis:**
-- `buildModulesPanel()` injects full-width `section-card` divs into `#modules-list`. Since `#panel-container` stretches to fill `#preview-area` (which can be 800px+ wide on large screens), each card fills the full width.
-- The zone diagram has `aspect-ratio: 16/9` and fills the container width, making it very tall.
-
-**Fix approach:**
-- Constrain `#panel-container` to `max-width: 520px` via inline style or a CSS class set when panels are injected.
-- For the Modules tab specifically, replace the one-card-per-module layout with a compact table-style grid: module name on the left, visibility toggle in the centre, zone `<select>` on the right — all in one `<div>` per module, not a full `section-card`.
-- Reduce zone diagram height: use `aspect-ratio: unset; height: 100px;` and shrink font size on zone cells to 8px.
-- Zone diagram should sit above the module list, not be a section-card of its own.
-
-#### Bug 3: Title module SVG icon functionality omitted
-
-**Root cause analysis:**
-- The original portfolio (`_portfolio_v7_DEPLOYED`) renders a custom SVG icon adjacent to the title. This SVG is part of the title module render logic in `main.js`'s `buildNav()` / `buildZoneContainers()`.
-- Phase 11 GUI reduced the title module to only `text` vs `logo` mode, ignoring the SVG icon entirely.
-
-**Fix approach:**
-1. Audit `main.js` to identify all places where the title SVG icon is rendered. Determine the current config key(s) controlling it (likely `config.ui.modules.title.icon` or similar).
-2. If the config key doesn't exist yet, add `"icon"` to `config.ui.modules.title` in `config.json`: `{ "enabled": false, "file": "", "position": "before" }`.
-3. In the Modules tab GUI, add beneath the mode dropdown:
-   - **Icon enabled** toggle
-   - **Icon file** text input (path relative to project root)
-   - **Icon position** select: `before title` | `after title`
-4. Ensure the `data-path` wiring covers these new fields so hot-reload and Save work correctly.
-
-#### Bug 4: All tab panels not scrollable / incorrect height
-
-**Root cause analysis:**
-- `#panel-container` is injected with `position: absolute; inset: 40px 0 0 0; overflow-y: auto` but CSS `overflow: auto` on a child of an absolutely-positioned element only creates a scrollable context if the element has a defined height. `inset: 40px 0 0 0` on an absolutely-positioned element in a `relative` parent *does* give it a fixed height — *but only if the parent also has a defined height*.
-- `#preview-area` is a grid cell with `grid-area: preview`. Grid cells do have a defined height from the grid track. However, if `#preview-area` has no explicit `overflow: hidden`, the panel container can overflow *outside* the grid cell, making the scroll container effectively infinite and thus non-scrolling.
-
-**Fix approach:**
-1. Add `overflow: hidden;` to `#preview-area` in `setup.css` (the grid cell needs to clip its children for scroll to work).
-2. Remove the `iframe` from the DOM flow when a panel is active (toggle `display: none` on it), so the panel truly fills the area. Toggle the iframe back when switching to a "preview-only" view (or simply leave it hidden whenever any panel tab is active, and make a dedicated "Preview" toggle or tab).
-3. Alternative: instead of a floating overlay, restructure the layout so the sidebar contains both the tab nav *and* the panel content (scrollable sidebar), and the preview pane is always the iframe. This is a cleaner UX: sidebar = controls, main = preview. The panel container then simply *is* the sidebar scroll area.
-4. Recommended: go with option 3. It matches the intended dual-pane design, avoids the overlay hack, and makes scroll trivial (the sidebar is already `overflow-y: auto`).
-
-#### Bug 5: Text animation trigger mode (hover-only vs. always-on)
-
-**New `config.json` key:** `theme.textAnimationTrigger` — `"always"` (default) | `"hover"`
-
-**CSS approach:**
-- In `style.css`, existing animation classes (`.text-fx-color-cycle`, `.text-fx-gradient`, `.text-fx-hue-rotate`) are applied to the text element directly and run continuously.
-- Add a `body.text-anim-hover` modifier class. When this class is present, rewrite the animation selectors in `style.css` using a `body.text-anim-hover` prefix + `:hover` on the relevant element. The non-hovered state reverts to the static `color: var(--ui-text-color)`.
-- In `applyTheme()` in `main.js`: toggle `body.text-anim-hover` based on `config.theme.textAnimationTrigger === 'hover'`.
-
-**GUI:** In the Typography tab, below the Text Animation radio group, show a conditional row `"Trigger"` (only visible when animation ≠ none): radio options `Always on` / `Hover only`. Wire to `theme.textAnimationTrigger` via `data-path`.
-
-#### Additional issues
-- `[ ]` Placeholder for further bugs identified by owner during Phase 12.5 QA review
-
----
-
-### Phase 13 — Documentation
-*Model: **Gemini 3.5 Flash (High)***
-
-#### In-GUI Help (tab + contextual)
-- Every GUI section has a collapsible `[?]` info block explaining what that section does and any caveats
-- "Help" tab: full getting-started guide, media folder setup, deployment walkthrough, troubleshooting FAQ
-- Links to: Google Fonts, realfavicongenerator.net, Cloudflare Pages, Netlify docs
-
-#### `README.md` (GitHub)
-- What this template is and who it's for
-- Live demo: `kostiskounadis.xyz`
-- Template philosophy (brutalist canvas, no scroll, etc.)
-- Quick-start: 3 steps (clone/download → add images → run setup GUI)
-- Feature overview (visual table)
-- Deployment guide (Cloudflare Pages, Netlify — both free tier)
-- Attribution/license
-
-#### `README-SETUP.md`
-- Platform-specific Node.js installation instructions (macOS/Windows/Linux)
-- Troubleshooting: port conflicts, browser compatibility, file permissions
-
----
-
-### Phase 13.5 — GUI Setup Tool: Further Bug Fixes & UX Polish
-*Model: **Gemini 3.5 Flash (Medium)***
-
-This phase addresses critical issues and regressions identified in the GUI Setup Tool and layout functionality before entering Mobile Polish.
-
-#### Bug Fixes & Refactoring Specs:
-
-1. **Remove Preview Mode Toggle / In-Tab Direct Live Preview**:
-   - The toggleable/separate preview mode is non-functional or redundant.
-   - The setup layout must be simplified so that the preview iframe is always visible on the right, and the tab panels are edited in the sidebar on the left. Changes immediately update the live iframe in real-time, eliminating the need to hide/toggle the preview.
-
-2. **Launcher Script Launching and Access Privileges**:
-   - Running the macOS double-clickable script `start-setup.command` results in access privilege issues.
-   - Make the command script executable out-of-the-box (`chmod +x start-setup.command` at the repo level) and improve clear logging when executing. Ensure it correctly boots the setup server and opens the GUI Setup Tool.
-
-3. **Modules Tab Option Conflicts**:
-   - Fix Title Display Mode and Decorative SVG Icon selector switch conflicts. Changing one must gracefully coordinate and not override/conflict with the state of the other.
-
-4. **Options Block Container Scrollability**:
-   - Fix container overflow in panel divs (such as Module Positions, Theme settings, etc.) so that they scroll inside their viewport, ensuring that all fields, buttons, and sub-panels are fully visible and accessible.
-
-5. **View All Categories Button Switch Refactoring**:
-   - Refactor the "View All" categories control into a configuration switch:
-     - **ON**: Shows the "View All" button below categories on selection.
-     - **OFF**: Omit the "View All" button. Re-clicking the currently focused category re-shows all items. If nothing is selected, clicking another category brings it into focus.
-
-6. **Image Click Modes Consolidation**:
-   - Consolidate Lightbox and Canvas Expand checkboxes into a single unified 3-way dropdown configuration: **Lightbox**, **Canvas Expand**, or **Off** (the default state).
-
-7. **Canvas Expand Physical Resizing and Centering**:
-   - Add a configuration option for Canvas Expand to physically scale the image relative to other items and center on the viewport via canvas panning (instead of zooming the entire canvas). If the user then manually zooms out the canvas, the expanded image remains physically larger than all other items.
-
-8. **Fix Preview Preloader Stuck Loading**:
-   - Resolve the issue where opening the live preview iframe in the GUI Setup Tool causes the preloader to get permanently stuck loading on the first image.
-   - Investigate preloader sequences and dynamic resource fetch boundaries in `main.js`/`data.js` to ensure the config initialization flow does not interrupt or break the image loading signals in the iframe context.
+## Verification Plan
+1. Ensure the React app successfully fetches `config.json` from the backend API.
+2. Verify modifying a field broadcasts via `BroadcastChannel`.
+3. Verify the layout perfectly matches the "Vercel Light Theme" aesthetic as a centralized settings dashboard.
 
 ---
 
@@ -717,7 +599,8 @@ This phase addresses critical issues and regressions identified in the GUI Setup
 | 12.5 | GUI bug fixes & UX corrections | Claude Sonnet 4.6 (Thinking) | L | ✅ |
 | 13 | Documentation (in-GUI help + README) | Gemini 3.5 Flash (High) | M | ✅ |
 | 13.5 | GUI setup: further bug fixes & UX polish | Gemini 3.5 Flash (Medium) | L | ✅ |
-| 14 | Mobile polish & final QA | Gemini 3.5 Flash (High) | M | ⚪ |
+| 13.6 | React GUI Logic & Feature Migration | Claude Sonnet 4.6 (Thinking) | L | ✅ |
+| 14 | Mobile polish & final QA | Gemini 3.5 Flash (High) | M | ✅ |
 
 **v2 branches** (post-v1, no model assigned yet):
 - `feature/infinite-grid-vanilla` — cosmos.so grid in pure vanilla JS

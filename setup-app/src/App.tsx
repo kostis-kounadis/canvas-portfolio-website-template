@@ -1,17 +1,61 @@
+import React, { useEffect } from "react"
 import Layout from "./components/Layout"
+import { useConfigStore } from "./lib/store"
+import { Toaster } from "@/components/ui/sonner"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  IdentityForm,
+  ThemeForm,
+  LayoutsForm,
+  ModulesForm,
+  InteractionsForm,
+  SEOForm,
+  DeploymentForm
+} from "./components/Forms"
 
 function App() {
+  const { fetchConfig, isLoading, error, activeSection } = useConfigStore()
+
+  useEffect(() => {
+    fetchConfig()
+  }, [fetchConfig])
+
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case 'identity': return <IdentityForm />
+      case 'theme': return <ThemeForm />
+      case 'layouts': return <LayoutsForm />
+      case 'modules': return <ModulesForm />
+      case 'interactions': return <InteractionsForm />
+      case 'seo': return <SEOForm />
+      case 'deployment': return <DeploymentForm />
+      default: return <div>Select a section from the sidebar.</div>
+    }
+  }
+
   return (
-    <Layout>
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Settings</h1>
-        <p className="text-zinc-500">Configure your portfolio template settings here.</p>
-        
-        <div className="border border-zinc-200 rounded p-4 bg-white">
-          <p className="text-sm">More configuration panels will go here.</p>
-        </div>
-      </div>
-    </Layout>
+    <>
+      <Layout>
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-[250px]" />
+            <Skeleton className="h-4 w-[300px]" />
+            <div className="space-y-2 mt-8">
+              <Skeleton className="h-[400px] w-full" />
+            </div>
+          </div>
+        ) : error ? (
+          <div className="p-4 border border-red-200 bg-red-50 text-red-700 rounded-md">
+            <h2 className="font-semibold mb-2">Error Loading Configuration</h2>
+            <p className="text-sm">{error}</p>
+            <p className="text-sm mt-4">Make sure the Node.js server is running via <code className="bg-red-100 px-1 rounded">npm start</code></p>
+          </div>
+        ) : (
+          renderActiveSection()
+        )}
+      </Layout>
+      <Toaster position="bottom-right" />
+    </>
   )
 }
 

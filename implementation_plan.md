@@ -504,6 +504,77 @@ Consolidate the build system:
 
 ---
 
+### Phase 12.5 — GUI Setup Tool: Bug Fixes & UX Corrections
+*Model: **Claude Sonnet 4.6 (Thinking)*** (complex JS + CSS debugging)
+
+> Must be completed before Phase 13 (Documentation). All five issues below render the GUI unusable in its current state.
+
+#### Bug 1: Live preview unavailable
+
+**Root cause analysis:**
+- The `preview-iframe` is loaded at `src="/"` which is served by the Node.js server. However, `main.js` calls `window.applyConfig()` on `DOMContentLoaded` inside the iframe — if the postMessage from `setup.js` arrives *before* `window.applyConfig` is defined on the iframe's `window`, it is silently dropped.
+- Secondary risk: `data.js` may be empty or missing (template has placeholder images, but if the user hasn't run a rebuild, `data.js` may not exist or may export `[]`), causing the canvas to be empty with no feedback.
+
+**Fix approach:**
+1. In `main.js`, after `init()` completes (or after the canvas first renders), add: `window.parent.postMessage({ type: 'canvas-ready' }, '*')`. This signals `setup.js` that the iframe is ready to receive config updates.
+2. In `setup.js`, replace the immediate `hotReload()` in the iframe `load` handler with: wait for `canvas-ready` message, *then* fire the first `hotReload()`. Set a 3-second timeout fallback in case the message never arrives (e.g. cross-origin restriction or old browser).
+3. If `data.js` is empty/missing: detect this inside the iframe (`window.portfolioData === undefined || portfolioData.length === 0`) and postMessage a `{ type: 'data-missing' }` signal. In `setup.js`, if this signal is received, display a non-blocking banner over the iframe: *“No images found. Click Rebuild Site to scan your assets/images/ folder.”* with a direct Rebuild button.
+
+#### Bug 2: Modules tab — oversized layout, not compact
+
+**Root cause analysis:**
+- `buildModulesPanel()` injects full-width `section-card` divs into `#modules-list`. Since `#panel-container` stretches to fill `#preview-area` (which can be 800px+ wide on large screens), each card fills the full width.
+- The zone diagram has `aspect-ratio: 16/9` and fills the container width, making it very tall.
+
+**Fix approach:**
+- Constrain `#panel-container` to `max-width: 520px` via inline style or a CSS class set when panels are injected.
+- For the Modules tab specifically, replace the one-card-per-module layout with a compact table-style grid: module name on the left, visibility toggle in the centre, zone `<select>` on the right — all in one `<div>` per module, not a full `section-card`.
+- Reduce zone diagram height: use `aspect-ratio: unset; height: 100px;` and shrink font size on zone cells to 8px.
+- Zone diagram should sit above the module list, not be a section-card of its own.
+
+#### Bug 3: Title module SVG icon functionality omitted
+
+**Root cause analysis:**
+- The original portfolio (`_portfolio_v7_DEPLOYED`) renders a custom SVG icon adjacent to the title. This SVG is part of the title module render logic in `main.js`'s `buildNav()` / `buildZoneContainers()`.
+- Phase 11 GUI reduced the title module to only `text` vs `logo` mode, ignoring the SVG icon entirely.
+
+**Fix approach:**
+1. Audit `main.js` to identify all places where the title SVG icon is rendered. Determine the current config key(s) controlling it (likely `config.ui.modules.title.icon` or similar).
+2. If the config key doesn't exist yet, add `"icon"` to `config.ui.modules.title` in `config.json`: `{ "enabled": false, "file": "", "position": "before" }`.
+3. In the Modules tab GUI, add beneath the mode dropdown:
+   - **Icon enabled** toggle
+   - **Icon file** text input (path relative to project root)
+   - **Icon position** select: `before title` | `after title`
+4. Ensure the `data-path` wiring covers these new fields so hot-reload and Save work correctly.
+
+#### Bug 4: All tab panels not scrollable / incorrect height
+
+**Root cause analysis:**
+- `#panel-container` is injected with `position: absolute; inset: 40px 0 0 0; overflow-y: auto` but CSS `overflow: auto` on a child of an absolutely-positioned element only creates a scrollable context if the element has a defined height. `inset: 40px 0 0 0` on an absolutely-positioned element in a `relative` parent *does* give it a fixed height — *but only if the parent also has a defined height*.
+- `#preview-area` is a grid cell with `grid-area: preview`. Grid cells do have a defined height from the grid track. However, if `#preview-area` has no explicit `overflow: hidden`, the panel container can overflow *outside* the grid cell, making the scroll container effectively infinite and thus non-scrolling.
+
+**Fix approach:**
+1. Add `overflow: hidden;` to `#preview-area` in `setup.css` (the grid cell needs to clip its children for scroll to work).
+2. Remove the `iframe` from the DOM flow when a panel is active (toggle `display: none` on it), so the panel truly fills the area. Toggle the iframe back when switching to a "preview-only" view (or simply leave it hidden whenever any panel tab is active, and make a dedicated "Preview" toggle or tab).
+3. Alternative: instead of a floating overlay, restructure the layout so the sidebar contains both the tab nav *and* the panel content (scrollable sidebar), and the preview pane is always the iframe. This is a cleaner UX: sidebar = controls, main = preview. The panel container then simply *is* the sidebar scroll area.
+4. Recommended: go with option 3. It matches the intended dual-pane design, avoids the overlay hack, and makes scroll trivial (the sidebar is already `overflow-y: auto`).
+
+#### Bug 5: Text animation trigger mode (hover-only vs. always-on)
+
+**New `config.json` key:** `theme.textAnimationTrigger` — `"always"` (default) | `"hover"`
+
+**CSS approach:**
+- In `style.css`, existing animation classes (`.text-fx-color-cycle`, `.text-fx-gradient`, `.text-fx-hue-rotate`) are applied to the text element directly and run continuously.
+- Add a `body.text-anim-hover` modifier class. When this class is present, rewrite the animation selectors in `style.css` using a `body.text-anim-hover` prefix + `:hover` on the relevant element. The non-hovered state reverts to the static `color: var(--ui-text-color)`.
+- In `applyTheme()` in `main.js`: toggle `body.text-anim-hover` based on `config.theme.textAnimationTrigger === 'hover'`.
+
+**GUI:** In the Typography tab, below the Text Animation radio group, show a conditional row `"Trigger"` (only visible when animation ≠ none): radio options `Always on` / `Hover only`. Wire to `theme.textAnimationTrigger` via `data-path`.
+
+#### Additional issues
+- `[ ]` Placeholder for further bugs identified by owner during Phase 12.5 QA review
+
+---
+
 ### Phase 13 — Documentation
 *Model: **Gemini 3.5 Flash (High)***
 
@@ -603,15 +674,27 @@ Consolidate the build system:
 | 8 | INFO overlay enhancement | Gemini 3.5 Flash (High) | S | ✅ |
 | 9 | SEO & metadata (static tags in `index.html`) | Gemini 3.5 Flash (High) | S | ✅ |
 | 10 | Favicon & OG Image Workflow | Gemini 3.5 Flash (Medium) | XS | ✅ |
-| 11 | GUI setup tool (Node.js server + full UI) | Claude Sonnet 4.6 (Thinking) | XL | ⬜ |
-| 12 | Build script consolidation | Gemini 3.5 Flash (High) | S | ⬜ |
-| 13 | Documentation (in-GUI help + README) | Gemini 3.5 Flash (High) | M | ⬜ |
-| 14 | Mobile polish & final QA | Gemini 3.5 Flash (High) | M | ⬜ |
+| 11 | GUI setup tool (Node.js server + full UI) | Claude Sonnet 4.6 (Thinking) | XL | ✅ |
+| 12 | Build script consolidation | Gemini 3.5 Flash (High) | S | ✅ |
+| 12.5 | GUI bug fixes & UX corrections | Claude Sonnet 4.6 (Thinking) | L | ⚪ |
+| 13 | Documentation (in-GUI help + README) | Gemini 3.5 Flash (High) | M | ⚪ |
+| 14 | Mobile polish & final QA | Gemini 3.5 Flash (High) | M | ⚪ |
 
 **v2 branches** (post-v1, no model assigned yet):
 - `feature/infinite-grid-vanilla` — cosmos.so grid in pure vanilla JS
 - `feature/infinite-grid-motion-one` — cosmos.so grid with Motion One library
 - `feature/gui-drag-modules` — drag-and-drop module positioning in GUI
+- `feature/gui-redesign` — full visual + structural redesign of the GUI Setup Tool
+
+  **Design direction for `feature/gui-redesign`:**
+  The current GUI has several design problems: purple-dominant accent palette that clashes with the neutral portfolio aesthetic, heavy emoji usage throughout tab labels and section headers (feels toy-like, not professional), Inter Regular at 13px with low contrast secondary colours that is tiring to read, and section cards with aggressive borders and background fills that create visual noise. The redesign should:
+  - **Typography**: Switch to a system font stack (`-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`) or a single clean alternative (e.g. `DM Sans`, `Geist`). Remove all emoji from the UI — use minimal monochrome SVG icons or no icons at all. Increase base font size to 14px, boost contrast on secondary text.
+  - **Colour palette**: Replace purple accent (`#5060f0`) with a near-neutral accent — e.g. a warm off-white or a muted slate blue that does not visually compete with the portfolio preview. Dark surfaces should be warmer (`#111`, `#1a1a1a`, `#222`) rather than the current cool blue-tinged darks.
+  - **Layout**: Adopt a true two-pane layout: full sidebar = scrollable form controls, full right pane = portfolio iframe preview (always visible). No floating overlay panels. This also resolves the Bug 4 scrollability issue natively.
+  - **Section cards**: Remove filled section header bars. Use a single thin rule separator between sections, or borderless groups with a small label in `text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px` above each group. Much less visual noise.
+  - **Controls**: Cleaner toggle switches (thinner track, smaller thumb), sliders without the glowing thumb, flat select dropdowns without the custom SVG arrow background-image hack.
+  - **Approach**: This is a full CSS + HTML restructure — `setup.css` rewritten, `setup/index.html` restructured (sidebar contains panel content, not overlay). `setup.js` logic mostly preserved but panel rendering refactored for the sidebar model.
+
 
 ---
 

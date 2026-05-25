@@ -1,6 +1,7 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ Phase 11 DONE — stopping before Phase 12.    
+> **Status**: ⏸ Phase 12 DONE — stopping before Phase 12.5.    
+> **Known issues logged**: Phase 12.5 added to capture GUI Setup Tool bugs found after Phase 11.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
 
@@ -223,10 +224,48 @@
 ## Phase 12 — Build Script Consolidation
 *Model: Gemini 3.5 Flash (High)*
 
-- `[ ]` Refactor `admin/generate-data.js` into a unified build pipeline (media scan → data.js → SEO in index.html → webmanifest → sitemap.xml)
-- `[ ]` Update `admin/package.json` with any new dependencies
-- `[ ]` Update `build-website.command` to call unified script
-- `[ ]` Verify: full build runs cleanly end-to-end
+- `[x]` Refactor `admin/generate-data.js` into a unified build pipeline (media scan → data.js → SEO in index.html → webmanifest → sitemap.xml)
+- `[x]` Update `admin/package.json` with any new dependencies
+- `[x]` Update `build-website.command` to call unified script
+- `[x]` Verify: full build runs cleanly end-to-end
+
+---
+
+## Phase 12.5 — GUI Setup Tool: Bug Fixes & UX Corrections
+*Model: Claude Sonnet 4.6 (Thinking)*
+
+> Issues discovered after Phase 11 implementation. All bugs listed here must be resolved before Phase 13 (Documentation) begins, as docs depend on a working GUI.
+
+- `[ ]` **Fix: Live preview not available in GUI Setup Tool**
+  - Symptom: The portfolio iframe inside the GUI shows blank or fails to load.
+  - Possible cause A: The iframe `src="/"` loads correctly from the server but `main.js` throws on `window.applyConfig` postMessage before images are loaded — race condition.
+  - Possible cause B: The `preview-iframe` receives the postMessage before `DOMContentLoaded` fires inside it; add a `canvas-ready` message from `main.js` and only hot-reload after receiving it.
+  - Possible cause C: `data.js` hasn't been generated yet (empty or missing) — show a friendly "Run a Rebuild first" message in the GUI if the iframe 404s or the canvas is empty.
+  - Fix approach: Listen for `iframe.onload` + a `canvas-ready` postMessage handshake before first hot-reload; add a visible "preview unavailable" overlay with a Rebuild CTA if needed.
+
+- `[ ]` **Fix: Modules tab layout broken + too large**
+  - Symptom: Module position cards are oversized and the zone diagram is not compact; the section is hard to use.
+  - Possible cause: `buildModulesPanel()` creates `section-card` divs inside `#modules-list` without constraining width; the panel container has no max-width and cards expand to fill the full preview area.
+  - Fix approach: Add a `max-width: 480px` cap on the panel container or the modules list; reduce card padding; lay out the module controls in a tighter two-column label + control grid rather than stacked full-width fields; reduce zone diagram height.
+
+- `[ ]` **Fix: Title module SVG icon functionality omitted**
+  - Symptom: The original portfolio has an interactive SVG icon element next to the title (visible in `_portfolio_v7_DEPLOYED`) that was part of the title module. Phase 11 GUI only exposes text / logo-file mode, ignoring this icon.
+  - What it does: The SVG icon is the site's decorative/interactive logo element shown alongside the title text. It may be toggled, animated, or used as a visual mark.
+  - Fix approach: Audit `main.js` `buildNav()` / title module rendering for the SVG icon path. Add an "Icon" option to the title module controls in the Modules tab (in addition to Text and Logo). Wire a new `config.ui.modules.title.icon` field covering: enabled toggle, SVG file path or inline SVG selector, size, and position relative to text. Ensure `applyConfig()` re-renders the title with the icon.
+
+- `[ ]` **Fix: Every tab panel is neither correctly sized nor scrollable**
+  - Symptom: All option cards in every tab are cut off — content below the fold is inaccessible, and there is no scroll within the panel area. The GUI is functionally unusable.
+  - Root cause: `#panel-container` is positioned `absolute; inset: 40px 0 0 0` with `overflow-y: auto` but the parent `#preview-area` does not have `overflow: hidden` set, so the browser ignores the container's scroll constraint. Additionally, individual `.section-card` heights are not constrained, causing the container height to exceed the viewport without triggering internal scroll.
+  - Fix approach: Set `#preview-area { overflow: hidden; position: relative; }` explicitly. Ensure `#panel-container` has a fixed computed height derived from the viewport (e.g. `height: calc(100vh - var(--header-h) - var(--statusbar-h) - 40px)`) and `overflow-y: auto`. Remove any `height: 100%` on `.panel` that fights against this. Audit and test scrollability on each tab.
+
+- `[ ]` **Fix/Feature: Text animation — add trigger mode (hover vs. always-on)**
+  - Symptom: Text animations (colour-cycle, gradient, hue-rotate) are always-on once set. There is no option to make them activate only on hover.
+  - Desired behaviour: A second control "Trigger" with options `always` and `hover-only`. When `hover-only`, the animation CSS class is applied only on `:hover` of the text element (or a parent wrapper), reverting to static colour when not hovered.
+  - Config key: `theme.textAnimationTrigger` — values: `"always"` (default, current behaviour) | `"hover"`.
+  - CSS approach: In `style.css`, add a `.text-anim-hover` body class. When set, rewrite the animation selectors to target `body.text-anim-hover .site-title:hover` (etc.) rather than always-active. `applyTheme()` toggles this body class.
+  - GUI: Add a "Trigger" radio (`Always on` / `Hover only`) below the existing Text Animation radio group in the Typography tab. Show only when a non-`none` animation is selected.
+
+- `[ ]` More issues to be added by owner during Phase 12.5 QA review
 
 ---
 
@@ -265,5 +304,6 @@
 - `[ ]` Create branch `feature/infinite-grid-vanilla` from `main@v1.0.0`
 - `[ ]` Create branch `feature/infinite-grid-motion-one` from `main@v1.0.0`
 - `[ ]` Create branch `feature/gui-drag-modules` from `main@v1.0.0`
+- `[ ]` Create branch `feature/gui-redesign` from `main@v1.0.0` — full visual redesign of the GUI Setup Tool (see Post-v1 notes in implementation_plan.md)
 - `[ ]` Develop each branch independently
 - `[ ]` Owner manual testing of both grid branches → merge winner into `main`

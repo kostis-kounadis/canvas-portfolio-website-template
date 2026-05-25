@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="canonical" href="https://kostiskounadis.xyz/" />
+
+    <title>[K.]</title>
+    <meta
+      name="description"
+      content="Kostis Kounadis — Portfolio of projects, experiments and random media."
+    />
+    <meta
+      name="keywords"
+      content="Portfolio, Kostis Kounadis, Creative, Interactive, Canvas, Web Design"
+    />
+    <meta name="author" content="Kostis Kounadis" />
+
+    <!-- Open Graph / Facebook / LinkedIn -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kostiskounadis.xyz/" />
+    <meta property="og:title" content="K. — Portfolio" />
+    <meta
+      property="og:description"
+      content="Kostis Kounadis — Portfolio of projects, experiments and random media."
+    />
+    <meta property="og:image" content="https://kostiskounadis.xyz/og-image.jpg" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://kostiskounadis.xyz/" />
+    <meta name="twitter:title" content="K. — Portfolio" />
+    <meta
+      name="twitter:description"
+      content="Kostis Kounadis — Portfolio of projects, experiments and random media."
+    />
+    <meta name="twitter:image" content="https://kostiskounadis.xyz/og-image.jpg" />
+    <meta name="twitter:site" content="@yourtwitterhandle" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./favicon/favicon-96x96.png?v=2" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="./favicon/favicon.svg?v=2" />
+    <link rel="shortcut icon" href="./favicon/favicon.ico?v=2" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./favicon/apple-touch-icon.png?v=2" />
+    <meta name="apple-mobile-web-app-title" content="[K.]" />
+    <link rel="manifest" href="./favicon/site.webmanifest?v=2" />
+
+    <!-- Typography: JetBrains (Light) from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Person",
+            "name": "Kostis Kounadis",
+            "jobTitle": "Designer",
+            "image": "https://media.licdn.com/dms/image/v2/C4E03AQFBOgKjmlJ2Jg/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1554370838459?e=1773273600&v=beta&t=uQO_ModrhRyyWuGUSZFcI05f9lqEkiQx3T7ulm0",
+            "url": "https://kostiskounadis.xyz/",
+            "sameAs": [
+              "https://www.instagram.com/inkanddestroy/",
+              "https://www.behance.net/kostiskounadis",
+              "https://www.linkedin.com/in/kostiskounadis/"
+            ],
+            "knowsAbout": [
+              "Graphic Design",
+              "Visual Design",
+              "Motion Design",
+              "Editorial Design"
+            ]
+          },
+          {
+            "@type": "ProfessionalService",
+            "name": "Kostis Kounadis Design",
+            "image": "https://media.licdn.com/dms/image/v2/C4E03AQFBOgKjmlJ2Jg/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1554370838459?e=1773273600&v=beta&t=uQO_ModrhRyyWuGUSZFcI05f9lqEkiQx3T7ulmzw",
+            "url": "https://kostiskounadis.xyz/",
+            "priceRange": "$$$",
+            "address": {
+              "@type": "Athens",
+              "addressCountry": "GR"
+            }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Brutalist Preloader -->
+    <div id="preloader" aria-hidden="true">
+      <div id="preloader-bar"></div>
+      <div id="preloader-counter"></div>
+    </div>
+
+    <!-- Fixed Navigation (ignores canvas dragging) -->
+    <nav class="nav">
+      <div class="nav-left">[K.]</div>
+      <div class="nav-right" id="nav-right">
+        <!-- Categories, [INFO], and [EMAIL] injected by main.js at runtime -->
+      </div>
+    </nav>
+
+    <!-- Main viewport wrapper (prevents native scroll, hosts virtual canvas) -->
+    <main class="viewport">
+      <section
+        id="stage-wrapper"
+        aria-label="Project Gallery Canvas"
+      >
+        <!--
+          The stage is our "virtual canvas" that we pan/zoom via transforms.
+          All media items will be absolutely positioned inside this element.
+        -->
+        <div id="stage"></div>
+      </section>
+    </main>
+
+    <!-- Fixed Footer with Zoom Controls -->
+    <footer class="footer">
+      <button class="zoom-btn" data-zoom="out" aria-label="Zoom out">[-]</button>
+      <button class="zoom-btn" data-zoom="reset" aria-label="Reset view">[0]</button>
+      <button class="zoom-btn" data-zoom="in" aria-label="Zoom in">[+]</button>
+    </footer>
+
+    <script src="./data.js"></script>
+    <script src="./main.js"></script>
+
+    <!-- Info Overlay — populated and toggled by main.js -->
+    <div id="info-overlay" role="dialog" aria-modal="true" aria-label="About">
+      <div id="info-text" lang="en"></div>
+    </div>
+  </body>
+</html>
+

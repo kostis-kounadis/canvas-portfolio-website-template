@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /temp/
+
+Sitemap: https://kostiskounadis.xyz/sitemap.xml

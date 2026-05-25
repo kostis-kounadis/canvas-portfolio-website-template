@@ -1,0 +1,753 @@
+/* 
+  Global layout: white/off-white brutalist canvas, full-viewport, no scrollbars.
+  Typography: JetBrains Mono, light weights.
+*/
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* no native scrollbars; we pan the stage instead */
+  background: var(--bg-colour, #f7f5f0); /* slightly off-white for tactile feel */
+  color: #111111;
+  font-family: "JetBrains Mono", "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace;
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: var(--ui-text-size, 18px);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Reset for semantic elements */
+figure {
+  margin: 0;
+  padding: 0;
+}
+
+/* Fixed navigation bar */
+
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+  pointer-events: none; /* Container ignores events, children re-enable */
+  mix-blend-mode: difference;
+  background: transparent;
+  color: var(--text-colour, #ffff00); /* yellow -> appears blue-ish with difference on white */
+  text-transform: uppercase;
+}
+
+.nav-left {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: var(--ui-text-size, 18px);
+  pointer-events: auto; /* Re-enable for the brand/name if needed, or keep it none */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.site-logo {
+  height: 20px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Nav right — shared base for all injected items */
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  pointer-events: none; /* container pass-through; children re-enable */
+}
+
+/* Base style for every nav interactive element (buttons + links) */
+.nav-btn {
+  display: inline;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--ui-text-size, 18px);
+  font-weight: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+.nav-btn:hover {
+  text-decoration: underline;
+}
+
+/* Separator pipe between nav items */
+.nav-sep {
+  font-size: var(--ui-text-size, 18px);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Strikethrough = category is hidden / toggled off */
+.nav-btn.is-struck {
+  text-decoration: line-through;
+}
+
+.nav-btn.is-struck:hover {
+  text-decoration: line-through underline;
+}
+
+/* Main viewport */
+
+.viewport {
+  position: fixed;
+  inset: 0;
+}
+
+#stage-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#stage-wrapper.is-dragging {
+  cursor: grabbing;
+}
+
+/*
+  The virtual canvas: intentionally larger than the viewport
+  so that panning reveals more whitespace and objects.
+*/
+
+#stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 9000px;
+  height: 6500px;
+  transform: translate3d(0, 0, 0) scale(1);
+  transform-origin: 0 0;
+  will-change: transform;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#stage.is-interacting {
+  transition: none;
+}
+
+/* Media items scattered across the stage */
+
+.media-item {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: grab;
+  transition: box-shadow 0.15s ease-out;
+  will-change: left, top;
+  position: absolute;
+}
+
+.media-item.is-dragging {
+  cursor: grabbing;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.16);
+  transition: none;
+}
+
+/* Media items are dragged, not keyboard-navigated — no focus ring needed */
+.media-item:focus {
+  outline: none;
+}
+
+.media-item img,
+.media-item video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.media-item video {
+  background: #000;
+  border: none;
+  outline: none;
+}
+
+/* Loading & error states to avoid "empty frames" */
+
+.media-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(247, 245, 240, 0.8);
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+  pointer-events: none;
+}
+
+.media-item.loading::before {
+  opacity: 1;
+}
+
+.media-item.loading img,
+.media-item.loading video {
+  opacity: 0;
+}
+
+.media-item.has-error {
+  background: #0047ff; /* solid blue block for failed media */
+}
+
+.media-item.has-error::before {
+  opacity: 0;
+}
+
+.reload-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  letter-spacing: 0.16em;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: var(--text-colour, #ffff00);
+  mix-blend-mode: difference;
+}
+
+.reload-badge:hover {
+  opacity: 0.8;
+}
+
+/* Embedded video placeholder with play overlay */
+
+.media-item.video-embed .video-placeholder {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.media-item.video-embed .video-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.media-item.video-embed .video-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5); /* 50% black overlay */
+  z-index: 1;
+  pointer-events: none;
+  transition: background 0.2s ease;
+}
+
+.media-item.video-embed .play-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.media-item.video-embed .play-badge-text {
+  color: var(--text-colour, #ffff00);
+  mix-blend-mode: difference;
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  text-align: center;
+}
+
+.media-item.video-embed:hover .video-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* When iframe replaces placeholder */
+
+.media-item.video-embed iframe {
+  border: none;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Hide thumbnail placeholder while YT iframe is active */
+.media-item.video-embed.is-playing .video-placeholder {
+  display: none;
+}
+
+/* [x] reset button — returns the embed to its draggable thumbnail state */
+.yt-reset-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  background: transparent;
+  border: none;
+  color: var(--text-colour, #ffff00);
+  mix-blend-mode: difference;
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  padding: 4px 6px;
+  pointer-events: auto;
+  line-height: 1;
+}
+
+.yt-reset-btn:hover {
+  opacity: 0.7;
+}
+
+/* Footer with zoom controls */
+
+.footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  z-index: 1000;
+  pointer-events: none; /* Container ignores events */
+  mix-blend-mode: difference;
+  background: transparent;
+  color: var(--text-colour, #ffff00); /* yellow -> appears blue-ish with difference on white */
+  text-transform: uppercase;
+}
+
+.zoom-btn {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--ui-text-size, 18px);
+  font-weight: 500;
+  padding: 0;
+  cursor: pointer;
+  letter-spacing: 0.12em;
+  pointer-events: auto; /* Re-enable for buttons */
+}
+
+.zoom-btn:hover {
+  text-decoration: none;
+}
+
+.zoom-btn:active {
+  opacity: 0.75;
+}
+
+/* Small helper for subtle debug text (if needed) */
+
+.debug-label {
+  position: fixed;
+  left: 16px;
+  bottom: 52px;
+  font-size: 10px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Visually hidden but readable by screen readers */
+#a11y-announcer {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Info Overlay ───────────────────────────────────────────────────────────── */
+
+#info-overlay {
+  position: fixed;
+  top: 64px;    /* clear nav */
+  left: 0;
+  right: 0;
+  bottom: 48px; /* clear footer */
+  z-index: 900; /* below nav (1000) */
+  background: transparent; /* canvas items visible behind */
+  display: none;
+  padding: 48px 64px;
+  overflow: hidden;
+  /* blend-mode on container: yellow text -> blue against off-white, same as nav */
+  mix-blend-mode: difference;
+  /* Let mouse events pass through to the canvas so panning still works */
+  pointer-events: none;
+}
+
+#info-overlay.is-visible {
+  display: block;
+}
+
+#info-text {
+  text-align: left;
+  hyphens: auto;
+  word-break: break-word;
+  -webkit-hyphens: auto;
+  font-family: inherit;
+  font-weight: 300;
+  text-transform: uppercase;
+  color: var(--text-colour, #ffff00); /* yellow blended via parent difference = blue on white bg */
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+  /* font-size controlled by JS autoscaler */
+  /* Allow clicking links and selecting text within the text block itself */
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+#info-text a {
+  color: inherit;
+  text-decoration: underline;
+  pointer-events: auto; /* links are clickable even though overlay passes events through */
+}
+
+#info-text a:hover {
+  opacity: 0.7;
+}
+
+#info-text strong {
+  font-weight: 500;
+}
+
+#info-text em {
+  font-style: italic;
+  text-transform: none; /* preserve case for italic phrases */
+}
+
+/* ── Preloader ───────────────────────────────────────────────────────────── */
+
+#preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  color: var(--text-colour, #ffff00);
+  font-family: "JetBrains Mono", "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1;
+}
+
+#preloader-bar {
+  display: block;
+  white-space: pre;
+  overflow: hidden;
+  width: 100%;
+  letter-spacing: 0;
+}
+
+#preloader-counter {
+  position: fixed;
+  bottom: 56px; /* sits just above the footer */
+  left: 32px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  :root {
+    --ui-text-size: 14px;
+  }
+  #layout-panel { display: none; }
+
+  .nav {
+    padding: 16px 20px;
+    padding-top: calc(16px + env(safe-area-inset-top));
+    height: auto;
+    min-height: 48px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .nav-left {
+    font-size: var(--ui-text-size, 18px);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* Stack nav-right items vertically, top-left (aligned with nav-left) */
+  .nav-right {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  /* Hide pipe separators on mobile — each item sits on its own line */
+  .nav-sep {
+    display: none;
+  }
+
+  .nav-btn {
+    font-size: var(--ui-text-size, 18px);
+  }
+
+  .footer {
+    padding: 0 16px;
+    padding-bottom: env(safe-area-inset-bottom);
+    height: auto;
+    min-height: 48px;
+    justify-content: flex-end; /* zoom controls bottom-right */
+  }
+
+  /* Zoom buttons same size as nav — no discrepancy */
+  .zoom-btn {
+    font-size: var(--ui-text-size, 18px);
+  }
+
+  /* Info Overlay Mobile Tweaks */
+  #info-overlay {
+    top: 0; /* Cover more area on mobile */
+    bottom: 0;
+    padding: 100px 20px 40px 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    pointer-events: none; /* Allow background scrolling/panning */
+  }
+
+  #info-text {
+    width: 100%;
+    max-width: none;
+    font-size: 7vw; /* Fluid font for brutalist feel, but limited */
+    line-height: 1.1;
+  }
+}
+
+/* ── Category Panel ─────────────────────────────────────────────────────────── */
+
+#category-panel {
+  position: fixed;
+  left: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1000;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  color: var(--text-colour, #ffff00);
+  font-family: inherit;
+  font-size: var(--ui-text-size, 18px);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+/* ── Layout Panel ───────────────────────────────────────────────────────────── */
+
+#layout-panel {
+  position: fixed;
+  right: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1000;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  color: var(--text-colour, #ffff00);
+  font-family: inherit;
+  font-size: var(--ui-text-size, 18px);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.layout-option {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--ui-text-size, 18px);
+  font-weight: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-decoration: line-through; /* default: struck = inactive */
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+.layout-option.is-active {
+  text-decoration: none; /* active mode = no strikethrough */
+}
+
+.layout-option:hover {
+  text-decoration: underline;
+}
+
+/* ── Config: No Blend Mode ──────────────────────────────────────────────────── */
+
+body.no-blend-mode .info-overlay,
+body.no-blend-mode #layout-panel,
+body.no-blend-mode #category-panel,
+body.no-blend-mode .nav-btn,
+body.no-blend-mode .layout-title,
+body.no-blend-mode .site-title,
+body.no-blend-mode .media-item .play-badge-text,
+body.no-blend-mode .yt-reset-btn {
+  mix-blend-mode: normal !important;
+}
+
+.layout-option.is-active:hover {
+  text-decoration: underline;
+}
+
+/* Brutalist linear transition for layout changes — no easing */
+.media-item.is-layouting {
+  transition: left 0.4s linear, top 0.4s linear, width 0.4s linear !important;
+}
+
+/* =========================================================================
+   Mobile Slideshow Mode
+   ========================================================================= */
+
+body.is-slideshow #stage-wrapper {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-snap-type: y mandatory;
+  cursor: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.is-slideshow #stage {
+  position: relative;
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10vh;
+  padding: 15vh 0;
+  transform: none !important;
+  will-change: auto;
+}
+
+body.is-slideshow .media-item {
+  position: relative !important;
+  display: flex !important;
+  left: auto !important;
+  top: auto !important;
+  transform: none !important;
+  width: 94vw !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  max-height: 80vh;
+  scroll-snap-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  will-change: auto;
+  margin-bottom: 0;
+}
+
+body.is-slideshow .media-item img,
+body.is-slideshow .media-item video {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 80vh !important;
+  object-fit: contain;
+}
+/* ── Mobile Mode Switcher ────────────────────────────────────────────────── */
+
+#mode-switcher {
+  position: fixed;
+  left: 32px; /* fallback */
+  bottom: 16px;
+  z-index: 1100;
+  mix-blend-mode: difference;
+  color: var(--text-colour, #ffff00);
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: var(--ui-text-size, 18px);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0;
+  cursor: pointer;
+  display: none;
+  pointer-events: auto;
+}
+
+#mode-switcher:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  #mode-switcher {
+    display: block;
+    left: 20px; /* matching .nav padding-left */
+    bottom: 16px; /* matching .nav padding-top */
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  /* When canvas mode is active on mobile, we hide layout selection (if any) 
+     and category filters as requested for a cleaner 'only canvas' experience. */
+  body:not(.is-slideshow) #category-panel,
+  body:not(.is-slideshow) #layout-panel {
+    display: none !important;
+  }
+}

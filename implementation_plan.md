@@ -598,6 +598,40 @@ Consolidate the build system:
 
 ---
 
+### Phase 13.5 — GUI Setup Tool: Further Bug Fixes & UX Polish
+*Model: **Gemini 3.5 Flash (Medium)***
+
+This phase addresses critical issues and regressions identified in the GUI Setup Tool and layout functionality before entering Mobile Polish.
+
+#### Bug Fixes & Refactoring Specs:
+
+1. **Remove Preview Mode Toggle / In-Tab Direct Live Preview**:
+   - The toggleable/separate preview mode is non-functional or redundant.
+   - The setup layout must be simplified so that the preview iframe is always visible on the right, and the tab panels are edited in the sidebar on the left. Changes immediately update the live iframe in real-time, eliminating the need to hide/toggle the preview.
+
+2. **Launcher Script Launching and Access Privileges**:
+   - Running the macOS double-clickable script `start-setup.command` results in access privilege issues.
+   - Make the command script executable out-of-the-box (`chmod +x start-setup.command` at the repo level) and improve clear logging when executing. Ensure it correctly boots the setup server and opens the GUI Setup Tool.
+
+3. **Modules Tab Option Conflicts**:
+   - Fix Title Display Mode and Decorative SVG Icon selector switch conflicts. Changing one must gracefully coordinate and not override/conflict with the state of the other.
+
+4. **Options Block Container Scrollability**:
+   - Fix container overflow in panel divs (such as Module Positions, Theme settings, etc.) so that they scroll inside their viewport, ensuring that all fields, buttons, and sub-panels are fully visible and accessible.
+
+5. **View All Categories Button Switch Refactoring**:
+   - Refactor the "View All" categories control into a configuration switch:
+     - **ON**: Shows the "View All" button below categories on selection.
+     - **OFF**: Omit the "View All" button. Re-clicking the currently focused category re-shows all items. If nothing is selected, clicking another category brings it into focus.
+
+6. **Image Click Modes Consolidation**:
+   - Consolidate Lightbox and Canvas Expand checkboxes into a single unified 3-way dropdown configuration: **Lightbox**, **Canvas Expand**, or **Off** (the default state).
+
+7. **Canvas Expand Physical Resizing and Centering**:
+   - Add a configuration option for Canvas Expand to physically scale the image relative to other items and center on the viewport via canvas panning (instead of zooming the entire canvas). If the user then manually zooms out the canvas, the expanded image remains physically larger than all other items.
+
+---
+
 ### Phase 14 — Mobile Polish & Final QA
 *Model: **Gemini 3.5 Flash (High)***
 
@@ -678,6 +712,7 @@ Consolidate the build system:
 | 12 | Build script consolidation | Gemini 3.5 Flash (High) | S | ✅ |
 | 12.5 | GUI bug fixes & UX corrections | Claude Sonnet 4.6 (Thinking) | L | ✅ |
 | 13 | Documentation (in-GUI help + README) | Gemini 3.5 Flash (High) | M | ✅ |
+| 13.5 | GUI setup: further bug fixes & UX polish | Gemini 3.5 Flash (Medium) | L | ⚪ |
 | 14 | Mobile polish & final QA | Gemini 3.5 Flash (High) | M | ⚪ |
 
 **v2 branches** (post-v1, no model assigned yet):

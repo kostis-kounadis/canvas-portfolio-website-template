@@ -1,6 +1,6 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ Phase 13 DONE — stopping before Phase 14.    
+> **Status**: 🔨 Phase 13.5 IN PROGRESS — GUI Setup Tool Bug Fixes & UX Polish.    
 > **Known issues logged**: Phase 12.5 added to capture GUI Setup Tool bugs found after Phase 11.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
@@ -252,7 +252,7 @@
 - `[x]` **Fix/Feature: Text animation — add trigger mode (hover vs. always-on)**
   - Fixed: New config key `theme.textAnimationTrigger` ('always'|'hover'). Added `body.text-anim-hover` CSS selectors in style.css that override animations to :hover only. GUI: conditional 'Animation Trigger' radio group in Typography tab.
 
-- `[x]` More issues to be added by owner during Phase 12.5 QA review (none added)
+- `[x]` More issues to be added by owner during Phase 12.5 QA review (transferred to Phase 13.5)
 
 ---
 
@@ -264,6 +264,31 @@
 - `[x]` Finalize `README.md` (full feature table, deployment guide, attribution/license)
 - `[x]` Finalize `README-SETUP.md` (platform-specific Node.js install instructions)
 - `[x]` Verify: Help tab renders correctly in GUI
+
+---
+
+## Phase 13.5 — GUI Setup Tool: Further Bug Fixes & UX Polish
+*Model: Gemini 3.5 Flash (Medium)*
+
+- `[ ]` **Fix: Remove "Preview only" toggle / live preview is in-tab directly**
+  - Problem: Separate preview mode is redundant. Active panel controls must sit in the left sidebar, and the right pane must always show the live iframe preview updating in real-time, eliminating the overlay toggle.
+- `[ ]` **Fix: start-setup.command permissions and server startup**
+  - Problem: Double-clicking `start-setup.command` results in: `The file “start-setup.command” could not be executed because you do not have appropriate access privileges.`
+  - Solution: Set executable permissions (`chmod +x start-setup.command`) and improve double-click shell launch script to boot the server and open the browser.
+- `[ ]` **Fix: Conflict between Title Display Mode and Decorative SVG Icon selector**
+  - Problem: Title display mode dropdown and Decorative SVG Icon options/switch conflict or allow invalid state combinations.
+- `[ ]` **Fix: Scrollability of panel option blocks**
+  - Problem: Option blocks (e.g. Module Positions list, Theme parameters, etc.) are cut off or non-scrollable when contents exceed the viewport height.
+  - Solution: Restructure setup.css panel styles to enable proper scroll context within the panel area.
+- `[ ]` **Fix/Feature: View All category button switch configuration**
+  - Problem: Hardcoded "View All" categories button is not optional.
+  - Spec: Turn "View All" into a switch: If ON, the button appears below categories when one is selected. If OFF, the button is omitted; instead, clicking the active focused category re-shows all items. If nothing is selected, clicking another category brings it into focus.
+- `[ ]` **Fix/Feature: Image Click mode consolidation**
+  - Problem: Separate toggles for Lightbox and Canvas Expand allow invalid configurations.
+  - Spec: Combine these controls into a single 3-way dropdown: **Lightbox**, **Canvas Expand**, or **Off** (the default state).
+- `[ ]` **Feature Option: Canvas Expand physical resizing and centering**
+  - Problem: Canvas Expand currently zooms the entire canvas viewport to the image.
+  - Spec: Add a setting for Canvas Expand to physically scale the media container relative to other items and center on the screen using canvas panning (instead of zooming the canvas). Clicking it again shrinks it back. If the user manually zooms out the canvas, the expanded image remains physically larger than all others.
 
 ---
 

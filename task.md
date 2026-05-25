@@ -1,6 +1,6 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ Phase 4 DONE — stopping before Phase 5.    
+> **Status**: ⏸ Phase 5 DONE — stopping before Phase 6.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
 
@@ -33,7 +33,7 @@
 - `[x]` Create `config.json` with full schema (all defaults from implementation plan)
 - `[x]` Delete `setup.md`
 - `[x]` Update `main.js`: replace `parseFrontMatter()` with JSON fetch
-- `[x]` Update `main.js`: replace `fetch("setup.md")` with `fetch("config.json")`
+- `[x]` Update `main.js`: replace `fetch("setup.md")` with `config.json`
 - `[x]` Update `main.js`: update all `siteConfig.*` key paths to match new `config.json` structure
 - `[x]` Expose `window.applyConfig(config)` on the global scope (for GUI hot-reload)
 - `[x]` Genericise `index.html`: replace hardcoded personal SEO tags with template placeholders
@@ -90,18 +90,18 @@
 ## Phase 5 — Image Effects System
 *Model: Claude Sonnet 4.6 (Thinking)*
 
-- `[ ]` Add image effect CSS classes to `style.css` (desaturated, duotone, is-coloured, is-blurred)
-- `[ ]` Add `applyImageEffects(config)` function to `main.js`
-- `[ ]` Implement `handleItemClick(el, config)` unified click handler
-- `[ ]` Implement gallery mode (multi-sticky `.is-coloured`)
-- `[ ]` Implement spotlight mode (single `.is-coloured`, remove from others)
-- `[ ]` Implement blur-others-on-click (`.is-blurred` on siblings)
-- `[ ]` Implement hover reveal (CSS-only, toggled by body class)
-- `[ ]` Verify: desaturated mode works in random layout
-- `[ ]` Verify: desaturated mode works in rows layout
-- `[ ]` Verify: desaturated mode works in stacks layout
-- `[ ]` Verify: gallery mode accumulates correctly across multiple clicks
-- `[ ]` Verify: spotlight mode correctly removes colour from previous on new click
+- `[x]` Add image effect CSS classes to `style.css` (desaturated, duotone, is-coloured, is-blurred)
+- `[x]` Add `applyImageEffects(config)` function to `main.js`
+- `[x]` Implement `handleItemClick(el, config)` unified click handler
+- `[x]` Implement gallery mode (multi-sticky `.is-coloured`)
+- `[x]` Implement spotlight mode (single `.is-coloured`, remove from others)
+- `[x]` Implement blur-others-on-click (`.is-blurred` on siblings)
+- `[x]` Implement hover reveal (CSS-only, toggled by body class)
+- `[x]` Verify: desaturated mode works in random layout
+- `[x]` Verify: desaturated mode works in rows layout
+- `[x]` Verify: desaturated mode works in stacks layout
+- `[x]` Verify: gallery mode accumulates correctly across multiple clicks
+- `[x]` Verify: spotlight mode correctly removes colour from previous on new click
 
 ---
 
@@ -183,7 +183,7 @@
   - `[ ]` `GET /api/config` → read & return `config.json`
   - `[ ]` `POST /api/config` → receive & write `config.json`
   - `[ ]` `POST /api/build` → spawn `generate-data.js` as child process
-  - `[ ]` Serve static files from `setup/` and portfolio root
+  - Serve static files from `setup/` and portfolio root
 - `[ ]` Create `start-setup.command` (macOS double-clickable launcher)
 - `[ ]` Create `start-setup.sh` (Linux/cross-platform)
 - `[ ]` Create `README-SETUP.md` (Node.js install instructions: macOS/Windows/Linux)

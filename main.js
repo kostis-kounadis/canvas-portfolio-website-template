@@ -175,6 +175,7 @@
     setZoom(zoomLevel * (1 + ZOOM_STEP), centerX, centerY);
   }
 
+  // Zoom configuration (ZOOM_MIN will be adjusted based on content bounds)
   function zoomOut(centerX, centerY) {
     setZoom(zoomLevel * (1 - ZOOM_STEP), centerX, centerY);
   }
@@ -189,7 +190,7 @@
   // Random scattering with overlap rules
   function getRandomPosition(width, height, customBounds = null) {
     // Scarcity: large gutters, big stage
-    const margin = 520;
+    const margin = margin = 520;
     const minX = customBounds ? customBounds.minX : margin;
     const minY = customBounds ? customBounds.minY : margin;
     const maxX = (customBounds ? customBounds.maxX : STAGE_WIDTH) - width - margin;
@@ -260,10 +261,10 @@
 
   function getContentBounds() {
     if (!placedRects.length) return null;
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
+    let minX = minX = Infinity;
+    let minY = minY = Infinity;
+    let maxX = maxX = -Infinity;
+    let maxY = maxY = -Infinity;
     for (const r of placedRects) {
       minX = Math.min(minX, r.x);
       minY = Math.min(minY, r.y);
@@ -338,7 +339,7 @@
   let announceTimer = null;
 
   function announce(msg) {
-    if (!announcerEl) announcerEl = buildAnnouncer();
+    if (!announcerEl) announcerEl = announcerEl = buildAnnouncer();
     // Clear then set — forces screen readers to re-read even identical messages
     announcerEl.textContent = "";
     window.clearTimeout(announceTimer);
@@ -521,6 +522,7 @@
     mapConfig(cfg);
     applyConfigCSS();
     applyTheme(cfg);          // Phase 3: apply theme colours, bg effect, noise, shadow
+    applyImageEffects(cfg);   // Phase 5: apply image effects
     buildZoneContainers();    // Phase 2: rebuild zone containers for new positions
 
     // Rebuild UI modules that depend on config
@@ -763,6 +765,122 @@
     }
     
     return null;
+  }
+
+  // Phase 5: Dynamic Image Effects System
+  function applyImageEffects(cfg) {
+    if (!cfg || !cfg.imageEffects) return;
+    const fx = cfg.imageEffects;
+    const root = document.documentElement;
+
+    // Clean up body classes
+    document.body.classList.remove("fx-desaturated", "fx-duotone", "fx-hover-reveal");
+
+    // Apply initial state
+    const state = fx.initialState || "colour";
+    if (state === "desaturated") {
+      document.body.classList.add("fx-desaturated");
+    } else if (state === "duotone") {
+      document.body.classList.add("fx-duotone");
+    }
+
+    // Apply hover reveal
+    if (fx.hoverReveal === true) {
+      document.body.classList.add("fx-hover-reveal");
+    }
+
+    // Apply duotone hue and saturation if provided
+    if (fx.duotoneHue != null) {
+      root.style.setProperty("--duotone-hue", fx.duotoneHue + "deg");
+    } else if (cfg.theme && cfg.theme.duotoneHue != null) {
+      root.style.setProperty("--duotone-hue", cfg.theme.duotoneHue + "deg");
+    }
+    
+    if (fx.duotoneSat != null) {
+      root.style.setProperty("--duotone-sat", String(fx.duotoneSat));
+    } else if (cfg.theme && cfg.theme.duotoneSat != null) {
+      root.style.setProperty("--duotone-sat", String(cfg.theme.duotoneSat));
+    }
+
+    // Clear any previous stickiness/blurs if config is completely reset
+    if (fx.clickMode === "none") {
+      document.querySelectorAll(".media-item").forEach(item => {
+        item.classList.remove("is-coloured", "is-blurred", "is-focused-click");
+      });
+    }
+  }
+
+  // Phase 5: Unified click interaction for media items
+  function handleItemClick(el, cfg) {
+    if (!cfg || !cfg.imageEffects) return;
+    const fx = cfg.imageEffects;
+    const clickMode = fx.clickMode || "none";
+    const blurOthers = fx.blurOthersOnClick === true;
+
+    const allItems = document.querySelectorAll(".media-item");
+
+    if (clickMode === "spotlight") {
+      const isAlreadyColoured = el.classList.contains("is-coloured");
+      
+      // Clear coloured from all
+      allItems.forEach(item => item.classList.remove("is-coloured"));
+      
+      if (!isAlreadyColoured) {
+        el.classList.add("is-coloured");
+        if (blurOthers) {
+          allItems.forEach(item => {
+            if (item === el) {
+              item.classList.remove("is-blurred");
+            } else {
+              item.classList.add("is-blurred");
+            }
+          });
+        }
+      } else {
+        // Toggled off: restore all from blur
+        if (blurOthers) {
+          allItems.forEach(item => item.classList.remove("is-blurred"));
+        }
+      }
+    } else if (clickMode === "gallery") {
+      el.classList.toggle("is-coloured");
+      
+      if (blurOthers) {
+        // If at least one item is still coloured, keep others blurred
+        const anyColoured = Array.from(allItems).some(item => item.classList.contains("is-coloured"));
+        if (anyColoured) {
+          allItems.forEach(item => {
+            if (item.classList.contains("is-coloured")) {
+              item.classList.remove("is-blurred");
+            } else {
+              item.classList.add("is-blurred");
+            }
+          });
+        } else {
+          // No items coloured anymore: restore all
+          allItems.forEach(item => item.classList.remove("is-blurred"));
+        }
+      }
+    } else {
+      // clickMode is "none" but blurOthersOnClick is still true
+      if (blurOthers) {
+        const isFocused = !el.classList.contains("is-focused-click");
+        
+        allItems.forEach(item => {
+          item.classList.remove("is-focused-click");
+          item.classList.remove("is-blurred");
+        });
+
+        if (isFocused) {
+          el.classList.add("is-focused-click");
+          allItems.forEach(item => {
+            if (item !== el) {
+              item.classList.add("is-blurred");
+            }
+          });
+        }
+      }
+    }
   }
 
   // Injects the SVG feTurbulence grain filter once.
@@ -1279,6 +1397,12 @@
       el.style.zIndex = String(zCounter);
     });
 
+    // Unified click handler (Phase 5)
+    el.addEventListener("click", () => {
+      if (el.dataset.preventClick === "true") return;
+      handleItemClick(el, window._siteConfigRaw);
+    });
+
     return el;
   }
 
@@ -1513,13 +1637,13 @@
     // If we went from 2 fingers to 1, we could switch to panning, 
     // but it's often smoother to just stop until next gesture to avoid jumps.
     else if (e.touches.length === 1 && isPinchZooming) {
-       // Reset pan start to avoid jump if user continues dragging
-       isPinchZooming = false;
-       isTouchPanning = true;
-       touchStartX = e.touches[0].clientX;
-       touchStartY = e.touches[0].clientY;
-       touchStartStageX = stageX;
-       touchStartStageY = stageY;
+        // Reset pan start to avoid jump if user continues dragging
+        isPinchZooming = false;
+        isTouchPanning = true;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartStageX = stageX;
+        touchStartStageY = stageY;
     }
   });
 
@@ -1576,6 +1700,7 @@
       const moveDy = event.clientY - startClientY;
       if (!hasPassedThreshold && Math.hypot(moveDx, moveDy) < 3) return;
       hasPassedThreshold = true;
+      el.dataset.preventClick = "true";
 
       const stageRect = stage.getBoundingClientRect();
       const pointerXInStage = (event.clientX - stageRect.left) / zoomLevel;
@@ -1596,6 +1721,9 @@
       if (!isDragging) return;
       isDragging = false;
       el.classList.remove("is-dragging");
+      setTimeout(() => {
+        delete el.dataset.preventClick;
+      }, 50);
 
       // STACKS drag-out: if card moved >100px from stack origin, free it
       if (currentLayout === "stacks" && el._stack && !el.dataset.stackFree) {
@@ -1661,7 +1789,7 @@
     const items = Array.from(stage.querySelectorAll(".media-item"))
       .filter((el) => el.style.display !== "none");
     if (!items.length) return null;
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = minX = Infinity, minY = minY = Infinity, maxX = maxX = -Infinity, maxY = maxY = -Infinity;
     items.forEach((el) => {
       const x = parseFloat(el.style.left);
       const y = parseFloat(el.style.top);
@@ -2070,6 +2198,7 @@
 
     // Phase 3: apply theme immediately after config is loaded
     applyTheme(window._siteConfigRaw);
+    applyImageEffects(window._siteConfigRaw);
 
     // Phase 2: build zone containers before any UI panels
     buildZoneContainers();

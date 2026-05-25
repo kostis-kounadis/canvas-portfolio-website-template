@@ -84,6 +84,10 @@
     categories_behaviour: "hide-on-click",
     categories_focus_effect: "hide",
     categories_view_all_label: "ALL",
+    // info defaults (Phase 8)
+    info_overlay_effect: "none",
+    info_button_style:   "arrow",
+    info_close_style:    "x-only",
   };
 
   // Active stack objects built by layoutStacks(); cleared on exit.
@@ -126,8 +130,7 @@
     if (e.key === "Escape") {
       const overlay = document.getElementById("info-overlay");
       if (overlay && overlay.classList.contains("is-visible")) {
-        overlay.classList.remove("is-visible");
-        document.getElementById("nav-info-btn")?.setAttribute("aria-pressed", "false");
+        closeInfoOverlay(overlay);
       }
       if (expandedEl) {
         resetViewSmooth();
@@ -601,6 +604,13 @@
       if (cfg.categories.viewAllLabel != null) siteConfig.categories_view_all_label = cfg.categories.viewAllLabel;
     }
 
+    // info (Phase 8)
+    if (cfg.info) {
+      if (cfg.info.overlayEffect != null) siteConfig.info_overlay_effect = cfg.info.overlayEffect;
+      if (cfg.info.buttonStyle != null)   siteConfig.info_button_style   = cfg.info.buttonStyle;
+      if (cfg.info.closeStyle != null)    siteConfig.info_close_style    = cfg.info.closeStyle;
+    }
+
     // mobile
     if (cfg.mobile && cfg.mobile.defaultMode) {
       siteConfig.mobile_mode = cfg.mobile.defaultMode;
@@ -679,6 +689,16 @@
           // Re-apply focus styles under the new settings (e.g. if focusEffect changed)
           focusGroup(focusedGroup);
         }
+      }
+    }
+
+    // Phase 8 hot-reload resets for active info overlay
+    const overlay = document.getElementById("info-overlay");
+    if (overlay && overlay.classList.contains("is-visible")) {
+      document.body.classList.remove("info-blur-bg", "info-darken", "info-colour-overlay");
+      const effect = siteConfig.info_overlay_effect || "none";
+      if (effect !== "none") {
+        document.body.classList.add("info-" + effect);
       }
     }
 
@@ -1069,12 +1089,48 @@
     }
   }
 
+  function getInfoButtonText(isOpen) {
+    const btnStyle   = siteConfig.info_button_style   || "arrow";
+    const closeStyle = siteConfig.info_close_style    || "x-only";
+
+    if (!isOpen) {
+      if (btnStyle === "indicator") return "[INFO •]";
+      if (btnStyle === "minimal") return "INFO";
+      return "[INFO ▷]"; // default "arrow"
+    } else {
+      if (closeStyle === "x-only") {
+        if (btnStyle === "minimal") return "×";
+        return "[×]";
+      }
+      if (closeStyle === "arrow") {
+        if (btnStyle === "minimal") return "INFO ▽";
+        return "[INFO ▽]";
+      }
+      if (closeStyle === "both") {
+        if (btnStyle === "minimal") return "INFO ×";
+        if (btnStyle === "indicator") return "[INFO • ×]";
+        return "[INFO ▽ ×]";
+      }
+      // default fallback
+      if (btnStyle === "minimal") return "×";
+      return "[×]";
+    }
+  }
+
   function openInfoOverlay(overlayEl, textEl) {
     overlayEl.classList.add("is-visible");
+
+    // Phase 8: Apply body class for canvas overlay effects
+    const effect = siteConfig.info_overlay_effect || "none";
+    document.body.classList.add("info-open");
+    if (effect !== "none") {
+      document.body.classList.add("info-" + effect);
+    }
+
     const infoBtn = document.getElementById("nav-info-btn");
     if (infoBtn) {
       infoBtn.setAttribute("aria-pressed", "true");
-      infoBtn.textContent = "[INFO ▽]";
+      infoBtn.textContent = getInfoButtonText(true);
     }
 
     if (!infoLoaded) {
@@ -1097,10 +1153,14 @@
 
   function closeInfoOverlay(overlayEl) {
     overlayEl.classList.remove("is-visible");
+
+    // Phase 8: Remove body classes for canvas overlay effects
+    document.body.classList.remove("info-open", "info-blur-bg", "info-darken", "info-colour-overlay");
+
     const infoBtn = document.getElementById("nav-info-btn");
     if (infoBtn) {
       infoBtn.setAttribute("aria-pressed", "false");
-      infoBtn.textContent = "[INFO ▷]";
+      infoBtn.textContent = getInfoButtonText(false);
     }
   }
 
@@ -1125,6 +1185,9 @@
   });
 
   function buildNav() {
+    const overlayEl = document.getElementById("info-overlay");
+    const isOverlayOpen = overlayEl ? overlayEl.classList.contains("is-visible") : false;
+
     // On desktop: hide the legacy <nav> and use zone containers instead.
     // On mobile: the <nav> remains visible and unchanged.
     const legacyNav   = document.querySelector(".nav");
@@ -1257,7 +1320,8 @@
         infoBtn.type = "button";
         infoBtn.id = "nav-info-btn";
         infoBtn.className = "nav-btn nav-info zone-info-module";
-        infoBtn.textContent = "[INFO ▷]";
+        infoBtn.textContent = getInfoButtonText(isOverlayOpen);
+        infoBtn.setAttribute("aria-pressed", isOverlayOpen ? "true" : "false");
         infoBtn.style.pointerEvents = "auto";
         infoBtn.addEventListener("click", toggleInfo);
         infoZone.appendChild(infoBtn);
@@ -1287,7 +1351,8 @@
             el.type = "button";
             el.id = "nav-info-btn";
             el.className = "nav-btn nav-info";
-            el.textContent = "[INFO ▷]";
+            el.textContent = getInfoButtonText(isOverlayOpen);
+            el.setAttribute("aria-pressed", isOverlayOpen ? "true" : "false");
             el.addEventListener("click", toggleInfo);
           } else {
             el = document.createElement("a");

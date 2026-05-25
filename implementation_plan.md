@@ -569,7 +569,7 @@ Consolidate the build system:
 | 5 | Image effects system (desat/duotone/sticky) | Claude Sonnet 4.6 (Thinking) | M | ✅ |
 | 6 | Image click: lightbox + canvas expand | Claude Sonnet 4.6 (Thinking) | M | ✅ |
 | 7 | Category behaviour (hide-on-click + focus mode) | Claude Sonnet 4.6 (Thinking) | S | ✅ |
-| 8 | INFO overlay enhancement | Gemini 3.5 Flash (High) | S | ⬜ |
+| 8 | INFO overlay enhancement | Gemini 3.5 Flash (High) | S | ✅ |
 | 9 | SEO & metadata (static tags in `index.html`) | Gemini 3.5 Flash (High) | S | ⬜ |
 | 10 | Favicon workflow (Option B + webmanifest sync) | Gemini 3.5 Flash (Medium) | XS | ⬜ |
 | 11 | GUI setup tool (Node.js server + full UI) | Claude Sonnet 4.6 (Thinking) | XL | ⬜ |

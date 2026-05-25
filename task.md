@@ -1,6 +1,6 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ Phase 7 DONE — stopping before Phase 8.    
+> **Status**: ⏸ Phase 8 DONE — stopping before Phase 9.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
 
@@ -141,12 +141,12 @@
 ## Phase 8 — INFO Overlay Enhancement
 *Model: Gemini 3.5 Flash (High)*
 
-- `[ ]` Add new `config.info` keys to `config.json`
-- `[ ]` Add CSS for canvas effects when info open (`blur-bg`, `darken`, `colour-overlay`)
-- `[ ]` Update `openInfoOverlay()` to apply body class from `config.info.overlayEffect`
-- `[ ]` Update `closeInfoOverlay()` to remove the body class
-- `[ ]` Update `buildInfoButton()` to render from `config.info.buttonStyle` and `closeStyle`
-- `[ ]` Verify: all 4 overlay effects (none/blur/darken/colour-overlay) render correctly
+- `[x]` Add new `config.info` keys to `config.json`
+- `[x]` Add CSS for canvas effects when info open (`blur-bg`, `darken`, `colour-overlay`)
+- `[x]` Update `openInfoOverlay()` to apply body class from `config.info.overlayEffect`
+- `[x]` Update `closeInfoOverlay()` to remove the body class
+- `[x]` Update `buildInfoButton()` to render from `config.info.buttonStyle` and `closeStyle`
+- `[x]` Verify: all 4 overlay effects (none/blur/darken/colour-overlay) render correctly
 
 ---
 

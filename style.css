@@ -164,6 +164,7 @@ figure {
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
+  transition: filter 0.3s ease;
 }
 
 #stage-wrapper.is-dragging {
@@ -443,6 +444,34 @@ figure {
 }
 
 /* ── Info Overlay ───────────────────────────────────────────────────────────── */
+
+/* Phase 8: Info Overlay Canvas Effects */
+body.info-open.info-blur-bg #stage-wrapper {
+  filter: blur(6px);
+}
+body.info-open.info-darken #stage-wrapper {
+  filter: brightness(0.6);
+}
+body.info-colour-overlay::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--info-overlay-colour, rgba(0, 0, 0, 0.3));
+  pointer-events: none;
+  z-index: 899;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+body.info-open.info-colour-overlay::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #stage-wrapper,
+  body.info-colour-overlay::after {
+    transition: none !important;
+  }
+}
 
 #info-overlay {
   position: fixed;

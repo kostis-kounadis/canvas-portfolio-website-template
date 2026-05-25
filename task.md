@@ -1,6 +1,6 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ Phase 6 DONE — stopping before Phase 7.    
+> **Status**: ⏸ Phase 7 DONE — stopping before Phase 8.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
 
@@ -124,17 +124,17 @@
 ## Phase 7 — Category Behaviour System
 *Model: Claude Sonnet 4.6 (Thinking)*
 
-- `[ ]` Extend `toggleGroup()` with `behaviour` mode branching
-- `[ ]` Implement `focusGroup(group)` function (focus-on-click mode)
-- `[ ]` Implement `restoreAllGroups()` function
-- `[ ]` Add CSS for blur focus effect on non-focused items (`.is-focus-blurred`)
-- `[ ]` Add "View All" / configurable label button to category panel (shown when in focus mode)
-- `[ ]` Wire "View All" button to `restoreAllGroups()`
-- `[ ]` Wire clicking active focused category to `restoreAllGroups()` (toggle back)
-- `[ ]` Verify: hide-on-click (original behaviour) still works
-- `[ ]` Verify: focus-on-click + hide effect works
-- `[ ]` Verify: focus-on-click + blur effect works
-- `[ ]` Verify: "View All" restores correctly
+- `[x]` Extend `toggleGroup()` with `behaviour` mode branching
+- `[x]` Implement `focusGroup(group)` function (focus-on-click mode)
+- `[x]` Implement `restoreAllGroups()` function
+- `[x]` Add CSS for blur focus effect on non-focused items (`.is-focus-blurred`)
+- `[x]` Add "View All" / configurable label button to category panel (shown when in focus mode)
+- `[x]` Wire "View All" button to `restoreAllGroups()`
+- `[x]` Wire clicking active focused category to `restoreAllGroups()` (toggle back)
+- `[x]` Verify: hide-on-click (original behaviour) still works
+- `[x]` Verify: focus-on-click + hide effect works
+- `[x]` Verify: focus-on-click + blur effect works
+- `[x]` Verify: "View All" restores correctly
 
 ---
 

@@ -928,13 +928,22 @@ body[class*="fx-"] .media-item.is-coloured video {
   transition: filter 0.3s ease;
 }
 
+/* Phase 7: Focus on category blur effect */
+.media-item.is-focus-blurred img,
+.media-item.is-focus-blurred video {
+  filter: blur(8px) opacity(0.3);
+  transition: filter 0.4s ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   body.fx-desaturated .media-item img,
   body.fx-desaturated .media-item video,
   body.fx-duotone .media-item img,
   body.fx-duotone .media-item video,
   .media-item.is-blurred img,
-  .media-item.is-blurred video {
+  .media-item.is-blurred video,
+  .media-item.is-focus-blurred img,
+  .media-item.is-focus-blurred video {
     transition: none;
   }
 }

@@ -80,6 +80,10 @@
     // misc
     mobile_mode:     "canvas",
     ui_text_size:    "18px",
+    // categories defaults (Phase 7)
+    categories_behaviour: "hide-on-click",
+    categories_focus_effect: "hide",
+    categories_view_all_label: "ALL",
   };
 
   // Active stack objects built by layoutStacks(); cleared on exit.
@@ -92,6 +96,9 @@
   let expandedEl = null;
   let visibleLightboxItems = [];
   let currentLightboxIndex = -1;
+
+  // Phase 7 State
+  let focusedGroup = null;
 
   window.addEventListener("keydown", (e) => {
     // Don't fire shortcuts when typing in an input / contenteditable
@@ -375,6 +382,17 @@
   // ── Nav: folder-driven category menu ───────────────────────────────────
 
   function toggleGroup(group, btnEl) {
+    const behaviour = siteConfig.categories_behaviour || "hide-on-click";
+    if (behaviour === "focus-on-click") {
+      if (focusedGroup === group) {
+        restoreAllGroups();
+      } else {
+        focusGroup(group);
+      }
+      return;
+    }
+
+    // Default: hide-on-click behaviour
     if (hiddenGroups.has(group)) {
       hiddenGroups.delete(group);
       btnEl.classList.remove("is-struck");
@@ -393,6 +411,85 @@
       announce(group.toUpperCase() + " HIDDEN");
     }
     // Reflow non-random layouts after filter change
+    if (currentLayout !== "random") applyLayout(currentLayout);
+  }
+
+  function focusGroup(group) {
+    focusedGroup = group;
+    const effect = siteConfig.categories_focus_effect || "hide";
+
+    // 1. Update button struck states
+    const panel = document.getElementById("category-panel");
+    if (panel) {
+      panel.querySelectorAll(".nav-category").forEach((btn) => {
+        const btnGrp = btn.dataset.group;
+        if (btnGrp === group) {
+          btn.classList.remove("is-struck");
+          btn.setAttribute("aria-pressed", "false");
+        } else {
+          btn.classList.add("is-struck");
+          btn.setAttribute("aria-pressed", "true");
+        }
+      });
+
+      // Show the View All button
+      const viewAllBtn = document.getElementById("category-view-all");
+      if (viewAllBtn) {
+        viewAllBtn.style.display = "";
+      }
+    }
+
+    // 2. Update media items visibility/blur
+    stage.querySelectorAll(".media-item").forEach((el) => {
+      const elGrp = el.dataset.group || "";
+      if (elGrp === group) {
+        el.style.display = "";
+        el.classList.remove("is-focus-blurred");
+      } else {
+        if (effect === "hide") {
+          el.style.display = "none";
+          el.classList.remove("is-focus-blurred");
+        } else {
+          // effect is "blur"
+          el.style.display = "";
+          el.classList.add("is-focus-blurred");
+        }
+      }
+    });
+
+    announce(group.toUpperCase() + " FOCUSED");
+
+    // Reflow layouts after filter changes
+    if (currentLayout !== "random") applyLayout(currentLayout);
+  }
+
+  function restoreAllGroups() {
+    focusedGroup = null;
+
+    // 1. Update button struck states
+    const panel = document.getElementById("category-panel");
+    if (panel) {
+      panel.querySelectorAll(".nav-category").forEach((btn) => {
+        btn.classList.remove("is-struck");
+        btn.setAttribute("aria-pressed", "false");
+      });
+
+      // Hide the View All button
+      const viewAllBtn = document.getElementById("category-view-all");
+      if (viewAllBtn) {
+        viewAllBtn.style.display = "none";
+      }
+    }
+
+    // 2. Restore all media items to visible and unblurred
+    stage.querySelectorAll(".media-item").forEach((el) => {
+      el.style.display = "";
+      el.classList.remove("is-focus-blurred");
+    });
+
+    announce("ALL CATEGORIES VISIBLE");
+
+    // Reflow layouts
     if (currentLayout !== "random") applyLayout(currentLayout);
   }
 
@@ -497,6 +594,13 @@
       if (cfg.layouts.default)               siteConfig.default_layout = cfg.layouts.default;
     }
 
+    // categories
+    if (cfg.categories) {
+      if (cfg.categories.behaviour != null)    siteConfig.categories_behaviour = cfg.categories.behaviour;
+      if (cfg.categories.focusEffect != null)  siteConfig.categories_focus_effect = cfg.categories.focusEffect;
+      if (cfg.categories.viewAllLabel != null) siteConfig.categories_view_all_label = cfg.categories.viewAllLabel;
+    }
+
     // mobile
     if (cfg.mobile && cfg.mobile.defaultMode) {
       siteConfig.mobile_mode = cfg.mobile.defaultMode;
@@ -562,12 +666,31 @@
       }
     }
 
+    // Phase 7 hot-reload resets
+    if (cfg.categories) {
+      const nextBehaviour = cfg.categories.behaviour || "hide-on-click";
+      if (nextBehaviour === "hide-on-click") {
+        if (focusedGroup !== null) {
+          restoreAllGroups();
+        }
+      } else {
+        // focus-on-click mode
+        if (focusedGroup !== null) {
+          // Re-apply focus styles under the new settings (e.g. if focusEffect changed)
+          focusGroup(focusedGroup);
+        }
+      }
+    }
+
     // Rebuild UI modules that depend on config
     const navRight = document.getElementById("nav-right");
     if (navRight) {
       navRight.innerHTML = "";
-      buildNav();
     }
+    buildNav();
+    buildCategoryPanel();
+    buildLayoutPanel();
+
     // Refresh info text if overlay is open
     const overlay = document.getElementById("info-overlay");
     const textEl  = document.getElementById("info-text");
@@ -2125,16 +2248,48 @@
       });
     }
 
+    const behaviour = siteConfig.categories_behaviour || "hide-on-click";
+
     groups.forEach((g) => {
       const el = document.createElement("button");
       el.type = "button";
       el.className = "nav-btn nav-category";
       el.dataset.group = g;
-      el.setAttribute("aria-pressed", "false");
+
+      // Determine struck state on creation (Phase 7 support for hot-reloads)
+      if (behaviour === "focus-on-click" && focusedGroup !== null) {
+        if (g === focusedGroup) {
+          el.classList.remove("is-struck");
+          el.setAttribute("aria-pressed", "false");
+        } else {
+          el.classList.add("is-struck");
+          el.setAttribute("aria-pressed", "true");
+        }
+      } else if (hiddenGroups.has(g)) {
+        el.classList.add("is-struck");
+        el.setAttribute("aria-pressed", "true");
+      } else {
+        el.setAttribute("aria-pressed", "false");
+      }
+
       el.textContent = "[" + g.toUpperCase() + "]";
       el.addEventListener("click", () => toggleGroup(g, el));
       panel.appendChild(el);
     });
+
+    // Phase 7: Add "View All" button for focus-on-click mode
+    if (behaviour === "focus-on-click") {
+      const viewAllBtn = document.createElement("button");
+      viewAllBtn.type = "button";
+      viewAllBtn.id = "category-view-all";
+      viewAllBtn.className = "nav-btn nav-category-view-all";
+      const viewAllLabel = siteConfig.categories_view_all_label || "ALL";
+      viewAllBtn.textContent = "[" + viewAllLabel.toUpperCase() + "]";
+      viewAllBtn.style.display = focusedGroup !== null ? "" : "none";
+      viewAllBtn.style.marginTop = "8px";
+      viewAllBtn.addEventListener("click", restoreAllGroups);
+      panel.appendChild(viewAllBtn);
+    }
 
     // Append into configured zone (or body fallback)
     const cfg = window._siteConfigRaw || {};

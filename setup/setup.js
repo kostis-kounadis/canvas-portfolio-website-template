@@ -35,6 +35,7 @@ let _cfg = null;       // live config object (mutated in-place)
 let _dirty = false;    // unsaved changes flag
 let _debounceTimer = null;
 let _activeTab = 'identity';
+let _canvasReady = false; // Phase 12.5 Bug 1: tracks iframe readiness
 
 // ── Utility ─────────────────────────────────────────────────────────────────
 
@@ -94,8 +95,8 @@ function renderPanel(tabId) {
       'overflow-y:auto', 'background:var(--bg-0)',
       'padding:20px', 'display:flex', 'flex-direction:column', 'gap:16px',
       'scrollbar-width:thin', 'scrollbar-color:var(--bg-4) transparent',
+      'max-width:580px', // Phase 12.5 Bug 2: constrain panel width
     ].join(';');
-    previewArea.style.position = 'relative';
     previewArea.appendChild(panelContainer);
   }
 
@@ -314,6 +315,8 @@ function handleConditionalVisibility() {
   maybe('lightbox-controls',   ic?.lightbox?.enabled);
   maybe('ic-trigger-card',     ic?.lightbox?.enabled && ic?.canvasExpand?.enabled);
   maybe('focus-effect-group',  cat?.behaviour === 'focus-on-click');
+  // Phase 12.5 Bug 5: text animation trigger visibility
+  maybe('text-anim-trigger-group', t?.textAnimation && t.textAnimation !== 'none');
 }
 
 function maybe(id, show) {
@@ -353,70 +356,89 @@ function buildModulesPanel() {
   if (!list) return;
   list.innerHTML = '';
 
+  // Phase 12.5 Bug 2: Compact table-grid layout for modules
   MODULE_KEYS.forEach(key => {
     const mod = deepGet(_cfg, `ui.modules.${key}`) || {};
-    const card = document.createElement('div');
-    card.className = 'section-card';
-    card.style.marginBottom = '12px';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:center; padding:8px 12px; background:var(--bg-2); border:1px solid var(--border); border-radius:var(--r-sm); margin-bottom:6px;';
 
-    // Has logo option for title module
-    const extraRow = key === 'title' ? `
-      <div class="field" style="margin-top:8px;">
-        <label>Title Display Mode</label>
-        <select id="mod-${key}-mode" style="width:100%">
-          <option value="text">Text</option>
-          <option value="logo">Logo image</option>
-        </select>
-      </div>
-      <div class="field" id="mod-title-logo-row" style="display:none;">
-        <label for="mod-title-logo">Logo filename (in project root)</label>
-        <input type="text" id="mod-title-logo" placeholder="logo.png" />
-      </div>
-      <div class="field" id="mod-title-text-row">
-        <label for="mod-title-text">Title text override</label>
-        <input type="text" id="mod-title-text" placeholder="My Portfolio" />
-      </div>
-    ` : '';
+    const label = document.createElement('span');
+    label.style.cssText = 'font-size:12px; font-weight:500; color:var(--text-primary);';
+    label.textContent = MODULE_LABELS[key];
 
-    card.innerHTML = `
-      <div class="section-header"><h3>${MODULE_LABELS[key]}</h3></div>
-      <div class="section-body">
-        <div class="toggle-row">
-          <label>Visible</label>
-          <label class="toggle"><input type="checkbox" id="mod-${key}-visible" ${mod.visible ? 'checked' : ''} /><span class="toggle-track"></span></label>
-        </div>
-        <div class="field">
-          <label for="mod-${key}-pos">Position</label>
-          <select id="mod-${key}-pos">
-            ${ZONES.map(z => `<option value="${z}" ${mod.position === z ? 'selected' : ''}>${z}</option>`).join('')}
-          </select>
-        </div>
-        ${extraRow}
-      </div>
-    `;
+    const toggleWrap = document.createElement('label');
+    toggleWrap.className = 'toggle';
+    toggleWrap.innerHTML = `<input type="checkbox" id="mod-${key}-visible" ${mod.visible ? 'checked' : ''} /><span class="toggle-track"></span>`;
 
-    list.appendChild(card);
+    const posSelect = document.createElement('select');
+    posSelect.id = `mod-${key}-pos`;
+    posSelect.style.cssText = 'width:130px; font-size:11px; padding:4px 6px;';
+    posSelect.innerHTML = ZONES.map(z => `<option value="${z}" ${mod.position === z ? 'selected' : ''}>${z}</option>`).join('');
+
+    row.appendChild(label);
+    row.appendChild(toggleWrap);
+    row.appendChild(posSelect);
+    list.appendChild(row);
 
     // Wire toggle
     const visEl = document.getElementById(`mod-${key}-visible`);
     visEl.addEventListener('change', () => {
       deepSet(_cfg, `ui.modules.${key}.visible`, visEl.checked);
-      markDirty();
-      scheduleHotReload();
-      updateZoneDiagram();
+      markDirty(); scheduleHotReload(); updateZoneDiagram();
     });
 
     // Wire position select
-    const posEl = document.getElementById(`mod-${key}-pos`);
-    posEl.addEventListener('change', () => {
-      deepSet(_cfg, `ui.modules.${key}.position`, posEl.value);
-      markDirty();
-      scheduleHotReload();
-      updateZoneDiagram();
+    posSelect.addEventListener('change', () => {
+      deepSet(_cfg, `ui.modules.${key}.position`, posSelect.value);
+      markDirty(); scheduleHotReload(); updateZoneDiagram();
     });
 
-    // Wire title-specific fields
+    // Title-specific extended controls
     if (key === 'title') {
+      const extCard = document.createElement('div');
+      extCard.className = 'section-card';
+      extCard.style.marginBottom = '6px';
+      extCard.innerHTML = `
+        <div class="section-body" style="padding:10px 12px; display:flex; flex-direction:column; gap:8px;">
+          <div class="field">
+            <label>Title Display Mode</label>
+            <select id="mod-title-mode" style="width:100%">
+              <option value="text">Text</option>
+              <option value="svg">Logo image (SVG/PNG)</option>
+              <option value="svg_text">Logo + Text</option>
+              <option value="text_svg">Text + Logo</option>
+            </select>
+          </div>
+          <div class="field" id="mod-title-logo-row" style="display:none;">
+            <label for="mod-title-logo">Logo filename (in project root)</label>
+            <input type="text" id="mod-title-logo" placeholder="logo.svg" />
+          </div>
+          <div class="field" id="mod-title-text-row">
+            <label for="mod-title-text">Title text override</label>
+            <input type="text" id="mod-title-text" placeholder="My Portfolio" />
+          </div>
+          <div class="toggle-row" id="mod-title-icon-row">
+            <label>Decorative SVG Icon</label>
+            <label class="toggle"><input type="checkbox" id="mod-title-icon-enabled" /><span class="toggle-track"></span></label>
+          </div>
+          <div id="mod-title-icon-controls" style="display:none;">
+            <div class="field" style="margin-bottom:6px;">
+              <label for="mod-title-icon-file">Icon SVG file path</label>
+              <input type="text" id="mod-title-icon-file" placeholder="icon.svg" />
+            </div>
+            <div class="field">
+              <label>Icon Position</label>
+              <select id="mod-title-icon-pos">
+                <option value="before">Before title</option>
+                <option value="after">After title</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      `;
+      list.appendChild(extCard);
+
+      // Wire title mode
       const modeEl = document.getElementById('mod-title-mode');
       const logoRow = document.getElementById('mod-title-logo-row');
       const textRow = document.getElementById('mod-title-text-row');
@@ -428,9 +450,9 @@ function buildModulesPanel() {
       textEl.value = mod.text || _cfg.site?.title || '';
 
       const toggleTitleMode = () => {
-        const isLogo = modeEl.value === 'logo';
+        const isLogo = modeEl.value === 'svg' || modeEl.value === 'svg_text' || modeEl.value === 'text_svg';
         logoRow.style.display = isLogo ? '' : 'none';
-        textRow.style.display = isLogo ? 'none' : '';
+        textRow.style.display = modeEl.value === 'svg' ? 'none' : '';
       };
       toggleTitleMode();
 
@@ -445,6 +467,35 @@ function buildModulesPanel() {
       });
       textEl.addEventListener('input', () => {
         deepSet(_cfg, 'ui.modules.title.text', textEl.value);
+        markDirty(); scheduleHotReload();
+      });
+
+      // Phase 12.5 Bug 3: Wire icon controls
+      const iconEnabledEl = document.getElementById('mod-title-icon-enabled');
+      const iconControlsEl = document.getElementById('mod-title-icon-controls');
+      const iconFileEl = document.getElementById('mod-title-icon-file');
+      const iconPosEl = document.getElementById('mod-title-icon-pos');
+
+      const icon = mod.icon || {};
+      iconEnabledEl.checked = icon.enabled === true;
+      iconFileEl.value = icon.file || '';
+      iconPosEl.value = icon.position || 'before';
+      iconControlsEl.style.display = icon.enabled ? '' : 'none';
+
+      iconEnabledEl.addEventListener('change', () => {
+        if (!_cfg.ui.modules.title.icon) _cfg.ui.modules.title.icon = {};
+        deepSet(_cfg, 'ui.modules.title.icon.enabled', iconEnabledEl.checked);
+        iconControlsEl.style.display = iconEnabledEl.checked ? '' : 'none';
+        markDirty(); scheduleHotReload();
+      });
+      iconFileEl.addEventListener('input', () => {
+        if (!_cfg.ui.modules.title.icon) _cfg.ui.modules.title.icon = {};
+        deepSet(_cfg, 'ui.modules.title.icon.file', iconFileEl.value);
+        markDirty(); scheduleHotReload();
+      });
+      iconPosEl.addEventListener('change', () => {
+        if (!_cfg.ui.modules.title.icon) _cfg.ui.modules.title.icon = {};
+        deepSet(_cfg, 'ui.modules.title.icon.position', iconPosEl.value);
         markDirty(); scheduleHotReload();
       });
     }
@@ -671,6 +722,9 @@ function wireTab(tabId) {
           embedEl.addEventListener('input', updateFontPreview);
           updateFontPreview();
         }
+
+        // Phase 12.5 Bug 5: text animation trigger visibility
+        handleConditionalVisibility();
       }
       break;
 
@@ -770,16 +824,27 @@ function init() {
     window.open('/', '_blank', 'noopener');
   });
 
-  // Listen for messages from preview iframe (optional: iframe ready signal)
+  // Listen for messages from preview iframe
   window.addEventListener('message', e => {
     if (e.data?.type === 'canvas-ready' && _cfg) {
+      _canvasReady = true;
       hotReload();
     }
   });
 
-  // When iframe finishes loading, send config
+  // When iframe finishes loading, wait for canvas-ready or fall back after 3s
   document.getElementById('preview-iframe').addEventListener('load', () => {
-    if (_cfg) setTimeout(hotReload, 200);
+    if (_cfg && _canvasReady) {
+      hotReload();
+    } else if (_cfg) {
+      // Fallback: if canvas-ready never arrives, try after 3 seconds
+      setTimeout(() => {
+        if (!_canvasReady) {
+          _canvasReady = true;
+          hotReload();
+        }
+      }, 3000);
+    }
   });
 
   // Keyboard shortcut: Cmd/Ctrl+S = save

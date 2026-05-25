@@ -210,6 +210,7 @@ html, body {
   background: var(--bg-0);
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Phase 12.5 Bug 4: clip children so panel-container can scroll */
 }
 
 #preview-toolbar {
@@ -717,12 +718,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
   grid-template-rows: 1fr 1fr 1fr;
   gap: 2px;
   width: 100%;
-  aspect-ratio: 16/9;
+  max-width: 320px;
+  height: 100px; /* Phase 12.5 Bug 2: compact zone diagram */
   background: var(--bg-0);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   overflow: hidden;
-  font-size: 9px;
+  font-size: 8px;
   color: var(--text-muted);
 }
 

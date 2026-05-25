@@ -573,6 +573,12 @@
         siteConfig.show_title = mods.title.visible !== false;
         siteConfig.title_mode = mods.title.mode || "text";
         siteConfig.logo_file  = mods.title.logoFile || "";
+        // Phase 12.5 Bug 3: SVG icon config
+        if (mods.title.icon) {
+          siteConfig.title_icon_enabled  = mods.title.icon.enabled === true;
+          siteConfig.title_icon_file     = mods.title.icon.file || "";
+          siteConfig.title_icon_position = mods.title.icon.position || "before";
+        }
         // Allow overriding display text separately from site.title
         if (mods.title.text) siteConfig.name = mods.title.text;
       }
@@ -712,11 +718,11 @@
     buildLayoutPanel();
 
     // Refresh info text if overlay is open
-    const overlay = document.getElementById("info-overlay");
+    const infoOverlay2 = document.getElementById("info-overlay");
     const textEl  = document.getElementById("info-text");
-    if (overlay && textEl && overlay.classList.contains("is-visible")) {
+    if (infoOverlay2 && textEl && infoOverlay2.classList.contains("is-visible")) {
       textEl.innerHTML = renderMarkdown(infoBodyText);
-      requestAnimationFrame(() => autoscaleText(overlay, textEl));
+      requestAnimationFrame(() => autoscaleText(infoOverlay2, textEl));
     }
   };
 
@@ -828,10 +834,16 @@
 
     // ─ Text animation ─
     document.body.classList.remove(...TEXT_FX_CLASSES);
+    document.body.classList.remove("text-anim-hover");
     const textFx = t.textAnimation || "none";
     if (textFx === "color-cycle")  document.body.classList.add("text-fx-color-cycle");
     else if (textFx === "gradient") document.body.classList.add("text-fx-gradient");
     else if (textFx === "hue-rotate") document.body.classList.add("text-fx-hue-rotate");
+
+    // Phase 12.5 Bug 5: text animation trigger mode (hover-only vs always-on)
+    if (textFx !== "none" && t.textAnimationTrigger === "hover") {
+      document.body.classList.add("text-anim-hover");
+    }
 
     // ─ Typography Dynamic Font Loading (Phase 4) ─
     const ui = cfg.ui || {};
@@ -1271,10 +1283,52 @@
         titleEl.appendChild(span);
       };
 
+      // Phase 12.5 Bug 3: build decorative SVG icon adjacent to the title
+      const buildIcon = () => {
+        const iconFile = siteConfig.title_icon_file;
+        if (!iconFile) return;
+        const iconContainer = document.createElement("div");
+        iconContainer.className = "site-icon";
+        fetch(iconFile)
+          .then(r => {
+            if (!r.ok) throw new Error("Icon fetch failed");
+            return r.text();
+          })
+          .then(svgText => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(svgText, "image/svg+xml");
+            const svgEl = doc.querySelector("svg");
+            if (svgEl) {
+              svgEl.removeAttribute("width");
+              svgEl.removeAttribute("height");
+              svgEl.style.display = "block";
+              svgEl.style.height = "1em";
+              svgEl.style.width = "auto";
+              svgEl.style.fill = "currentColor";
+              svgEl.querySelectorAll("path, circle, rect, polygon, ellipse").forEach(shape => {
+                shape.style.fill = "currentColor";
+              });
+              iconContainer.innerHTML = svgEl.outerHTML;
+            }
+          })
+          .catch(err => {
+            console.error("[nav] Icon error:", err);
+          });
+        titleEl.appendChild(iconContainer);
+      };
+
+      // Determine icon placement (before or after the main content)
+      const iconEnabled = siteConfig.title_icon_enabled;
+      const iconPos     = siteConfig.title_icon_position || "before";
+
+      if (iconEnabled && iconPos === "before") buildIcon();
+
       if (titleMode === "text")       buildText();
       else if (titleMode === "svg")       buildSvg();
       else if (titleMode === "svg_text") { buildSvg(); buildText(); }
       else if (titleMode === "text_svg") { buildText(); buildSvg(); }
+
+      if (iconEnabled && iconPos === "after") buildIcon();
 
       titleZone.appendChild(titleEl);
     }
@@ -2755,6 +2809,11 @@
     buildCategoryPanel();
     buildLayoutPanel();
     buildModeSwitcher();
+
+    // Phase 12.5 Bug 1: Signal GUI that the canvas is ready for hot-reload
+    try {
+      window.parent.postMessage({ type: 'canvas-ready' }, '*');
+    } catch (_) { /* not in iframe — noop */ }
   }
 
   if (document.readyState === "loading") {

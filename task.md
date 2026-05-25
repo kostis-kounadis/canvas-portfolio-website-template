@@ -1,6 +1,6 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ⏸ Phase 12 DONE — stopping before Phase 12.5.    
+> **Status**: 🔨 Phase 12.5 IN PROGRESS — GUI bug fixes & UX corrections.    
 > **Known issues logged**: Phase 12.5 added to capture GUI Setup Tool bugs found after Phase 11.    
 > **Branch**: `main` (v1 template)  
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)

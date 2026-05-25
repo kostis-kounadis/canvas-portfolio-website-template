@@ -898,6 +898,46 @@ body.text-fx-hue-rotate .nav {
   to   { filter: hue-rotate(360deg); }
 }
 
+/* ── Text Animation: Hover-Only Trigger (Phase 12.5 Bug 5) ──────────────────── */
+/* When body.text-anim-hover is present, animations only activate on :hover */
+
+body.text-anim-hover.text-fx-color-cycle .zone-container,
+body.text-anim-hover.text-fx-color-cycle .nav {
+  animation: none;
+}
+body.text-anim-hover.text-fx-color-cycle .zone-container:hover,
+body.text-anim-hover.text-fx-color-cycle .nav:hover {
+  animation: text-color-cycle 8s linear infinite;
+}
+
+body.text-anim-hover.text-fx-gradient .zone-container *,
+body.text-anim-hover.text-fx-gradient .nav * {
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
+  animation: none;
+}
+body.text-anim-hover.text-fx-gradient .zone-container:hover *,
+body.text-anim-hover.text-fx-gradient .nav:hover * {
+  background: linear-gradient(90deg, var(--text-colour), hsl(30, 100%, 70%), var(--text-colour));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-gradient-shift 5s linear infinite;
+}
+
+body.text-anim-hover.text-fx-hue-rotate .zone-container,
+body.text-anim-hover.text-fx-hue-rotate .nav {
+  animation: none;
+  filter: none;
+}
+body.text-anim-hover.text-fx-hue-rotate .zone-container:hover,
+body.text-anim-hover.text-fx-hue-rotate .nav:hover {
+  animation: text-hue-rotate 6s linear infinite;
+}
+
 /* ── Accessibility: Reduced Motion ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   body.bg-gradient-animated,

@@ -18,7 +18,7 @@
   },
   "ui": {
     "modules": {
-      "title":      { "visible": true,  "position": "top-left",    "mode": "text", "text": "My Portfolio", "logoFile": "" },
+      "title":      { "visible": true,  "position": "top-left",    "mode": "text", "text": "My Portfolio", "logoFile": "", "icon": { "enabled": false, "file": "", "position": "before" } },
       "email":      { "visible": true,  "position": "top-right" },
       "info":       { "visible": true,  "position": "top-right" },
       "categories": { "visible": true,  "position": "middle-left" },
@@ -33,6 +33,7 @@
     "textColor": "#ffff00",
     "blendMode": true,
     "textAnimation": "none",
+    "textAnimationTrigger": "always",
     "backgroundEffect": "solid",
     "backgroundGradientFrom": "#f7f5f0",
     "backgroundGradientTo": "#e0e0e0",

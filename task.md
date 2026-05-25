@@ -166,13 +166,16 @@
 
 ---
 
-## Phase 10 — Favicon Workflow
+## Phase 10 — Favicon & OG Image Workflow
 *Model: Gemini 3.5 Flash (Medium)*
 
 - `[ ]` Ensure placeholder `favicon/` folder exists with working placeholder icons
 - `[ ]` Update `admin/generate-data.js` to update `favicon/site.webmanifest` from `config.site.title`
 - `[ ]` Prepare GUI help text + link for realfavicongenerator.net (for Phase 11)
 - `[ ]` Verify: webmanifest `name`/`short_name` update correctly after build
+- `[ ]` Open Graph image (og-image.jpg) workflow:
+  - `[ ]` Document og-image creation best-practices (1200x630px template, why & how to use it)
+  - `[ ]` Specify GUI SEO tab instructions & text input field mapping for `config.seo.ogImage`
 
 ---
 

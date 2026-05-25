@@ -137,8 +137,111 @@ async function main() {
   // 5. Write to data.js
   const output = `${comments}window.mediaItems = ${JSON.stringify(finalItems, null, 2)};\n`;
   fs.writeFileSync(dataFile, output, 'utf8');
-  
   console.log(`Done. ${finalItems.length} items written to data.js.`);
+
+  // 6. Phase 9: Update static SEO tags in index.html & update sitemap.xml
+  console.log('Updating static SEO tags and sitemap...');
+  try {
+    const configPath = path.join(rootDir, 'config.json');
+    if (!fs.existsSync(configPath)) {
+      console.warn('Warning: config.json not found, skipping static SEO updates.');
+      return;
+    }
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+    const indexHtmlPath = path.join(rootDir, 'index.html');
+    if (!fs.existsSync(indexHtmlPath)) {
+      console.warn('Warning: index.html not found, skipping static SEO updates.');
+      return;
+    }
+    let html = fs.readFileSync(indexHtmlPath, 'utf8');
+
+    const canonicalUrl = config.seo?.canonicalUrl || "https://example.com/";
+    const siteTitle = config.site?.title || "My Portfolio";
+    const metaDescription = config.seo?.metaDescription || "";
+    const author = config.site?.author || "";
+    const twitterHandle = config.seo?.twitterHandle || "";
+
+    const keywordsArr = config.seo?.keywords || [];
+    const keywords = Array.isArray(keywordsArr) ? keywordsArr.join(', ') : keywordsArr;
+
+    let ogImage = config.seo?.ogImage || "og-image.jpg";
+    if (ogImage && !/^https?:\/\//i.test(ogImage)) {
+      const base = canonicalUrl.endsWith('/') ? canonicalUrl : canonicalUrl + '/';
+      const relative = ogImage.startsWith('/') ? ogImage.slice(1) : ogImage;
+      ogImage = base + relative;
+    }
+
+    // Replace standard tags
+    html = html.replace(/<link[^>]*?rel="canonical"[^>]*?>/is, `<link rel="canonical" href="${canonicalUrl}" />`);
+    html = html.replace(/<title>[\s\S]*?<\/title>/is, `<title>${siteTitle}</title>`);
+    html = html.replace(/<meta[^>]*?name="description"[^>]*?>/is, `<meta name="description" content="${metaDescription}" />`);
+    html = html.replace(/<meta[^>]*?name="keywords"[^>]*?>/is, `<meta name="keywords" content="${keywords}" />`);
+    html = html.replace(/<meta[^>]*?name="author"[^>]*?>/is, `<meta name="author" content="${author}" />`);
+
+    // Replace Open Graph tags
+    html = html.replace(/<meta[^>]*?property="og:url"[^>]*?>/is, `<meta property="og:url" content="${canonicalUrl}" />`);
+    html = html.replace(/<meta[^>]*?property="og:title"[^>]*?>/is, `<meta property="og:title" content="${siteTitle}" />`);
+    html = html.replace(/<meta[^>]*?property="og:description"[^>]*?>/is, `<meta property="og:description" content="${metaDescription}" />`);
+    html = html.replace(/<meta[^>]*?property="og:image"[^>]*?>/is, `<meta property="og:image" content="${ogImage}" />`);
+
+    // Replace Twitter Card tags
+    html = html.replace(/<meta[^>]*?name="twitter:url"[^>]*?>/is, `<meta name="twitter:url" content="${canonicalUrl}" />`);
+    html = html.replace(/<meta[^>]*?name="twitter:title"[^>]*?>/is, `<meta name="twitter:title" content="${siteTitle}" />`);
+    html = html.replace(/<meta[^>]*?name="twitter:description"[^>]*?>/is, `<meta name="twitter:description" content="${metaDescription}" />`);
+    html = html.replace(/<meta[^>]*?name="twitter:image"[^>]*?>/is, `<meta name="twitter:image" content="${ogImage}" />`);
+    html = html.replace(/<meta[^>]*?name="twitter:site"[^>]*?>/is, `<meta name="twitter:site" content="${twitterHandle}" />`);
+
+    // Replace apple-mobile-web-app-title
+    html = html.replace(/<meta[^>]*?name="apple-mobile-web-app-title"[^>]*?>/is, `<meta name="apple-mobile-web-app-title" content="${siteTitle}" />`);
+
+    // Replace legacy nav-left in index.html statically for fast first-paint matching
+    html = html.replace(/<div class="nav-left">[\s\S]*?<\/div>/is, `<div class="nav-left">${siteTitle}</div>`);
+
+    // Replace Schema.org JSON-LD blocks
+    const schemaType = config.seo?.schemaType || "Person";
+    const sameAs = config.seo?.sameAs || [];
+    
+    const schemaObj = {
+      "@context": "https://schema.org",
+      "@type": schemaType,
+      "name": schemaType === "Person" ? (config.site?.author || "Your Name") : (config.site?.title || "My Portfolio"),
+      "url": canonicalUrl
+    };
+    
+    if (schemaType === "Person" && config.seo?.jobTitle) {
+      schemaObj.jobTitle = config.seo.jobTitle;
+    }
+    
+    if (Array.isArray(sameAs) && sameAs.length > 0) {
+      schemaObj.sameAs = sameAs;
+    }
+
+    const jsonLdStr = JSON.stringify(schemaObj, null, 2);
+    html = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/is, 
+      `<script type="application/ld+json">\n${jsonLdStr.split('\n').map(line => '      ' + line).join('\n').trim()}\n    </script>`);
+
+    fs.writeFileSync(indexHtmlPath, html, 'utf8');
+    console.log('Successfully updated index.html with static SEO tags.');
+
+    // sitemap.xml update
+    const today = new Date().toISOString().split('T')[0];
+    const sitemapXmlPath = path.join(rootDir, 'sitemap.xml');
+    const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${canonicalUrl}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>\n`;
+    fs.writeFileSync(sitemapXmlPath, sitemapContent, 'utf8');
+    console.log(`Successfully updated sitemap.xml with canonical URL: ${canonicalUrl} and date: ${today}`);
+
+  } catch (err) {
+    console.error('Error during static SEO or sitemap generation:', err);
+  }
 }
 
 main().catch(console.error);

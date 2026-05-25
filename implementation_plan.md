@@ -401,15 +401,23 @@ This means SEO updates require a re-run of the build script — which users alre
 
 ---
 
-### Phase 10 — Favicon Workflow
+### Phase 10 — Favicon & OG Image Workflow
 *Model: **Gemini 3.5 Flash (Medium)***
 
-**Decision: Option B** — GUI links to [realfavicongenerator.net](https://realfavicongenerator.net) with clear step-by-step instructions. Template ships with a placeholder `favicon/` folder.
+#### Favicons: Option B
+- GUI links to [realfavicongenerator.net](https://realfavicongenerator.net) with clear step-by-step instructions. Template ships with a placeholder `favicon/` folder.
+- **GUI "Favicon" tab content**:
+  1. Link to realfavicongenerator.net with explanatory text
+  2. Step-by-step instructions: upload your logo there → download the package → unzip into the `favicon/` folder, replacing all files
+  3. Update `config.site.title` (used in `site.webmanifest`) — the build script keeps webmanifest in sync
 
-#### GUI "Favicon" tab content:
-1. Link to realfavicongenerator.net with explanatory text
-2. Step-by-step instructions: upload your logo there → download the package → unzip into the `favicon/` folder, replacing all files
-3. Update `config.site.title` (used in `site.webmanifest`) — the build script keeps webmanifest in sync
+#### Open Graph (og-image.jpg) Workflow
+- The Open Graph sharing preview card is powered by the image filename configured at `config.seo.ogImage` (default: `"og-image.jpg"`).
+- **GUI "SEO" tab instructions**:
+  - **Label**: Open Graph Image Filename (`config.seo.ogImage`)
+  - **Why & What**: When sharing your website on Discord, Twitter, LinkedIn, etc., platforms fetch this image to display a preview card. It should be a beautiful graphic representing your profile, work, or branding.
+  - **Best Practices**: Create a high-quality 1200 x 630 pixel JPEG or PNG image (using Canva, Figma, Photoshop, or a screenshot of your portfolio).
+  - **How**: Save the file in the root directory of your website project, and specify its filename in this input field. When you run a rebuild or export, the system automatically appends it to your static meta tags!
 
 #### [MODIFY] `admin/generate-data.js`
 - Update `favicon/site.webmanifest` `name` and `short_name` fields from `config.site.title`
@@ -570,8 +578,8 @@ Consolidate the build system:
 | 6 | Image click: lightbox + canvas expand | Claude Sonnet 4.6 (Thinking) | M | ✅ |
 | 7 | Category behaviour (hide-on-click + focus mode) | Claude Sonnet 4.6 (Thinking) | S | ✅ |
 | 8 | INFO overlay enhancement | Gemini 3.5 Flash (High) | S | ✅ |
-| 9 | SEO & metadata (static tags in `index.html`) | Gemini 3.5 Flash (High) | S | ⬜ |
-| 10 | Favicon workflow (Option B + webmanifest sync) | Gemini 3.5 Flash (Medium) | XS | ⬜ |
+| 9 | SEO & metadata (static tags in `index.html`) | Gemini 3.5 Flash (High) | S | ✅ |
+| 10 | Favicon & OG Image Workflow | Gemini 3.5 Flash (Medium) | XS | ⬜ |
 | 11 | GUI setup tool (Node.js server + full UI) | Claude Sonnet 4.6 (Thinking) | XL | ⬜ |
 | 12 | Build script consolidation | Gemini 3.5 Flash (High) | S | ⬜ |
 | 13 | Documentation (in-GUI help + README) | Gemini 3.5 Flash (High) | M | ⬜ |

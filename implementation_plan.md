@@ -617,6 +617,95 @@ All three platforms: browser auto-opens to `http://localhost:3000/setup/`
   - **Controls**: Cleaner toggle switches (thinner track, smaller thumb), sliders without the glowing thumb, flat select dropdowns without the custom SVG arrow background-image hack.
   - **Approach**: This is a full CSS + HTML restructure — `setup.css` rewritten, `setup/index.html` restructured (sidebar contains panel content, not overlay). `setup.js` logic mostly preserved but panel rendering refactored for the sidebar model.
 
+---
+
+## GUI Redesign Follow-up: Click/Hover Hotfixes & Image Blend Mode
+
+### Goal Description
+Resolve critical bugs where clicking images does not trigger the configured click action (Lightbox / Canvas Expand). Simplify and refine image hover states: remove the complex "Image Hover State" dropdown entirely. By default, hovering/dragging an image will always cancel any active filter state (desaturated, duotone, blurred) to reveal the original full-color image. Introduce a new **"Slightly Enlarge on Hover"** switch under image settings. Also implement an **"Image Blend Mode"** dropdown, replicating the Text Blend Mode options, and apply it dynamically using CSS custom properties.
+
+### Proposed Changes
+
+#### [MODIFY] [main.js](file:///Users/kkounadi/Desktop/antigravity-projects/_portfolio_port-to-template/main.js)
+- Remove `event.preventDefault()` inside the `mousedown` event listener of `initDragging` (around line 2150) so click events are successfully fired by the browser on mouseup.
+- In `applyImageEffects()`, simplify hover classes on the body:
+  - By default, always add `"fx-hover-normal"` class to the body. This guarantees that hovering/dragging an image always cancels the initial filter state (grayscale, duotone, blur) to reveal full color.
+  - If `fx.enlargeOnHover === true`, add `"fx-hover-enlarge"` class to the body.
+- In `applyImageEffects()`, parse `fx.blendMode` (defaulting to `"normal"`) and dynamically apply it to the CSS custom property `--image-blend-mode` on the document root.
+
+#### [MODIFY] [style.css](file:///Users/kkounadi/Desktop/antigravity-projects/_portfolio_port-to-template/style.css)
+- Revise `.media-item img` and `.media-item video` declarations to apply `mix-blend-mode: var(--image-blend-mode, normal);` so that dynamic blending works out of the box.
+- Keep the `body.fx-hover-enlarge .media-item:hover img/video` scale rules for the inner media (scaling by 1.05), which performs the zoom internally as preferred.
+
+#### [MODIFY] [store.ts](file:///Users/Users/kkounadi/Desktop/antigravity-projects/_portfolio_port-to-template/setup-app/src/lib/store.ts)
+- Add `enlargeOnHover?: boolean;` and `blendMode?: string;` properties to `imageEffects` interface inside `SiteConfig`.
+
+#### [MODIFY] [config.json](file:///Users/kkounadi/Desktop/antigravity-projects/_portfolio_port-to-template/config.json)
+- Set `"enlargeOnHover": true` (or `false` as default) and `"blendMode": "normal"` inside `imageEffects` block.
+- Remove legacy `"hoverState"` and `"hoverReveal"` properties.
+
+#### [MODIFY] [Forms.tsx](file:///Users/kkounadi/Desktop/antigravity-projects/_portfolio_port-to-template/setup-app/src/components/Forms.tsx)
+- Remove the `"Image Hover State"` dropdown card entirely.
+- Add a new `"Slightly Enlarge on Hover"` Switch card that maps to `config.imageEffects.enlargeOnHover`.
+- Append an `"Image Blend Mode"` dropdown Select card that maps to `config.imageEffects.blendMode`, listing the 16 CSS blend modes.
+
+### Verification Plan
+
+#### Automated Tests & Rebuild
+- Run `npm run build` under `setup-app/` to ensure type-correct compilation.
+- Restart the setup server on Port 3000 (`bash start-setup.sh`).
+
+#### Manual Verification
+- Open `http://localhost:3000/setup/`, adjust "Image Blend Mode" to `difference` or `overlay` and check if the portfolio updates automatically and displays the correct CSS mix-blend-mode.
+- Toggle "Slightly Enlarge on Hover" ON/OFF and verify the zoom scaling.
+- Hover over any grayscale/duotone/blurred image and verify it always cancels the filter to reveal the full color.
+- Click any image and verify that the Lightbox or Canvas Expand overlay opens correctly.
+
+---
+
+## GUI Re-engineering: Auto-Save, Layout Hot-Reloads, & Custom Viewport Lightbox
+
+### Goal Description
+Address critical user pain points regarding unsaved settings and half-functional hot-reloads by engineering **Debounced Auto-Save** in the React store and implementing comprehensive, real-time hot-reloading for all visual layout settings. Additionally, completely redesign the **Lightbox layout** to be full-screen (`100vw` by `100vh`), resolving containing block issues due to scale transforms so navigation arrows remain strictly sticky at the viewport edges. Provide custom color, opacity, and mix-blend-mode sub-options for the Lightbox backdrop.
+
+### Proposed Changes
+
+#### [MODIFY] [store.ts](file:///Users/kkounadi/Desktop/antigravity-projects/_portfolio_port-to-template/setup-app/src/lib/store.ts)
+- Implement debounced auto-saving inside `updateConfig` using a 400ms timer. Whenever any form slider, switch, picker, or input is modified, it silently persists to `config.json` on disk, guaranteeing settings never get lost and are perfectly synchronized.
+- Extend `imageClick.lightbox` schema to include `overlayColor`, `overlayOpacity`, and `overlayBlendMode`.
+
+#### [MODIFY] [Layout.tsx](file:///Users/kkounadi/Desktop/antigravity-projects/_portfolio_port-to-template/setup-app/src/components/Layout.tsx)
+- Add a real-time auto-save indicator in the header ("Saving changes...", "All changes saved to config.json").
+- Re-wire the "Rebuild Site" button click handler to automatically trigger `saveConfig()` first if the local state is dirty, guaranteeing that static compilation always reflects the absolute latest visual adjustments.
+
+#### [MODIFY] [main.js](file:///Users/kkounadi/Desktop/antigravity-projects/_portfolio_port-to-template/main.js)
+- Upgrade `window.applyConfig(cfg)` hot-reload routine: in addition to theme/image effects, trigger `buildZoneContainers()` and `applyLayout(currentLayout, false)` dynamically. Any adjustments to rows spacing/gap, rows heights, stacks spacing/spacing order, or zoom module visibility update on-screen in real-time.
+- Revamp `_ensureLightbox()`:
+  - Create and inject a `.lightbox-overlay` container directly behind `.lightbox-content` inside the dialog.
+  - Position navigation buttons `.lightbox-nav` and close button `.lightbox-close` inside the full-screen dialog container.
+  - Update the dialog click handler to close the modal if clicking outside the media (clicks landing on `.lightbox-overlay` or `.lightbox-content`).
+- Inside `applyImageEffects()`, parse lightbox overlay custom variables (`--lightbox-overlay-color`, `--lightbox-overlay-opacity`, `--lightbox-overlay-blend-mode`) and inject them onto the document root.
+
+#### [MODIFY] [style.css](file:///Users/kkounadi/Desktop/antigravity-projects/_portfolio_port-to-template/style.css)
+- Revise `.lightbox-dialog` to cover the entire screen viewport (`100vw` / `100vh` dimensions, `margin: 0`, `padding: 0`).
+- Remove the `scale(0.92)` transform transition from the `.lightbox-dialog` container itself (which was creating a transformed containing block context and forcing fixed arrows to move relative to image width).
+- Apply the entry scale animation to `.lightbox-media-container` internally, so the media zooms in elegantly while navigation controls remain perfectly stuck at the viewport edges.
+- Style `.lightbox-overlay` to dynamically apply `--lightbox-overlay-color`, `--lightbox-overlay-opacity`, and `--lightbox-overlay-blend-mode` with full cross-browser reliability.
+- Remove `text-decoration: underline` from hover states of `.lightbox-close` and `.lightbox-nav` buttons.
+
+#### [MODIFY] [Forms.tsx](file:///Users/kkounadi/Desktop/antigravity-projects/_portfolio_port-to-template/setup-app/src/components/Forms.tsx)
+- Append conditional backdrop custom settings (Color Picker, Opacity Slider, and Blend Mode dropdown) directly under the "Lightbox" choice inside the Image Click Action RadioGroup.
+
+### Verification Plan
+
+#### Automated Tests & Rebuild
+- Compile the setup application using `npm run build` inside `setup-app/`.
+- Ensure Node.js server routes `/api/config` and `/api/build` resolve perfectly.
+
+#### Manual Verification
+- Verify that tweaking any option in the setup panel auto-saves silently to disk in the background and updates the live portfolio preview dynamically.
+- Click "Rebuild Site" and verify it compiles successfully.
+- Open Lightbox and check that navigation arrows are perfectly sticky at the left and right edges of the screen and close button `[×]` is at the top right, with no hover underlines, and backdrop overlay options apply in real-time.
 
 ---
 

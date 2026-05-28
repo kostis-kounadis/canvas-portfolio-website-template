@@ -79,7 +79,7 @@ figure {
   justify-content: space-between;
   z-index: 1000;
   pointer-events: none; /* Container ignores events, children re-enable */
-  mix-blend-mode: difference;
+  mix-blend-mode: var(--text-blend-mode, normal);
   background: transparent;
   color: var(--text-colour, #ffff00); /* yellow -> appears blue-ish with difference on white */
   text-transform: uppercase;
@@ -158,6 +158,7 @@ figure {
 
 #stage-wrapper {
   position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -208,6 +209,7 @@ figure {
   cursor: grab;
   transition: box-shadow 0.15s ease-out;
   will-change: left, top;
+  mix-blend-mode: var(--image-blend-mode, normal);
 }
 
 .media-item.is-dragging {
@@ -279,7 +281,7 @@ figure {
   font-size: 14px;
   text-transform: uppercase;
   color: var(--text-colour, #ffff00);
-  mix-blend-mode: difference;
+  mix-blend-mode: var(--text-blend-mode, normal);
 }
 
 .reload-badge:hover {
@@ -328,7 +330,7 @@ figure {
 
 .media-item.video-embed .play-badge-text {
   color: var(--text-colour, #ffff00);
-  mix-blend-mode: difference;
+  mix-blend-mode: var(--text-blend-mode, normal);
   font-size: 14px;
   letter-spacing: 0.16em;
   text-align: center;
@@ -361,7 +363,7 @@ figure {
   background: transparent;
   border: none;
   color: var(--text-colour, #ffff00);
-  mix-blend-mode: difference;
+  mix-blend-mode: var(--text-blend-mode, normal);
   font-family: inherit;
   font-size: 14px;
   letter-spacing: 0.1em;
@@ -389,7 +391,7 @@ figure {
   padding: 0 32px;
   z-index: 1000;
   pointer-events: none; /* Container ignores events */
-  mix-blend-mode: difference;
+  mix-blend-mode: var(--text-blend-mode, normal);
   background: transparent;
   color: var(--text-colour, #ffff00); /* yellow -> appears blue-ish with difference on white */
   text-transform: uppercase;
@@ -404,7 +406,7 @@ figure {
   color: inherit;
   font-family: inherit;
   font-size: var(--ui-text-size, 18px);
-  font-weight: 500;
+  font-weight: inherit;
   padding: 0;
   cursor: pointer;
   letter-spacing: 0.12em;
@@ -456,14 +458,15 @@ body.info-colour-overlay::after {
   content: '';
   position: fixed;
   inset: 0;
-  background: var(--info-overlay-colour, rgba(0, 0, 0, 0.3));
+  background-color: var(--info-overlay-color, #000000);
+  mix-blend-mode: var(--info-overlay-blend-mode, normal);
   pointer-events: none;
   z-index: 899;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 body.info-open.info-colour-overlay::after {
-  opacity: 1;
+  opacity: var(--info-overlay-opacity, 0.75);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -485,7 +488,7 @@ body.info-open.info-colour-overlay::after {
   padding: 48px 64px;
   overflow: hidden;
   /* blend-mode on container: yellow text -> blue against off-white, same as nav */
-  mix-blend-mode: difference;
+  mix-blend-mode: var(--text-blend-mode, normal);
   /* Let mouse events pass through to the canvas so panning still works */
   pointer-events: none;
 }
@@ -500,7 +503,7 @@ body.info-open.info-colour-overlay::after {
   word-break: break-word;
   -webkit-hyphens: auto;
   font-family: inherit;
-  font-weight: 300;
+  font-weight: inherit;
   text-transform: uppercase;
   color: var(--text-colour, #ffff00); /* yellow blended via parent difference = blue on white bg */
   line-height: 1.15;
@@ -540,9 +543,9 @@ body.info-open.info-colour-overlay::after {
   right: 0;
   z-index: 2000;
   pointer-events: none;
-  mix-blend-mode: difference;
+  mix-blend-mode: var(--text-blend-mode, normal);
   color: var(--text-colour, #ffff00);
-  font-family: "JetBrains Mono", "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace;
+  font-family: var(--font-family);
   font-size: 14px;
   line-height: 1;
 }
@@ -641,7 +644,7 @@ body.info-open.info-colour-overlay::after {
 #category-panel {
   z-index: 1000;
   pointer-events: none;
-  mix-blend-mode: difference;
+  mix-blend-mode: var(--text-blend-mode, normal);
   color: var(--text-colour, #ffff00);
   font-family: inherit;
   font-size: var(--ui-text-size, 18px);
@@ -659,7 +662,7 @@ body.info-open.info-colour-overlay::after {
 #layout-panel {
   z-index: 1000;
   pointer-events: none;
-  mix-blend-mode: difference;
+  mix-blend-mode: var(--text-blend-mode, normal);
   color: var(--text-colour, #ffff00);
   font-family: inherit;
   font-size: var(--ui-text-size, 18px);
@@ -696,18 +699,7 @@ body.info-open.info-colour-overlay::after {
 
 /* ── Config: No Blend Mode ──────────────────────────────────────────────────── */
 
-body.no-blend-mode .info-overlay,
-body.no-blend-mode #layout-panel,
-body.no-blend-mode #category-panel,
-body.no-blend-mode .nav,
-body.no-blend-mode .nav-btn,
-body.no-blend-mode .layout-title,
-body.no-blend-mode .site-title,
-body.no-blend-mode .zone-container,
-body.no-blend-mode .media-item .play-badge-text,
-body.no-blend-mode .yt-reset-btn {
-  mix-blend-mode: normal !important;
-}
+
 
 body.no-shadow .media-item {
   box-shadow: none;
@@ -725,7 +717,7 @@ body.no-shadow .media-item {
   flex-direction: column;
   gap: 4px;
   pointer-events: none;
-  mix-blend-mode: difference;
+  mix-blend-mode: var(--text-blend-mode, normal);
   color: var(--text-colour, #ffff00);
   font-family: inherit;
   font-size: var(--ui-text-size, 18px);
@@ -791,66 +783,13 @@ body.bg-gradient-animated {
   100% { background-position: 0% 50%; }
 }
 
-/* Two drifting blurred radial blobs (mesh gradient feel) */
-body.bg-blob-mesh::before,
-body.bg-blob-mesh::after {
-  content: "";
-  position: fixed;
-  width: 60vmax;
-  height: 60vmax;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.55;
-  pointer-events: none;
-  z-index: 0;
-}
 
-body.bg-blob-mesh::before {
-  background: var(--bg-from, var(--bg-colour));
-  top: -20vmax;
-  left: -10vmax;
-  animation: blob-drift-a 25s ease-in-out alternate infinite;
-}
-
-body.bg-blob-mesh::after {
-  background: var(--bg-to, #e0e0e0);
-  bottom: -20vmax;
-  right: -10vmax;
-  animation: blob-drift-b 28s ease-in-out alternate infinite;
-}
-
-@keyframes blob-drift-a {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(8vw, 6vh) scale(1.1); }
-}
-
-@keyframes blob-drift-b {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(-6vw, -8vh) scale(1.15); }
-}
-
-/* Noise/grain overlay — layered on top of any background effect.
-   The SVG grain filter is injected into <body> by JS (applyTheme).
-   body.bg-noise activates the ::before pseudo-element. */
-body.bg-noise::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1;            /* above bg blobs (z:0), below stage-wrapper */
-  pointer-events: none;
-  filter: url(#grain);
-  opacity: var(--noise-opacity, 0);
-  will-change: opacity;
-  /* Ensure blob-mesh ::before/::after don't conflict (they are on body, this is too) */
-}
-
-/* When blob-mesh + noise are both active, we can't use body::before for both.
-   The blob uses ::before/::after; noise needs its own element.
-   JS injects a <div id="grain-overlay"> instead when blob-mesh is active. */
+/* Noise/grain overlay — injected by JS as a real DOM element inside .viewport.
+   Stacking order: background (body) → grain (#grain-overlay, z:0) → images (#stage-wrapper, z:1) → text (nav z:1000) */
 #grain-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
   filter: url(#grain);
   opacity: var(--noise-opacity, 0);
@@ -861,25 +800,31 @@ body.bg-noise::before {
 /* Applied as class on the .zone-container and .nav elements */
 
 body.text-fx-color-cycle .zone-container,
-body.text-fx-color-cycle .nav {
-  animation: text-color-cycle 8s linear infinite;
+body.text-fx-color-cycle .nav,
+body.text-fx-color-cycle .footer,
+body.text-fx-color-cycle #info-overlay,
+body.text-fx-color-cycle #preloader {
+  animation: text-color-cycle var(--text-cycle-speed, 8s) linear infinite;
 }
 
 @keyframes text-color-cycle {
-  0%   { color: var(--text-colour); }
-  33%  { color: hsl(60, 100%, 70%); }
-  66%  { color: hsl(30, 100%, 70%); }
-  100% { color: var(--text-colour); }
+  0%   { color: var(--text-cycle-1, var(--text-colour)); }
+  33%  { color: var(--text-cycle-2, hsl(60, 100%, 70%)); }
+  66%  { color: var(--text-cycle-3, hsl(30, 100%, 70%)); }
+  100% { color: var(--text-cycle-1, var(--text-colour)); }
 }
 
 body.text-fx-gradient .zone-container *,
-body.text-fx-gradient .nav * {
-  background: linear-gradient(90deg, var(--text-colour), hsl(30, 100%, 70%), var(--text-colour));
+body.text-fx-gradient .nav *,
+body.text-fx-gradient .footer *,
+body.text-fx-gradient #info-overlay *,
+body.text-fx-gradient #preloader * {
+  background: linear-gradient(90deg, var(--text-gradient-1, var(--text-colour)), var(--text-gradient-2, hsl(30, 100%, 70%)), var(--text-gradient-1, var(--text-colour)));
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: text-gradient-shift 5s linear infinite;
+  animation: text-gradient-shift var(--text-gradient-speed, 5s) linear infinite;
 }
 
 @keyframes text-gradient-shift {
@@ -889,29 +834,41 @@ body.text-fx-gradient .nav * {
 
 /* hue-rotate: works best in Chromium. Graceful fallback = no animation. */
 body.text-fx-hue-rotate .zone-container,
-body.text-fx-hue-rotate .nav {
-  animation: text-hue-rotate 6s linear infinite;
+body.text-fx-hue-rotate .nav,
+body.text-fx-hue-rotate .footer,
+body.text-fx-hue-rotate #info-overlay,
+body.text-fx-hue-rotate #preloader {
+  animation: text-hue-rotate var(--text-hue-speed, 6s) linear infinite;
 }
 
 @keyframes text-hue-rotate {
-  from { filter: hue-rotate(0deg); }
-  to   { filter: hue-rotate(360deg); }
+  from { filter: hue-rotate(0deg); color: var(--text-hue-base, var(--text-colour)); }
+  to   { filter: hue-rotate(360deg); color: var(--text-hue-base, var(--text-colour)); }
 }
 
 /* ── Text Animation: Hover-Only Trigger (Phase 12.5 Bug 5) ──────────────────── */
 /* When body.text-anim-hover is present, animations only activate on :hover */
 
 body.text-anim-hover.text-fx-color-cycle .zone-container,
-body.text-anim-hover.text-fx-color-cycle .nav {
+body.text-anim-hover.text-fx-color-cycle .nav,
+body.text-anim-hover.text-fx-color-cycle .footer,
+body.text-anim-hover.text-fx-color-cycle #info-overlay,
+body.text-anim-hover.text-fx-color-cycle #preloader {
   animation: none;
 }
 body.text-anim-hover.text-fx-color-cycle .zone-container:hover,
-body.text-anim-hover.text-fx-color-cycle .nav:hover {
-  animation: text-color-cycle 8s linear infinite;
+body.text-anim-hover.text-fx-color-cycle .nav:hover,
+body.text-anim-hover.text-fx-color-cycle .footer:hover,
+body.text-anim-hover.text-fx-color-cycle #info-overlay:hover,
+body.text-anim-hover.text-fx-color-cycle #preloader:hover {
+  animation: text-color-cycle var(--text-cycle-speed, 8s) linear infinite;
 }
 
 body.text-anim-hover.text-fx-gradient .zone-container *,
-body.text-anim-hover.text-fx-gradient .nav * {
+body.text-anim-hover.text-fx-gradient .nav *,
+body.text-anim-hover.text-fx-gradient .footer *,
+body.text-anim-hover.text-fx-gradient #info-overlay *,
+body.text-anim-hover.text-fx-gradient #preloader * {
   background: none;
   -webkit-background-clip: unset;
   -webkit-text-fill-color: unset;
@@ -919,39 +876,55 @@ body.text-anim-hover.text-fx-gradient .nav * {
   animation: none;
 }
 body.text-anim-hover.text-fx-gradient .zone-container:hover *,
-body.text-anim-hover.text-fx-gradient .nav:hover * {
-  background: linear-gradient(90deg, var(--text-colour), hsl(30, 100%, 70%), var(--text-colour));
+body.text-anim-hover.text-fx-gradient .nav:hover *,
+body.text-anim-hover.text-fx-gradient .footer:hover *,
+body.text-anim-hover.text-fx-gradient #info-overlay:hover *,
+body.text-anim-hover.text-fx-gradient #preloader:hover * {
+  background: linear-gradient(90deg, var(--text-gradient-1, var(--text-colour)), var(--text-gradient-2, hsl(30, 100%, 70%)), var(--text-gradient-1, var(--text-colour)));
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: text-gradient-shift 5s linear infinite;
+  animation: text-gradient-shift var(--text-gradient-speed, 5s) linear infinite;
 }
 
 body.text-anim-hover.text-fx-hue-rotate .zone-container,
-body.text-anim-hover.text-fx-hue-rotate .nav {
+body.text-anim-hover.text-fx-hue-rotate .nav,
+body.text-anim-hover.text-fx-hue-rotate .footer,
+body.text-anim-hover.text-fx-hue-rotate #info-overlay,
+body.text-anim-hover.text-fx-hue-rotate #preloader {
   animation: none;
   filter: none;
 }
 body.text-anim-hover.text-fx-hue-rotate .zone-container:hover,
-body.text-anim-hover.text-fx-hue-rotate .nav:hover {
-  animation: text-hue-rotate 6s linear infinite;
+body.text-anim-hover.text-fx-hue-rotate .nav:hover,
+body.text-anim-hover.text-fx-hue-rotate .footer:hover,
+body.text-anim-hover.text-fx-hue-rotate #info-overlay:hover,
+body.text-anim-hover.text-fx-hue-rotate #preloader:hover {
+  animation: text-hue-rotate var(--text-hue-speed, 6s) linear infinite;
 }
 
 /* ── Accessibility: Reduced Motion ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  body.bg-gradient-animated,
-  body.bg-blob-mesh::before,
-  body.bg-blob-mesh::after {
+  body.bg-gradient-animated {
     animation: none;
   }
 
   body.text-fx-color-cycle .zone-container,
   body.text-fx-color-cycle .nav,
+  body.text-fx-color-cycle .footer,
+  body.text-fx-color-cycle #info-overlay,
+  body.text-fx-color-cycle #preloader,
   body.text-fx-gradient .zone-container *,
   body.text-fx-gradient .nav *,
+  body.text-fx-gradient .footer *,
+  body.text-fx-gradient #info-overlay *,
+  body.text-fx-gradient #preloader *,
   body.text-fx-hue-rotate .zone-container,
-  body.text-fx-hue-rotate .nav {
+  body.text-fx-hue-rotate .nav,
+  body.text-fx-hue-rotate .footer,
+  body.text-fx-hue-rotate #info-overlay,
+  body.text-fx-hue-rotate #preloader {
     animation: none;
     filter: none;
     -webkit-text-fill-color: unset;
@@ -972,11 +945,45 @@ body.fx-desaturated .media-item video {
 
 body.fx-duotone .media-item img,
 body.fx-duotone .media-item video {
-  filter: grayscale(1) sepia(1) hue-rotate(var(--duotone-hue, 200deg)) saturate(var(--duotone-sat, 2));
+  filter: url(#duotone-filter);
   transition: filter 0.4s ease;
 }
 
-/* Hover reveal: show full colour on hover (when fx mode is active) */
+body.fx-blurred .media-item img,
+body.fx-blurred .media-item video {
+  filter: blur(6px);
+  transition: filter 0.4s ease;
+}
+
+/* Hover reveal: show full colour on hover / drag */
+body.fx-hover-normal.fx-desaturated .media-item:hover img,
+body.fx-hover-normal.fx-desaturated .media-item:hover video,
+body.fx-hover-normal.fx-desaturated .media-item.is-dragging img,
+body.fx-hover-normal.fx-desaturated .media-item.is-dragging video,
+body.fx-hover-normal.fx-duotone .media-item:hover img,
+body.fx-hover-normal.fx-duotone .media-item:hover video,
+body.fx-hover-normal.fx-duotone .media-item.is-dragging img,
+body.fx-hover-normal.fx-duotone .media-item.is-dragging video,
+body.fx-hover-normal.fx-blurred .media-item:hover img,
+body.fx-hover-normal.fx-blurred .media-item:hover video,
+body.fx-hover-normal.fx-blurred .media-item.is-dragging img,
+body.fx-hover-normal.fx-blurred .media-item.is-dragging video {
+  filter: none !important;
+}
+
+/* Enlarge scale effects */
+body.fx-hover-enlarge .media-item {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease-out, filter 0.4s ease;
+}
+body.fx-hover-enlarge .media-item:hover,
+body.fx-hover-enlarge .media-item.is-dragging {
+  transform: scale(1.05);
+}
+body.fx-hover-enlarge .media-item.is-dragging {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease; /* preserve scale animation but remove box-shadow delay during drag */
+}
+
+/* Legacy hover reveal support */
 body.fx-hover-reveal.fx-desaturated .media-item:hover img,
 body.fx-hover-reveal.fx-desaturated .media-item:hover video,
 body.fx-hover-reveal.fx-duotone .media-item:hover img,
@@ -987,7 +994,7 @@ body.fx-hover-reveal.fx-duotone .media-item:hover video {
 /* Click-sticky: is-coloured = item shown in full colour */
 body[class*="fx-"] .media-item.is-coloured img,
 body[class*="fx-"] .media-item.is-coloured video {
-  filter: none;
+  filter: none !important;
 }
 
 /* Phase 14: Touch-reveal on mobile (tap to colour) */
@@ -1088,7 +1095,7 @@ body.is-slideshow .media-item video {
   left: 32px; /* fallback */
   bottom: 16px;
   z-index: 1100;
-  mix-blend-mode: difference;
+  mix-blend-mode: var(--text-blend-mode, normal);
   color: var(--text-colour, #ffff00);
   background: transparent;
   border: none;
@@ -1128,27 +1135,39 @@ dialog.lightbox-dialog {
   border: none;
   background: transparent;
   padding: 0;
-  margin: auto;
-  max-width: 90vw;
-  max-height: 90vh;
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
   outline: none;
-  overflow: visible;
+  overflow: hidden;
+  box-sizing: border-box;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
 }
-dialog.lightbox-dialog::backdrop {
-  background-color: rgba(0, 0, 0, 0);
-  backdrop-filter: none;
-  transition: background-color 0.4s ease, backdrop-filter 0.4s ease, display 0.4s allow-discrete, overlay 0.4s allow-discrete;
-}
-dialog.lightbox-dialog.backdrop-darken::backdrop {
-  background-color: rgba(0, 0, 0, 0.75);
-}
-dialog.lightbox-dialog.backdrop-blur::backdrop {
-  background-color: rgba(0, 0, 0, 0.3);
+dialog.lightbox-dialog.backdrop-blur {
   backdrop-filter: blur(12px);
 }
-dialog.lightbox-dialog.backdrop-none::backdrop {
-  background-color: rgba(0, 0, 0, 0);
-  backdrop-filter: none;
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: var(--lightbox-overlay-color, rgba(0, 0, 0, 0.75));
+  opacity: 0;
+  mix-blend-mode: var(--lightbox-overlay-blend-mode, normal);
+  z-index: 9998;
+  pointer-events: auto;
+  transition: opacity 0.4s ease, display 0.4s allow-discrete;
+  transition-behavior: allow-discrete;
+  display: none;
+}
+.lightbox-overlay.is-open {
+  display: block;
+  opacity: var(--lightbox-overlay-opacity, 0.75);
+  @starting-style {
+    opacity: 0;
+  }
 }
 .lightbox-content {
   display: flex;
@@ -1157,6 +1176,17 @@ dialog.lightbox-dialog.backdrop-none::backdrop {
   width: 100%;
   height: 100%;
   position: relative;
+  z-index: 2;
+}
+.lightbox-media-container {
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 90vw;
+  max-height: 90vh;
 }
 .lightbox-image,
 .lightbox-video {
@@ -1201,30 +1231,25 @@ dialog.lightbox-dialog.backdrop-none::backdrop {
 }
 .lightbox-nav:hover,
 .lightbox-close:hover {
-  text-decoration: underline;
+  text-decoration: none !important;
   opacity: 0.8;
 }
 dialog.lightbox-dialog {
   opacity: 0;
-  transform: scale(0.92);
-  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), display 0.4s allow-discrete, overlay 0.4s allow-discrete;
+  transition: opacity 0.4s ease, display 0.4s allow-discrete, overlay 0.4s allow-discrete;
   transition-behavior: allow-discrete;
 }
 dialog.lightbox-dialog[open] {
   opacity: 1;
-  transform: scale(1);
-  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), display 0.4s allow-discrete, overlay 0.4s allow-discrete;
+  transition: opacity 0.4s ease, display 0.4s allow-discrete, overlay 0.4s allow-discrete;
   transition-behavior: allow-discrete;
   @starting-style {
     opacity: 0;
-    transform: scale(0.92);
   }
 }
-dialog.lightbox-dialog[open]::backdrop {
-  @starting-style {
-    background-color: rgba(0, 0, 0, 0);
-    backdrop-filter: none;
-  }
+dialog.lightbox-dialog[open] .lightbox-media-container {
+  opacity: 1;
+  transform: scale(1);
 }
 #stage.stage-animating {
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;

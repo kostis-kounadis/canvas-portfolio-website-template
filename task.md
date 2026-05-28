@@ -1,8 +1,7 @@
 # Canvas Portfolio Template — Task Tracker
 
-> **Status**: ✅ Phase 13.5 COMPLETED. Next: Phase 14 — Mobile Polish & Final QA.
-> **Known issues logged**: Phase 12.5 added to capture GUI Setup Tool bugs found after Phase 11.    
-> **Branch**: `main` (v1 template)  
+> **Status**: ✅ React GUI Redesign (feature/gui-redesign) COMPLETED and Visually Audited.
+> **Branch**: `feature/gui-redesign`
 > **Source**: copy from `_portfolio_v7_DEPLOYED` (no actual photos)
 
 ---
@@ -332,5 +331,60 @@
 - `[ ]` Create branch `feature/infinite-grid-motion-one` from `main@v1.0.0`
 - `[ ]` Create branch `feature/gui-drag-modules` from `main@v1.0.0`
 - `[x]` Create branch `feature/gui-redesign` from `main@v1.0.0` — full visual redesign of the GUI Setup Tool (see Post-v1 notes in implementation_plan.md)
-- `[ ]` Develop each branch independently
+  - `[x]` Migrate legacy vanilla GUI to high-performance React + Vite + Tailwind CSS (`setup-app/`)
+  - `[x]` Build robust Zustand-driven config store with `BroadcastChannel` live preview hot-reloads
+  - `[x]` Map shadcn/base-ui design tokens dynamically via Tailwind CSS variable extends
+  - `[x]` Fix state-based checkbox, switch, and radio control rendering using valid `data-[checked]` bindings
+  - `[x]` Upgrade background and click actions to premium expandable, selectable card grids with hover transitions
+  - `[x]` Implement gorgeous interactive 3x3 Modules Canvas Grid positioning preview diagram
+  - `[x]` Add "Live Preview" navigation shortcut in the breadcrumb header
+  - `[x]` Restore clean documentation tabs (Favicon guides & Help FAQs) using beautiful ordered and bulleted lists
+- `[x]` Visually test and QA audit all forms, settings, and states on local server
 - `[ ]` Owner manual testing of both grid branches → merge winner into `main`
+
+---
+
+## Post-Redesign Follow-up: Hotfixes & Image Blend Mode
+
+- `[x]` **Fix Image Click Actions (Lightbox & Canvas Expand):**
+  - `[x]` Remove `event.preventDefault()` from `mousedown` handler in `main.js` (line 2150).
+  - `[x]` Test clicking to verify that lightbox and canvas-expand overlays open immediately.
+- `[x]` **Refactor & Fix Hover State behavior:**
+  - `[x]` Modify `applyImageEffects` in `main.js` to always add `"fx-hover-normal"` class to `body`.
+  - `[x]` If `fx.enlargeOnHover` is `true`, add `"fx-hover-enlarge"` class to `body`.
+  - `[x]` In `style.css`, verify `.fx-hover-enlarge` scales inner `img`/`video` properly without card scaling issues.
+- `[x]` **Implement Image Blend Mode:**
+  - `[x]` Update `imageEffects` type inside `SiteConfig` in `setup-app/src/lib/store.ts` with `enlargeOnHover` and `blendMode`.
+  - `[x]` Add `"enlargeOnHover": false` and `"blendMode": "normal"` default values to `imageEffects` in `config.json`.
+  - `[x]` Read `fx.blendMode` in `applyImageEffects` in `main.js` and set `--image-blend-mode` custom property on root.
+  - `[x]` Apply `mix-blend-mode: var(--image-blend-mode, normal);` to `.media-item img, .media-item video` in `style.css`.
+  - `[x]` Add `"Slightly Enlarge on Hover"` Switch and `"Image Blend Mode"` dropdown Select cards inside `LayoutsForm` in `setup-app/src/components/Forms.tsx`.
+- `[x]` **Recompile & Restart:**
+  - `[x]` Run `npm run build` in `setup-app/` to compile updates.
+  - `[x]` Restart the setup server on Port 3000 to verify all options in real-time.
+
+---
+
+## Post-Redesign Overhaul: Auto-Save, Hot-Reloads, & Fullscreen Sticky Lightbox
+
+- `[x]` **Engineered Zero-Friction Saving Model (Auto-Save):**
+  - `[x]` Implement a 400ms debounced auto-save to disk in `setup-app/src/lib/store.ts`.
+  - `[x]` Automatically trigger configuration auto-saving in the background on every slider, color-picker, or switch change.
+  - `[x]` Add a visual header auto-save indicator ("All changes saved to config.json" vs "Auto-saving to disk...") in `Layout.tsx`.
+  - `[x]` Force hard saving of dirty drafts on clicking "Rebuild Site" before compilation is triggered, guaranteeing correct compiles.
+- `[x]` **Created Instant Layout & Modules Hot-Reloads:**
+  - `[x]` Enhance `window.applyConfig` in `main.js` to call `applyLayout()` and toggle zoom control footer visibility dynamically.
+  - `[x]` Hot-reload spacing, gaps, row height, and modules toggle dynamically without full page refresh.
+- `[x]` **Overhauled Fullscreen Sticky Lightbox layout:**
+  - `[x]` Set `<dialog id="lightbox">` to cover the entire screen viewport (`100vw` by `100vh`) in `style.css`.
+  - `[x]` Remove `transform: scale(0.92)` from the dialog element itself to avoid transformed containing block overrides for child navigation elements.
+  - `[x]` Position navigation arrows (`◁`, `▷`) and close buttons `[×]` strictly at the viewport edges (`left: 32px` / `right: 32px` / `top: 32px`) as fixed/absolute viewport elements.
+  - `[x]` Put image zooming `transform` on `.lightbox-media-container` internally, preventing arrow misalignment.
+  - `[x]` Remove underlines from hover states of close and arrow controls in `style.css`.
+  - `[x]` Add click event listener checking `.lightbox-overlay` and `.lightbox-content` class to close lightbox when clicking outside the media element.
+- `[x]` **Added Advanced Lightbox Backdrop Customisation:**
+  - `[x]` Recreate `.lightbox-overlay` DOM container and append it directly behind `.lightbox-content` inside `main.js`.
+  - `[x]` Support dynamic properties (`--lightbox-overlay-color`, `--lightbox-overlay-opacity`, and `--lightbox-overlay-blend-mode`) on root.
+  - `[x]` Add overlay color picker, opacity slider, and blend mode Select dropdown inside `LayoutsForm` under click settings conditional card in `Forms.tsx`.
+
+

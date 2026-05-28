@@ -45,16 +45,26 @@ const MIME = {
 };
 
 function serveFile(filePath, res) {
-  if (!fs.existsSync(filePath)) {
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('404 Not Found: ' + filePath);
-    return;
-  }
-  const ext  = path.extname(filePath).toLowerCase();
-  const mime = MIME[ext] || 'application/octet-stream';
-  const data = fs.readFileSync(filePath);
-  res.writeHead(200, { 'Content-Type': mime });
-  res.end(data);
+  fs.stat(filePath, (err, stat) => {
+    if (err || !stat.isFile()) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('404 Not Found');
+      return;
+    }
+    const ext  = path.extname(filePath).toLowerCase();
+    const mime = MIME[ext] || 'application/octet-stream';
+    let cacheControl = 'public, max-age=300';
+    if (ext === '.html' || ext === '.json' || ext === '.js') {
+      cacheControl = 'no-cache, no-store, must-revalidate';
+    }
+    
+    res.writeHead(200, {
+      'Content-Type': mime,
+      'Content-Length': stat.size,
+      'Cache-Control': cacheControl,
+    });
+    fs.createReadStream(filePath).pipe(res);
+  });
 }
 
 function readBody(req) {

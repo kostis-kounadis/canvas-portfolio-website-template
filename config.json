@@ -1,14 +1,17 @@
 {
   "site": {
-    "title": "My Portfolio",
-    "email": "hello@example.com",
+    "title": "Tester",
+    "email": "test@test.com",
     "url": "https://example.com",
-    "infoText": "Your name — a short description of what you do and what this portfolio contains. Supports **bold**, _italic_, and [links](https://example.com).\n\nFor commissions and collaborations, feel free to reach out.",
+    "infoText": "This is a longer **text**. To try out a __few__ things and [links](test.com).",
     "author": "Your Name"
   },
   "seo": {
     "metaDescription": "Portfolio of projects, experiments and media.",
-    "keywords": ["portfolio", "design"],
+    "keywords": [
+      "portfolio",
+      "design"
+    ],
     "ogImage": "og-image.jpg",
     "twitterHandle": "@handle",
     "canonicalUrl": "https://example.com/",
@@ -18,35 +21,102 @@
   },
   "ui": {
     "modules": {
-      "title":      { "visible": true,  "position": "top-left",    "mode": "text", "text": "My Portfolio", "logoFile": "", "icon": { "enabled": false, "file": "", "position": "before" } },
-      "email":      { "visible": true,  "position": "top-right" },
-      "info":       { "visible": true,  "position": "top-right" },
-      "categories": { "visible": true,  "position": "middle-left" },
-      "layouts":    { "visible": true,  "position": "middle-right" }
+      "title": {
+        "visible": false,
+        "position": "top-left",
+        "mode": "text",
+        "text": "My Portfolio",
+        "logoFile": "",
+        "icon": {
+          "enabled": false,
+          "file": "",
+          "position": "before"
+        }
+      },
+      "email": {
+        "visible": false,
+        "position": "top-left"
+      },
+      "info": {
+        "visible": false,
+        "position": "top-right",
+        "buttonStyle": "static",
+        "overlayEffect": "none",
+        "overlayColor": "#000000",
+        "overlayOpacity": 0.75,
+        "overlayBlendMode": "normal"
+      },
+      "categories": {
+        "visible": false,
+        "position": "top-right",
+        "behaviour": "focus-on-click",
+        "layout": "horizontal",
+        "alignment": "right",
+        "separator": " ",
+        "spacing": 0
+      },
+      "layouts": {
+        "visible": false,
+        "position": "middle-right",
+        "layout": "horizontal",
+        "alignment": "center",
+        "separator": " ",
+        "spacing": 0
+      }
     },
-    "zoom":         { "visible": true },
-    "textSize":     "18px",
+    "zoom": {
+      "visible": false
+    },
+    "textSize": "18px",
     "fontEmbedCode": ""
   },
   "theme": {
-    "backgroundColor": "#f7f5f0",
-    "textColor": "#ffff00",
+    "backgroundColor": "#ffffff",
+    "textColor": "#f7d918",
     "blendMode": true,
     "textAnimation": "none",
     "textAnimationTrigger": "always",
     "backgroundEffect": "solid",
-    "backgroundGradientFrom": "#f7f5f0",
-    "backgroundGradientTo": "#e0e0e0",
-    "noiseGrain": { "enabled": false, "opacity": 0.04 },
-    "imageShadow": { "enabled": true, "opacity": 0.06, "blur": 30, "color": "#000000" }
+    "backgroundGradientFrom": "#ff4d9a",
+    "backgroundGradientTo": "#fde5ff",
+    "noiseGrain": {
+      "enabled": true,
+      "opacity": 0.05,
+      "size": 1
+    },
+    "imageShadow": {
+      "enabled": false,
+      "opacity": 0.1,
+      "blur": 11,
+      "color": "#000000"
+    }
   },
   "layouts": {
-    "available": ["random", "rows", "stacks"],
+    "available": [
+      "random",
+      "rows",
+      "stacks"
+    ],
     "default": "random",
-    "labels": ["▩▩▩", "▤▤▤", "▧▧▧"],
-    "random":  { "scarcity": 520, "overlapRatio": 0.2, "draggable": true },
-    "rows":    { "rowHeight": 280, "gap": 24 },
-    "stacks":  { "spacing": 1000 }
+    "draggable": true,
+    "labels": [
+      "▩▩▩",
+      "▤▤▤",
+      "▧▧▧"
+    ],
+    "random": {
+      "scarcity": 520,
+      "overlapRatio": 0.2,
+      "draggable": true
+    },
+    "rows": {
+      "rowHeight": 280,
+      "gap": 24
+    },
+    "stacks": {
+      "spacing": 1000,
+      "depthOrder": "front-to-back"
+    }
   },
   "categories": {
     "behaviour": "hide-on-click",
@@ -54,15 +124,27 @@
     "viewAllLabel": "ALL"
   },
   "imageEffects": {
-    "initialState": "colour",
-    "hoverReveal": false,
+    "initialState": "desaturated",
+    "duotoneColor1": "#000000",
+    "duotoneColor2": "#ffffff",
+    "enlargeOnHover": false,
+    "blendMode": "multiply",
     "clickMode": "none",
     "clickStickyMode": "multi",
     "blurOthersOnClick": false
   },
   "imageClick": {
-    "lightbox": { "enabled": false, "backdropEffect": "darken" },
-    "canvasExpand": { "enabled": false }
+    "lightbox": {
+      "enabled": true,
+      "backdropEffect": "darken",
+      "overlayColor": "#000000",
+      "overlayBlendMode": "normal",
+      "overlayOpacity": 1
+    },
+    "canvasExpand": {
+      "enabled": false
+    },
+    "mode": "lightbox"
   },
   "info": {
     "overlayEffect": "none",
@@ -71,5 +153,24 @@
   },
   "mobile": {
     "defaultMode": "canvas"
+  },
+  "typography": {
+    "fontMode": "google",
+    "googleEmbedCode": "",
+    "localFontUrl": "",
+    "baseSize": "15px",
+    "textColor": "#ff5b24",
+    "gradientColor1": "#000000",
+    "gradientColor2": "#e0e9f5",
+    "gradientSpeed": 7,
+    "cycleColor1": "#000000",
+    "cycleColor2": "#ffff00",
+    "cycleColor3": "#00ff00",
+    "cycleSpeed": 8,
+    "hueRotateBase": "#0066ff",
+    "hueRotateSpeed": 2,
+    "blendMode": "normal",
+    "textAnimation": "none",
+    "textAnimationTrigger": "always"
   }
 }

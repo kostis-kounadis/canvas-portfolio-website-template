@@ -22,33 +22,47 @@ export interface SiteConfig {
     modules: {
       title: { visible: boolean; position: string; mode: string; text: string; logoFile: string; icon: { enabled: boolean; file: string; position: string } };
       email: { visible: boolean; position: string };
-      info: { visible: boolean; position: string };
-      categories: { visible: boolean; position: string };
-      layouts: { visible: boolean; position: string };
+      info: { visible: boolean; position: string; buttonStyle?: string; overlayEffect?: string; overlayColor?: string; overlayOpacity?: number; overlayBlendMode?: string; };
+      categories: { visible: boolean; position: string; behaviour?: string; layout?: string; alignment?: string; separator?: string; spacing?: number };
+      layouts: { visible: boolean; position: string; layout?: string; alignment?: string; separator?: string; spacing?: number };
     };
     zoom: { visible: boolean };
-    textSize: string;
-    fontEmbedCode: string;
+  };
+  typography: {
+    fontMode: string;
+    googleEmbedCode: string;
+    localFontUrl: string;
+    baseSize: string;
+    textColor: string;
+    gradientColor1: string;
+    gradientColor2: string;
+    gradientSpeed: number;
+    cycleColor1: string;
+    cycleColor2: string;
+    cycleColor3: string;
+    cycleSpeed: number;
+    hueRotateBase: string;
+    hueRotateSpeed: number;
+    blendMode: string | boolean;
+    textAnimation: string;
+    textAnimationTrigger: string;
   };
   theme: {
     backgroundColor: string;
-    textColor: string;
-    blendMode: boolean;
-    textAnimation: string;
-    textAnimationTrigger: string;
     backgroundEffect: string;
     backgroundGradientFrom: string;
     backgroundGradientTo: string;
-    noiseGrain: { enabled: boolean; opacity: number };
+    noiseGrain: { enabled: boolean; opacity: number; size: number };
     imageShadow: { enabled: boolean; opacity: number; blur: number; color: string };
   };
   layouts: {
     available: string[];
     default: string;
     labels: string[];
-    random: { scarcity: number; overlapRatio: number; draggable: boolean };
+    draggable: boolean;
+    random: { scarcity: number; overlapRatio: number; draggable?: boolean };
     rows: { rowHeight: number; gap: number };
-    stacks: { spacing: number };
+    stacks: { spacing: number; depthOrder?: string };
   };
   categories: {
     behaviour: string;
@@ -57,13 +71,23 @@ export interface SiteConfig {
   };
   imageEffects: {
     initialState: string;
-    hoverReveal: boolean;
+    duotoneColor1?: string;
+    duotoneColor2?: string;
+    enlargeOnHover?: boolean;
+    blendMode?: string;
     clickMode: string;
     clickStickyMode: string;
     blurOthersOnClick: boolean;
   };
   imageClick: {
-    lightbox: { enabled: boolean; backdropEffect: string };
+    mode?: string;
+    lightbox: { 
+      enabled: boolean; 
+      backdropEffect: string;
+      overlayColor?: string;
+      overlayOpacity?: number;
+      overlayBlendMode?: string;
+    };
     canvasExpand: { enabled: boolean };
   };
   info: {
@@ -92,6 +116,7 @@ interface ConfigState {
 }
 
 let _guiChannel: BroadcastChannel | null = null;
+let _saveTimeout: any = null;
 try {
   _guiChannel = new BroadcastChannel('canvas-portfolio-config');
 } catch (_) { /* BroadcastChannel unsupported */ }
@@ -128,6 +153,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     updater(newConfig);
     
     set({ config: newConfig, isDirty: true });
+
+    // Debounced auto-save
+    if (_saveTimeout) clearTimeout(_saveTimeout);
+    _saveTimeout = setTimeout(() => {
+      get().saveConfig().catch(() => {});
+    }, 400);
 
     // Hot-reload
     if (_guiChannel) {

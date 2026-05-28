@@ -106,12 +106,26 @@ async function main() {
       const content = fs.readFileSync(videosTxtPath, 'utf8');
       const lines = content.split('\n');
       for (const line of lines) {
-        const match = line.match(/(?:youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/watch\?v=)([^"&?\s]+)/);
-        if (match) {
-          const videoId = match[1];
+        const ytMatch = line.match(/(?:youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/watch\?v=)([^"&?\s]+)/);
+        const vimeoMatch = line.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
+        if (ytMatch) {
+          const videoId = ytMatch[1];
           newItems.push({
             id: `video-yt-${videoId}`,
             type: 'video-embed',
+            provider: 'youtube',
+            videoId: videoId,
+            width: DISPLAY_WIDTH,
+            height: Math.round(DISPLAY_WIDTH / (16 / 9)),
+            group: group,
+            _name: `zzz-video-${videoId}`
+          });
+        } else if (vimeoMatch) {
+          const videoId = vimeoMatch[1];
+          newItems.push({
+            id: `video-vm-${videoId}`,
+            type: 'video-embed',
+            provider: 'vimeo',
             videoId: videoId,
             width: DISPLAY_WIDTH,
             height: Math.round(DISPLAY_WIDTH / (16 / 9)),

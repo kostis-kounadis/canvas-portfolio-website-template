@@ -1,4 +1,4 @@
-import { Fingerprint, Palette, LayoutTemplate, Layers, MousePointerClick, Globe, Rocket } from "lucide-react"
+import { Fingerprint, Palette, LayoutTemplate, Layers, Image as ImageIcon, Rocket, Image, HelpCircle } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -12,13 +12,14 @@ import {
 import { useConfigStore } from "@/lib/store"
 
 const navItems = [
-  { id: "identity", title: "Identity", icon: Fingerprint },
+  { id: "identity", title: "Identity & SEO", icon: Fingerprint },
   { id: "theme", title: "Theme & Styling", icon: Palette },
   { id: "layouts", title: "Layouts", icon: LayoutTemplate },
+  { id: "images", title: "Image Settings", icon: ImageIcon },
   { id: "modules", title: "Modules", icon: Layers },
-  { id: "interactions", title: "Interactions", icon: MousePointerClick },
-  { id: "seo", title: "SEO", icon: Globe },
+  { id: "favicon", title: "Favicon & Assets", icon: Image },
   { id: "deployment", title: "Deployment", icon: Rocket },
+  { id: "help", title: "Help & Guide", icon: HelpCircle },
 ]
 
 export function AppSidebar() {

@@ -77,6 +77,13 @@
     // layouts
     layout_names:    ["\u2569\u2569\u2569", "\u2564\u2564\u2564", "\u2567\u2567\u2567"],
     default_layout:  "random",
+    draggable:       true,
+    random_scarcity: 100,
+    random_overlap_ratio: 0.8,
+    rows_row_height: 280,
+    rows_gap: 24,
+    stacks_spacing: 1000,
+    stacks_depth_order: "front-to-back",
     // misc
     mobile_mode:     "canvas",
     ui_text_size:    "18px",
@@ -224,7 +231,7 @@
   // Random scattering with overlap rules
   function getRandomPosition(width, height, customBounds = null) {
     // Scarcity: large gutters, big stage
-    const margin = margin = 520;
+    const margin = siteConfig.random_scarcity !== undefined ? siteConfig.random_scarcity : 520;
     const minX = customBounds ? customBounds.minX : margin;
     const minY = customBounds ? customBounds.minY : margin;
     const maxX = (customBounds ? customBounds.maxX : STAGE_WIDTH) - width - margin;
@@ -295,10 +302,10 @@
 
   function getContentBounds() {
     if (!placedRects.length) return null;
-    let minX = minX = Infinity;
-    let minY = minY = Infinity;
-    let maxX = maxX = -Infinity;
-    let maxY = maxY = -Infinity;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
     for (const r of placedRects) {
       minX = Math.min(minX, r.x);
       minY = Math.min(minY, r.y);
@@ -315,18 +322,21 @@
     };
   }
 
-  // Preload thumbnails and images so tiles don't appear empty on first paint.
+  // Preload thumbnails — only used for video-embed thumbnails (external URLs).
+  // Local images are NOT preloaded here because createMediaElement already
+  // requests them; duplicate requests compete for HTTP connections and slow
+  // initial render.
   function preloadMedia() {
     if (!Array.isArray(window.mediaItems)) return;
     window.mediaItems.forEach((item) => {
       try {
-        if (item.type === "image") {
+        if (item.type === "video-embed" && item.videoId) {
           const img = new Image();
-          img.src = item.src;
-
-        } else if (item.type === "video-embed" && item.videoId) {
-          const img = new Image();
-          img.src = `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`;
+          if (item.provider === "vimeo") {
+            img.src = `https://vumbnail.com/${item.videoId}.jpg`;
+          } else {
+            img.src = `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`;
+          }
         }
       } catch (_e) {
         // best-effort; ignore individual preload failures
@@ -385,7 +395,9 @@
   // ── Nav: folder-driven category menu ───────────────────────────────────
 
   function toggleGroup(group, btnEl) {
-    const behaviour = siteConfig.categories_behaviour || "hide-on-click";
+    const cfg = window._siteConfigRaw || {};
+    const catCfg = (cfg.ui && cfg.ui.modules && cfg.ui.modules.categories) || {};
+    const behaviour = catCfg.behaviour || siteConfig.categories_behaviour || "hide-on-click";
     if (behaviour === "focus-on-click") {
       if (focusedGroup === group) {
         restoreAllGroups();
@@ -583,8 +595,6 @@
           siteConfig.title_icon_file     = mods.title.icon.file || "";
           siteConfig.title_icon_position = mods.title.icon.position || "before";
         }
-        // Allow overriding display text separately from site.title
-        if (mods.title.text) siteConfig.name = mods.title.text;
       }
       if (mods.email    != null) siteConfig.show_email      = mods.email.visible    !== false;
       if (mods.info     != null) siteConfig.show_info       = mods.info.visible     !== false;
@@ -605,6 +615,23 @@
     if (cfg.layouts) {
       if (Array.isArray(cfg.layouts.labels)) siteConfig.layout_names  = cfg.layouts.labels;
       if (cfg.layouts.default)               siteConfig.default_layout = cfg.layouts.default;
+      if (cfg.layouts.draggable !== undefined) {
+        siteConfig.draggable = cfg.layouts.draggable;
+      } else if (cfg.layouts.random && cfg.layouts.random.draggable !== undefined) {
+        siteConfig.draggable = cfg.layouts.random.draggable;
+      }
+      if (cfg.layouts.random) {
+        if (cfg.layouts.random.scarcity != null)     siteConfig.random_scarcity = cfg.layouts.random.scarcity;
+        if (cfg.layouts.random.overlapRatio != null) siteConfig.random_overlap_ratio = cfg.layouts.random.overlapRatio;
+      }
+      if (cfg.layouts.rows) {
+        if (cfg.layouts.rows.rowHeight != null)      siteConfig.rows_row_height = cfg.layouts.rows.rowHeight;
+        if (cfg.layouts.rows.gap != null)            siteConfig.rows_gap = cfg.layouts.rows.gap;
+      }
+      if (cfg.layouts.stacks) {
+        if (cfg.layouts.stacks.spacing != null)      siteConfig.stacks_spacing = cfg.layouts.stacks.spacing;
+        if (cfg.layouts.stacks.depthOrder != null)   siteConfig.stacks_depth_order = cfg.layouts.stacks.depthOrder;
+      }
     }
 
     // categories
@@ -667,12 +694,29 @@
   // without a full page reload. Accepts the full config.json object.
   window.applyConfig = function applyConfig(cfg) {
     if (!cfg || typeof cfg !== "object") return;
+    
+    // Store previous layout properties to detect actual layout changes
+    const prevScarcity = siteConfig.random_scarcity;
+    const prevOverlap = siteConfig.random_overlap_ratio;
+    const prevRowHeight = siteConfig.rows_row_height;
+    const prevRowGap = siteConfig.rows_gap;
+    const prevStacksSpacing = siteConfig.stacks_spacing;
+    const prevStacksDepth = siteConfig.stacks_depth_order;
+
     window._siteConfigRaw = cfg;
     mapConfig(cfg);
     applyConfigCSS();
     applyTheme(cfg);          // Phase 3: apply theme colours, bg effect, noise, shadow
     applyImageEffects(cfg);   // Phase 5: apply image effects
-    buildZoneContainers();    // Phase 2: rebuild zone containers for new positions
+    
+    // Rebuild zone containers and UI modules so positions & options update in real-time
+    buildZoneContainers();
+    
+    // Toggle zoom controls footer visibility dynamically
+    const footer = document.querySelector(".footer");
+    if (footer) {
+      footer.style.display = (siteConfig.show_zoom !== false) ? "flex" : "none";
+    }
 
     // Phase 6 hot-reload resets
     if (cfg.imageClick) {
@@ -707,9 +751,19 @@
     const overlay = document.getElementById("info-overlay");
     if (overlay && overlay.classList.contains("is-visible")) {
       document.body.classList.remove("info-blur-bg", "info-darken", "info-colour-overlay");
-      const effect = siteConfig.info_overlay_effect || "none";
+      
+      const cfg = window._siteConfigRaw || {};
+      const infoCfg = (cfg.ui && cfg.ui.modules && cfg.ui.modules.info) || {};
+      const effect = infoCfg.overlayEffect || siteConfig.info_overlay_effect || "none";
+      
       if (effect !== "none") {
         document.body.classList.add("info-" + effect);
+        if (effect === "colour-overlay") {
+          const root = document.documentElement;
+          root.style.setProperty("--info-overlay-color", infoCfg.overlayColor || "#000000");
+          root.style.setProperty("--info-overlay-opacity", infoCfg.overlayOpacity ?? 0.75);
+          root.style.setProperty("--info-overlay-blend-mode", infoCfg.overlayBlendMode || "normal");
+        }
       }
     }
 
@@ -728,6 +782,33 @@
     if (infoOverlay2 && textEl && infoOverlay2.classList.contains("is-visible")) {
       textEl.innerHTML = renderMarkdown(infoBodyText);
       requestAnimationFrame(() => autoscaleText(infoOverlay2, textEl));
+    }
+
+    // Update active layout style if it changed in config
+    let layoutModeChanged = false;
+    if (cfg.layouts && cfg.layouts.default && cfg.layouts.default !== currentLayout) {
+      currentLayout = cfg.layouts.default;
+      layoutModeChanged = true;
+    }
+
+    const randomParamsChanged = (prevScarcity !== siteConfig.random_scarcity) || (prevOverlap !== siteConfig.random_overlap_ratio);
+    const rowsParamsChanged = (prevRowHeight !== siteConfig.rows_row_height) || (prevRowGap !== siteConfig.rows_gap);
+    const stacksParamsChanged = (prevStacksSpacing !== siteConfig.stacks_spacing) || (prevStacksDepth !== siteConfig.stacks_depth_order);
+    const layoutParamsChanged = randomParamsChanged || rowsParamsChanged || stacksParamsChanged;
+
+    // Re-apply layout parameters only if a layout property changed
+    if (currentLayout) {
+      if (currentLayout === "random" && (layoutModeChanged || randomParamsChanged)) {
+        // Clear previous random placement and re-scatter to apply new scarcity/overlapRatio!
+        placedRects.length = 0;
+        overlapCount.clear();
+        stage.querySelectorAll(".media-item").forEach((el) => el.remove());
+        scatterItems();
+      }
+      
+      if (layoutModeChanged || layoutParamsChanged) {
+        applyLayout(currentLayout);
+      }
     }
   };
 
@@ -785,7 +866,7 @@
   // • Body classes for background effect and text animation
   // • Injects the SVG feTurbulence grain filter if noise is enabled
 
-  const BG_EFFECT_CLASSES = ["bg-solid", "bg-gradient-static", "bg-gradient-animated", "bg-blob-mesh", "bg-noise"];
+  const BG_EFFECT_CLASSES = ["bg-solid", "bg-gradient-static", "bg-gradient-animated"];
   const TEXT_FX_CLASSES   = ["text-fx-color-cycle", "text-fx-gradient", "text-fx-hue-rotate"];
 
   function applyTheme(cfg) {
@@ -800,7 +881,6 @@
     }
     if (t.backgroundGradientFrom) root.style.setProperty("--bg-from", t.backgroundGradientFrom);
     if (t.backgroundGradientTo)   root.style.setProperty("--bg-to",   t.backgroundGradientTo);
-    if (t.textColor) root.style.setProperty("--text-colour", t.textColor);
 
     // ─ Shadow ─
     const shadow = t.imageShadow || {};
@@ -820,12 +900,7 @@
       }
     }
 
-    // ─ Blend mode ─
-    if (t.blendMode === false) {
-      document.body.classList.add("no-blend-mode");
-    } else {
-      document.body.classList.remove("no-blend-mode");
-    }
+    // ─ Shadow ─
 
     // ─ Background effect ─
     document.body.classList.remove(...BG_EFFECT_CLASSES);
@@ -833,75 +908,135 @@
     if (effect === "solid")             document.body.classList.add("bg-solid");
     else if (effect === "gradient-static")   document.body.classList.add("bg-gradient-static");
     else if (effect === "gradient-animated") document.body.classList.add("bg-gradient-animated");
-    else if (effect === "blob-mesh")    document.body.classList.add("bg-blob-mesh");
 
     // ─ Noise/grain ─
     const noise = t.noiseGrain || {};
     if (noise.enabled) {
       root.style.setProperty("--noise-opacity", String(noise.opacity != null ? noise.opacity : 0.04));
-      _ensureGrainFilter(effect === "blob-mesh"); // blob-mesh needs #grain-overlay div
-      document.body.classList.add("bg-noise");
+      _ensureGrainFilter(noise.size != null ? noise.size : 0.65);
+      // Inject grain overlay div inside .viewport (before #stage-wrapper) if not present
+      let grainEl = document.getElementById("grain-overlay");
+      if (!grainEl) {
+        grainEl = document.createElement("div");
+        grainEl.id = "grain-overlay";
+        const viewport = document.querySelector(".viewport");
+        const stageWrapper = document.getElementById("stage-wrapper");
+        if (viewport && stageWrapper) {
+          viewport.insertBefore(grainEl, stageWrapper);
+        } else if (viewport) {
+          viewport.prepend(grainEl);
+        }
+      }
+      // Force browser to re-evaluate SVG filter by toggling the filter property
+      grainEl.style.filter = "none";
+      void grainEl.offsetWidth;
+      grainEl.style.filter = "";
     } else {
       root.style.setProperty("--noise-opacity", "0");
-      document.body.classList.remove("bg-noise");
       const go = document.getElementById("grain-overlay");
       if (go) go.remove();
+
     }
 
-    // ─ Text animation ─
+    // ─ Typography (Phase 4) ─
+    const typo = cfg.typography || {};
+    
+    // Set base size
+    if (typo.baseSize) {
+      root.style.setProperty("--ui-text-size", typo.baseSize);
+    }
+    
+    // Set single text color (always)
+    root.style.setProperty("--text-colour", typo.textColor || '#000000');
+
+    // Gradient pan — always set so gradient mode works as soon as it's selected
+    root.style.setProperty("--text-gradient-1", typo.gradientColor1 || typo.textColor || '#000000');
+    root.style.setProperty("--text-gradient-2", typo.gradientColor2 || '#0066ff');
+    root.style.setProperty("--text-gradient-speed", `${typo.gradientSpeed || 5}s`);
+
+    // Color cycle — always set
+    root.style.setProperty("--text-cycle-1", typo.cycleColor1 || typo.textColor || '#000000');
+    root.style.setProperty("--text-cycle-2", typo.cycleColor2 || '#ffff00');
+    root.style.setProperty("--text-cycle-3", typo.cycleColor3 || '#00ff00');
+    root.style.setProperty("--text-cycle-speed", `${typo.cycleSpeed || 8}s`);
+
+    // Hue rotate — always set
+    root.style.setProperty("--text-hue-base", typo.hueRotateBase || typo.textColor || '#0066ff');
+    root.style.setProperty("--text-hue-speed", `${typo.hueRotateSpeed || 6}s`);
+
+    // Text blend mode
+    let bm = typo.blendMode;
+    if (bm === true) bm = "difference";
+    if (bm === false || !bm) bm = "normal";
+    root.style.setProperty("--text-blend-mode", bm);
+
+    // Text animation
     document.body.classList.remove(...TEXT_FX_CLASSES);
     document.body.classList.remove("text-anim-hover");
-    const textFx = t.textAnimation || "none";
+    const textFx = typo.textAnimation || "none";
     if (textFx === "color-cycle")  document.body.classList.add("text-fx-color-cycle");
     else if (textFx === "gradient") document.body.classList.add("text-fx-gradient");
     else if (textFx === "hue-rotate") document.body.classList.add("text-fx-hue-rotate");
 
-    // Phase 12.5 Bug 5: text animation trigger mode (hover-only vs always-on)
-    if (textFx !== "none" && t.textAnimationTrigger === "hover") {
+    if (textFx !== "none" && typo.textAnimationTrigger === "hover") {
       document.body.classList.add("text-anim-hover");
     }
-
-    // ─ Typography Dynamic Font Loading (Phase 4) ─
-    const ui = cfg.ui || {};
-    const fontEmbedCode = ui.fontEmbedCode || "";
 
     // Clean up existing dynamic font elements
     const oldEmbeds = document.querySelectorAll(".dynamic-font-embed");
     oldEmbeds.forEach(el => el.remove());
 
-    const DEFAULT_FONT_EMBED = `<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">`;
-    let embedToUse = fontEmbedCode.trim();
-    const isDefault = !embedToUse;
+    const DEFAULT_FONT = '"JetBrains Mono", "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace';
+    const DEFAULT_EMBED = `<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">`;
 
-    if (isDefault) {
-      embedToUse = DEFAULT_FONT_EMBED;
-    }
-
-    // Convert raw URL or raw @import into HTML tags
-    if (embedToUse && !embedToUse.startsWith("<")) {
-      if (embedToUse.startsWith("http")) {
-        embedToUse = `<link href="${embedToUse}" rel="stylesheet">`;
-      } else if (embedToUse.includes("@import")) {
-        embedToUse = `<style>${embedToUse}</style>`;
-      }
-    }
-
-    // Inject into head
-    if (embedToUse) {
-      const container = document.createElement("div");
-      container.innerHTML = embedToUse;
-      Array.from(container.children).forEach(child => {
-        child.classList.add("dynamic-font-embed");
-        document.head.appendChild(child);
-      });
-    }
-
-    // Parse font-family from the embed code
-    const parsedFamily = parseFontFamilyFromEmbed(embedToUse);
-    if (parsedFamily && !isDefault) {
-      root.style.setProperty("--font-family", parsedFamily);
+    if (typo.fontMode === "local" && typo.localFontUrl) {
+      // Inject @font-face
+      const style = document.createElement("style");
+      style.classList.add("dynamic-font-embed");
+      style.innerHTML = `
+        @font-face {
+          font-family: 'CustomLocalFont';
+          src: url('${typo.localFontUrl}');
+          font-display: swap;
+        }
+      `;
+      document.head.appendChild(style);
+      root.style.setProperty("--font-family", '"CustomLocalFont", sans-serif');
     } else {
-      root.style.setProperty("--font-family", '"JetBrains Mono", "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace');
+      // Google mode (or fallback)
+      let embedToUse = typo.googleEmbedCode ? typo.googleEmbedCode.trim() : "";
+      let isDefault = !embedToUse;
+
+      if (isDefault) {
+        embedToUse = DEFAULT_EMBED;
+      }
+
+      // Convert raw URL or raw @import into HTML tags
+      if (embedToUse && !embedToUse.startsWith("<")) {
+        if (embedToUse.startsWith("http")) {
+          embedToUse = `<link href="${embedToUse}" rel="stylesheet">`;
+        } else if (embedToUse.includes("@import")) {
+          embedToUse = `<style>${embedToUse}</style>`;
+        }
+      }
+
+      // Inject into head
+      if (embedToUse) {
+        const container = document.createElement("div");
+        container.innerHTML = embedToUse;
+        Array.from(container.children).forEach(child => {
+          child.classList.add("dynamic-font-embed");
+          document.head.appendChild(child);
+        });
+      }
+
+      // Parse font-family from the embed code
+      const parsedFamily = parseFontFamilyFromEmbed(embedToUse);
+      if (parsedFamily && !isDefault) {
+        root.style.setProperty("--font-family", parsedFamily);
+      } else {
+        root.style.setProperty("--font-family", DEFAULT_FONT);
+      }
     }
   }
 
@@ -982,7 +1117,14 @@
     const root = document.documentElement;
 
     // Clean up body classes
-    document.body.classList.remove("fx-desaturated", "fx-duotone", "fx-hover-reveal");
+    document.body.classList.remove(
+      "fx-desaturated", 
+      "fx-duotone", 
+      "fx-blurred", 
+      "fx-hover-reveal", 
+      "fx-hover-normal", 
+      "fx-hover-enlarge"
+    );
 
     // Apply initial state
     const state = fx.initialState || "colour";
@@ -990,14 +1132,30 @@
       document.body.classList.add("fx-desaturated");
     } else if (state === "duotone") {
       document.body.classList.add("fx-duotone");
+      _ensureDuotoneFilter(fx.duotoneColor1 || "#000000", fx.duotoneColor2 || "#ffffff");
+    } else if (state === "blurred") {
+      document.body.classList.add("fx-blurred");
     }
 
-    // Apply hover reveal
-    if (fx.hoverReveal === true) {
-      document.body.classList.add("fx-hover-reveal");
+    // Apply hover state: hover cancels initial effects (fx-hover-normal) by default
+    document.body.classList.add("fx-hover-normal");
+    if (fx.enlargeOnHover === true) {
+      document.body.classList.add("fx-hover-enlarge");
     }
 
-    // Apply duotone hue and saturation if provided
+    // Apply Image Blend Mode
+    const ibm = fx.blendMode || "normal";
+    root.style.setProperty("--image-blend-mode", ibm);
+
+    // Lightbox Custom Overlay Variables
+    if (cfg?.imageClick?.lightbox) {
+      const lb = cfg.imageClick.lightbox;
+      root.style.setProperty("--lightbox-overlay-color", lb.overlayColor || "#000000");
+      root.style.setProperty("--lightbox-overlay-opacity", String(lb.overlayOpacity ?? 0.75));
+      root.style.setProperty("--lightbox-overlay-blend-mode", lb.overlayBlendMode || "normal");
+    }
+
+    // Apply duotone hue and saturation if provided (legacy support)
     if (fx.duotoneHue != null) {
       root.style.setProperty("--duotone-hue", fx.duotoneHue + "deg");
     } else if (cfg.theme && cfg.theme.duotoneHue != null) {
@@ -1016,6 +1174,49 @@
         item.classList.remove("is-coloured", "is-blurred", "is-focused-click");
       });
     }
+  }
+
+  function _ensureDuotoneFilter(color1, color2) {
+    let svg = document.getElementById("duotone-svg-container");
+    if (!svg) {
+      svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.id = "duotone-svg-container";
+      svg.style.position = "absolute";
+      svg.style.width = "0";
+      svg.style.height = "0";
+      document.body.appendChild(svg);
+    }
+    
+    const c1 = _hexToRgbRatio(color1);
+    const c2 = _hexToRgbRatio(color2);
+    
+    svg.innerHTML = `
+      <defs>
+        <filter id="duotone-filter">
+          <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0
+                                               0.2126 0.7152 0.0722 0 0
+                                               0.2126 0.7152 0.0722 0 0
+                                               0      0      0      1 0" />
+          <feComponentTransfer color-interpolation-filters="sRGB">
+            <feFuncR type="table" tableValues="${c1.r} ${c2.r}" />
+            <feFuncG type="table" tableValues="${c1.g} ${c2.g}" />
+            <feFuncB type="table" tableValues="${c1.b} ${c2.b}" />
+          </feComponentTransfer>
+        </filter>
+      </defs>
+    `;
+  }
+  
+  function _hexToRgbRatio(hex) {
+    const clean = hex.startsWith("#") ? hex.slice(1) : hex;
+    const r = parseInt(clean.slice(0, 2), 16) / 255;
+    const g = parseInt(clean.slice(2, 4), 16) / 255;
+    const b = parseInt(clean.slice(4, 6), 16) / 255;
+    return {
+      r: Number.isFinite(r) ? r : 0,
+      g: Number.isFinite(g) ? g : 0,
+      b: Number.isFinite(b) ? b : 0
+    };
   }
 
   // Phase 5: Unified click interaction for media items
@@ -1092,56 +1293,48 @@
   }
 
   // Injects the SVG feTurbulence grain filter once.
-  // When blob-mesh is active, injects a #grain-overlay div instead of relying on body::before.
-  function _ensureGrainFilter(useDivOverlay) {
-    if (!document.getElementById("grain-filter-svg")) {
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  function _ensureGrainFilter(size) {
+    let svg = document.getElementById("grain-filter-svg");
+    if (!svg) {
+      svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svg.id = "grain-filter-svg";
-      svg.setAttribute("style", "display:none");
-      svg.innerHTML = `
-        <defs>
-          <filter id="grain" x="0%" y="0%" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3"
-              stitchTiles="stitch" result="noise"/>
-            <feColorMatrix type="saturate" values="0" in="noise" result="grey"/>
-            <feBlend in="SourceGraphic" in2="grey" mode="multiply"/>
-          </filter>
-        </defs>`;
+      svg.setAttribute("style", "display:none; width:0; height:0; position:absolute;");
       document.body.appendChild(svg);
     }
-    // When blob-mesh is active body::before is used by the blobs, so inject a div overlay
-    if (useDivOverlay && !document.getElementById("grain-overlay")) {
-      const div = document.createElement("div");
-      div.id = "grain-overlay";
-      document.body.appendChild(div);
-    }
+    // Entirely replace innerHTML to force browser to re-evaluate the SVG filter definition
+    svg.innerHTML = `
+      <defs>
+        <filter id="grain" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence id="grain-turbulence" type="fractalNoise" baseFrequency="${size}" numOctaves="3" stitchTiles="stitch" result="noise"/>
+          <feColorMatrix type="saturate" values="0" in="noise"/>
+        </filter>
+      </defs>`;
   }
 
-  function getInfoButtonText(isOpen) {
-    const btnStyle   = siteConfig.info_button_style   || "arrow";
-    const closeStyle = siteConfig.info_close_style    || "x-only";
+  function updateInfoButtonState(isOpen) {
+    const infoBtn = document.getElementById("nav-info-btn");
+    if (!infoBtn) return;
+    
+    const cfg = window._siteConfigRaw || {};
+    const infoCfg = (cfg.ui && cfg.ui.modules && cfg.ui.modules.info) || {};
+    const btnStyle = infoCfg.buttonStyle || "static";
 
-    if (!isOpen) {
-      if (btnStyle === "indicator") return "[INFO •]";
-      if (btnStyle === "minimal") return "INFO";
-      return "[INFO ▷]"; // default "arrow"
+    infoBtn.setAttribute("aria-pressed", isOpen ? "true" : "false");
+
+    if (isOpen) {
+      infoBtn.classList.remove("is-struck");
+      if (btnStyle === "x-close") {
+        infoBtn.textContent = "[×]";
+      } else {
+        infoBtn.textContent = "[INFO]";
+      }
     } else {
-      if (closeStyle === "x-only") {
-        if (btnStyle === "minimal") return "×";
-        return "[×]";
+      if (btnStyle === "strikethrough") {
+        infoBtn.classList.add("is-struck");
+      } else {
+        infoBtn.classList.remove("is-struck");
       }
-      if (closeStyle === "arrow") {
-        if (btnStyle === "minimal") return "INFO ▽";
-        return "[INFO ▽]";
-      }
-      if (closeStyle === "both") {
-        if (btnStyle === "minimal") return "INFO ×";
-        if (btnStyle === "indicator") return "[INFO • ×]";
-        return "[INFO ▽ ×]";
-      }
-      // default fallback
-      if (btnStyle === "minimal") return "×";
-      return "[×]";
+      infoBtn.textContent = "[INFO]";
     }
   }
 
@@ -1149,17 +1342,22 @@
     overlayEl.classList.add("is-visible");
 
     // Phase 8: Apply body class for canvas overlay effects
-    const effect = siteConfig.info_overlay_effect || "none";
+    const cfg = window._siteConfigRaw || {};
+    const infoCfg = (cfg.ui && cfg.ui.modules && cfg.ui.modules.info) || {};
+    const effect = infoCfg.overlayEffect || siteConfig.info_overlay_effect || "none";
+    
     document.body.classList.add("info-open");
     if (effect !== "none") {
       document.body.classList.add("info-" + effect);
+      if (effect === "colour-overlay") {
+        const root = document.documentElement;
+        root.style.setProperty("--info-overlay-color", infoCfg.overlayColor || "#000000");
+        root.style.setProperty("--info-overlay-opacity", infoCfg.overlayOpacity ?? 0.75);
+        root.style.setProperty("--info-overlay-blend-mode", infoCfg.overlayBlendMode || "normal");
+      }
     }
 
-    const infoBtn = document.getElementById("nav-info-btn");
-    if (infoBtn) {
-      infoBtn.setAttribute("aria-pressed", "true");
-      infoBtn.textContent = getInfoButtonText(true);
-    }
+    updateInfoButtonState(true);
 
     if (!infoLoaded) {
       // Config wasn't pre-loaded (unusual); fetch config.json now
@@ -1185,11 +1383,7 @@
     // Phase 8: Remove body classes for canvas overlay effects
     document.body.classList.remove("info-open", "info-blur-bg", "info-darken", "info-colour-overlay");
 
-    const infoBtn = document.getElementById("nav-info-btn");
-    if (infoBtn) {
-      infoBtn.setAttribute("aria-pressed", "false");
-      infoBtn.textContent = getInfoButtonText(false);
-    }
+    updateInfoButtonState(false);
   }
 
   function toggleInfo() {
@@ -1390,11 +1584,11 @@
         infoBtn.type = "button";
         infoBtn.id = "nav-info-btn";
         infoBtn.className = "nav-btn nav-info zone-info-module";
-        infoBtn.textContent = getInfoButtonText(isOverlayOpen);
-        infoBtn.setAttribute("aria-pressed", isOverlayOpen ? "true" : "false");
         infoBtn.style.pointerEvents = "auto";
         infoBtn.addEventListener("click", toggleInfo);
         infoZone.appendChild(infoBtn);
+        // Set initial state
+        updateInfoButtonState(isOverlayOpen);
       }
     } else {
       // Mobile: populate legacy nav-right
@@ -1421,8 +1615,6 @@
             el.type = "button";
             el.id = "nav-info-btn";
             el.className = "nav-btn nav-info";
-            el.textContent = getInfoButtonText(isOverlayOpen);
-            el.setAttribute("aria-pressed", isOverlayOpen ? "true" : "false");
             el.addEventListener("click", toggleInfo);
           } else {
             el = document.createElement("a");
@@ -1431,6 +1623,9 @@
             el.textContent = "[" + item.label + "]";
           }
           legacyRight.appendChild(el);
+          if (item.type === "info") {
+            updateInfoButtonState(isOverlayOpen);
+          }
         });
       }
     }
@@ -1555,7 +1750,7 @@
         });
       });
 
-      // Set src LAST so listeners are ready
+      // Set src so listeners are ready
       img.src = item.src;
 
       // Immediate check for cached images
@@ -1606,8 +1801,13 @@
       el.style.aspectRatio = "16 / 9";
 
       const videoId = item.videoId;
-      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&mute=0`;
-      const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      const isVimeo = item.provider === "vimeo";
+      const embedUrl = isVimeo 
+        ? `https://player.vimeo.com/video/${videoId}?autoplay=1&background=1&muted=1`
+        : `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&mute=0`;
+      const thumbUrl = isVimeo 
+        ? `https://vumbnail.com/${videoId}.jpg`
+        : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
       const placeholder = document.createElement("button");
       placeholder.type = "button";
@@ -1767,7 +1967,8 @@
           el,
         };
 
-        const { allowed, overlaps } = canPlaceRect(rect, placedRects, isMobile ? 0.05 : 0.2);
+        const overlapRatio = isMobile ? 0.05 : (siteConfig.random_overlap_ratio !== undefined ? siteConfig.random_overlap_ratio : 0.2);
+        const { allowed, overlaps } = canPlaceRect(rect, placedRects, overlapRatio);
         if (allowed) {
           if (!isSlideshow) {
             el.style.left = rect.x + "px";
@@ -1988,10 +2189,10 @@
     el.addEventListener("mousedown", (event) => {
       if (event.button !== 0) return;
       if (spaceDown) return; // Space+drag is reserved for panning
+      if (siteConfig.draggable === false) return;
 
       // Prevent initiating stage pan
       event.stopPropagation();
-      event.preventDefault();
       isDragging = true;
       hasPassedThreshold = false;
       el.classList.add("is-dragging");
@@ -2018,6 +2219,11 @@
         pendingLeft = (elRect.left - stageRect.left) / zoomLevel;
         pendingTop = (elRect.top - stageRect.top) / zoomLevel;
       }
+    });
+
+    // Prevent the native browser ghost dragging on images/links
+    el.addEventListener("dragstart", (event) => {
+      event.preventDefault();
     });
 
     window.addEventListener("mousemove", (event) => {
@@ -2111,11 +2317,11 @@
   // Compute bounds from actual current item positions.
   // Uses _mediaItem dimensions to avoid unreliable offsetHeight reads during layout.
   function getItemBounds() {
-    const ROW_H_FALLBACK = 280; // matches layoutRows constant
+    const ROW_H_FALLBACK = siteConfig.rows_row_height !== undefined ? siteConfig.rows_row_height : 280;
     const items = Array.from(stage.querySelectorAll(".media-item"))
       .filter((el) => el.style.display !== "none");
     if (!items.length) return null;
-    let minX = minX = Infinity, minY = minY = Infinity, maxX = maxX = -Infinity, maxY = maxY = -Infinity;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     items.forEach((el) => {
       const x = parseFloat(el.style.left);
       const y = parseFloat(el.style.top);
@@ -2203,10 +2409,10 @@
   }
 
   function layoutRows() {
-    const ROW_GAP        = 48;  // vertical gap between category rows
-    const COL_GAP        = 24;  // horizontal gap between images
-    const CAT_GAP        = 64;  // extra vertical gap before a new category
-    const ROW_H          = 280; // uniform display height for all images
+    const COL_GAP        = siteConfig.rows_gap !== undefined ? siteConfig.rows_gap : 24;  // horizontal gap between images
+    const ROW_GAP        = COL_GAP * 2;  // vertical gap between category rows
+    const CAT_GAP        = COL_GAP * 2.6;  // extra vertical gap before a new category
+    const ROW_H          = siteConfig.rows_row_height !== undefined ? siteConfig.rows_row_height : 280; // uniform display height for all images
     const ORIGIN_X       = 200; // stage-absolute left margin
     const MAX_ROW_WIDTH  = STAGE_WIDTH - ORIGIN_X * 2;
 
@@ -2277,17 +2483,20 @@
     // Each card steps STEP px right and down from the one above it,
     // so the stack fans visibly to the bottom-right.
     const STEP = 10;
+    const isBackToFront = siteConfig.stacks_depth_order === "back-to-front";
     stack.items.forEach((el, i) => {
       el.style.left      = (stack.x + i * STEP) + "px";
       el.style.top       = (stack.y + i * STEP) + "px";
       el.style.transform = "";
-      el.style.zIndex    = String(zCounter + stack.items.length - i);
+      el.style.zIndex    = isBackToFront 
+        ? String(zCounter + i)
+        : String(zCounter + stack.items.length - i);
     });
     zCounter += stack.items.length + 1;
   }
 
   function layoutStacks() {
-    const STACK_SPACING_X = 1000;
+    const STACK_SPACING_X = siteConfig.stacks_spacing !== undefined ? siteConfig.stacks_spacing : 1000;
 
     // Restore widths from ROWS if needed
     stage.querySelectorAll(".media-item").forEach((el) => {
@@ -2389,9 +2598,40 @@
       });
     }
 
-    const behaviour = siteConfig.categories_behaviour || "hide-on-click";
+    const cfg = window._siteConfigRaw || {};
+    const catCfg = (cfg.ui && cfg.ui.modules && cfg.ui.modules.categories) || {};
+    const behaviour = catCfg.behaviour || siteConfig.categories_behaviour || "hide-on-click";
+    
+    const layout = catCfg.layout || "vertical";
+    const alignment = catCfg.alignment || "left";
+    const separator = catCfg.separator || "|";
+    const spacing = catCfg.spacing ?? 10;
+    const catPos = catCfg.position || "middle-left";
 
-    groups.forEach((g) => {
+    // Apply layout styles
+    if (layout === "horizontal") {
+      panel.style.display = "flex";
+      panel.style.flexDirection = "row";
+      panel.style.alignItems = "center";
+      panel.style.gap = spacing + "px";
+      panel.style.flexWrap = "nowrap";
+    } else {
+      panel.style.display = "flex";
+      panel.style.flexDirection = "column";
+      panel.style.gap = spacing + "px";
+      if (alignment === "center") {
+        panel.style.alignItems = "center";
+        panel.style.textAlign = "center";
+      } else if (alignment === "right") {
+        panel.style.alignItems = "flex-end";
+        panel.style.textAlign = "right";
+      } else {
+        panel.style.alignItems = "flex-start";
+        panel.style.textAlign = "left";
+      }
+    }
+
+    groups.forEach((g, idx) => {
       const el = document.createElement("button");
       el.type = "button";
       el.className = "nav-btn nav-category";
@@ -2416,10 +2656,31 @@
       el.textContent = "[" + g.toUpperCase() + "]";
       el.addEventListener("click", () => toggleGroup(g, el));
       panel.appendChild(el);
+
+      if (layout === "horizontal" && idx < groups.length - 1) {
+        const sep = document.createElement("span");
+        sep.textContent = separator;
+        sep.className = "nav-category-sep";
+        sep.style.fontSize = "12px";
+        sep.style.color = "inherit";
+        sep.style.opacity = "0.5";
+        panel.appendChild(sep);
+      }
     });
 
-    // Phase 7: Add "View All" button for focus-on-click mode
+    // Add "View All" button for focus-on-click mode
     if (behaviour === "focus-on-click") {
+      if (layout === "horizontal" && groups.length > 0) {
+        const sep = document.createElement("span");
+        sep.textContent = separator;
+        sep.className = "nav-category-sep nav-category-view-all-sep";
+        sep.style.fontSize = "12px";
+        sep.style.color = "inherit";
+        sep.style.opacity = "0.5";
+        sep.style.display = focusedGroup !== null ? "" : "none";
+        panel.appendChild(sep);
+      }
+
       const viewAllBtn = document.createElement("button");
       viewAllBtn.type = "button";
       viewAllBtn.id = "category-view-all";
@@ -2427,16 +2688,12 @@
       const viewAllLabel = siteConfig.categories_view_all_label || "ALL";
       viewAllBtn.textContent = "[" + viewAllLabel.toUpperCase() + "]";
       viewAllBtn.style.display = focusedGroup !== null ? "" : "none";
-      viewAllBtn.style.marginTop = "8px";
+      if (layout === "vertical") viewAllBtn.style.marginTop = "8px";
       viewAllBtn.addEventListener("click", restoreAllGroups);
       panel.appendChild(viewAllBtn);
     }
 
     // Append into configured zone (or body fallback)
-    const cfg = window._siteConfigRaw || {};
-    const catPos = (cfg.ui && cfg.ui.modules && cfg.ui.modules.categories)
-      ? (cfg.ui.modules.categories.position || "middle-left")
-      : "middle-left";
     getZone(catPos).appendChild(panel);
   }
 
@@ -2451,36 +2708,75 @@
     const panel = document.createElement("div");
     panel.id = "layout-panel";
 
+    // Config parsing
+    const cfg = window._siteConfigRaw || {};
+    const layCfg = (cfg.ui && cfg.ui.modules && cfg.ui.modules.layouts) || {};
+    const layout = layCfg.layout || "vertical"; // default vertical? or horizontal? wait, previous default was vertical layout buttons stacked or inline? actually `.layout-option` is block/inline. but let's follow the options. Wait, my config defaults to horizontal for layouts. Let's respect layCfg.
+    const alignment = layCfg.alignment || "left";
+    const separator = layCfg.separator || "|";
+    const spacing = layCfg.spacing ?? 10;
+    const layoutPos = layCfg.position || "middle-right";
+
+    // Apply layout styles
+    if (layout === "horizontal") {
+      panel.style.display = "flex";
+      panel.style.flexDirection = "row";
+      panel.style.alignItems = "center";
+      panel.style.gap = spacing + "px";
+      panel.style.flexWrap = "nowrap";
+    } else {
+      panel.style.display = "flex";
+      panel.style.flexDirection = "column";
+      panel.style.gap = spacing + "px";
+      if (alignment === "center") {
+        panel.style.alignItems = "center";
+        panel.style.textAlign = "center";
+      } else if (alignment === "right") {
+        panel.style.alignItems = "flex-end";
+        panel.style.textAlign = "right";
+      } else {
+        panel.style.alignItems = "flex-start";
+        panel.style.textAlign = "left";
+      }
+    }
+
     // Use available layouts from config; fall back to all three
-    const cfg = window._siteConfigRaw;
     const available = (cfg && cfg.layouts && Array.isArray(cfg.layouts.available))
       ? cfg.layouts.available
       : ["random", "rows", "stacks"];
     const allModes = ["random", "rows", "stacks"];
     const defaultLayout = siteConfig.default_layout || "random";
+    
+    // Filter available to only valid modes
+    const validModes = available.filter(mode => allModes.includes(mode));
 
-    available.forEach((mode) => {
-      if (!allModes.includes(mode)) return;
-      const idx = allModes.indexOf(mode);
+    validModes.forEach((mode, idx) => {
+      const allModesIdx = allModes.indexOf(mode);
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "layout-option" + (mode === defaultLayout ? " is-active" : "");
       btn.dataset.layout = mode;
 
       let label = mode.toUpperCase();
-      if (Array.isArray(siteConfig.layout_names) && siteConfig.layout_names[idx]) {
-        label = siteConfig.layout_names[idx].toUpperCase();
+      if (Array.isArray(siteConfig.layout_names) && siteConfig.layout_names[allModesIdx]) {
+        label = siteConfig.layout_names[allModesIdx].toUpperCase();
       }
 
       btn.textContent = "[" + label + "]";
       btn.addEventListener("click", () => applyLayout(mode));
       panel.appendChild(btn);
+
+      if (layout === "horizontal" && idx < validModes.length - 1) {
+        const sep = document.createElement("span");
+        sep.textContent = separator;
+        sep.className = "nav-layout-sep";
+        sep.style.fontSize = "12px";
+        sep.style.color = "inherit";
+        sep.style.opacity = "0.5";
+        panel.appendChild(sep);
+      }
     });
 
-    // Append into configured zone (or body fallback)
-    const layoutPos = (cfg && cfg.ui && cfg.ui.modules && cfg.ui.modules.layouts)
-      ? (cfg.ui.modules.layouts.position || "middle-right")
-      : "middle-right";
     getZone(layoutPos).appendChild(panel);
   }
 
@@ -2552,6 +2848,12 @@
       dialog.id = "lightbox";
       dialog.className = "lightbox-dialog";
 
+      // Background overlay for color, opacity, blend-modes (placed OUTSIDE dialog to avoid stacking context isolation)
+      const overlay = document.createElement("div");
+      overlay.id = "lightbox-bg-overlay";
+      overlay.className = "lightbox-overlay";
+      document.body.appendChild(overlay);
+
       const content = document.createElement("div");
       content.className = "lightbox-content";
 
@@ -2589,9 +2891,11 @@
 
       document.body.appendChild(dialog);
 
-      // Close lightbox on backdrop click
+      // Close lightbox on overlay click
+      overlay.addEventListener("click", () => dialog.close());
+
       dialog.addEventListener("click", (e) => {
-        if (e.target === dialog) {
+        if (e.target === dialog || e.target.classList.contains("lightbox-content")) {
           dialog.close();
         }
       });
@@ -2615,6 +2919,7 @@
           activeVideo.src = "";
         }
         dialog.querySelector(".lightbox-media-container")?.remove();
+        document.getElementById("lightbox-bg-overlay")?.classList.remove("is-open");
       });
     }
 
@@ -2663,7 +2968,10 @@
     } else if (mediaItem.type === "video-embed") {
       const iframe = document.createElement("iframe");
       const videoId = mediaItem.videoId;
-      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1`;
+      const isVimeo = mediaItem.provider === "vimeo";
+      iframe.src = isVimeo 
+        ? `https://player.vimeo.com/video/${videoId}?autoplay=1`
+        : `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1`;
       iframe.className = "lightbox-video";
       iframe.style.border = "none";
       iframe.style.aspectRatio = "16/9";
@@ -2696,8 +3004,9 @@
     }
 
     const dialog = _ensureLightbox();
-    dialog.showModal();
     updateLightboxContent();
+    document.getElementById("lightbox-bg-overlay")?.classList.add("is-open");
+    dialog.show();
   }
 
   function zoomToElementSmooth(el) {
@@ -2765,7 +3074,16 @@
 
   function handleItemInteraction(el, type) {
     const cfg = window._siteConfigRaw;
-    const mode = cfg?.imageClick?.mode || "none";
+    let mode = "none";
+    if (cfg?.imageClick) {
+      if (cfg.imageClick.mode) {
+        mode = cfg.imageClick.mode;
+      } else if (cfg.imageClick.lightbox?.enabled) {
+        mode = "lightbox";
+      } else if (cfg.imageClick.canvasExpand?.enabled) {
+        mode = "canvasExpand";
+      }
+    }
 
     if (type === "single") {
       if (mode === "lightbox") {
@@ -2823,6 +3141,10 @@
 
     preloadMedia();
     scatterItems(isSlideshow);
+
+    if (!isSlideshow && currentLayout !== "random") {
+      applyLayout(currentLayout);
+    }
 
     if (!isSlideshow) {
       // Apply dimensions to DOM so layout matches logic

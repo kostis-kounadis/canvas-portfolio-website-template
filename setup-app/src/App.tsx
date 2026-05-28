@@ -8,9 +8,10 @@ import {
   ThemeForm,
   LayoutsForm,
   ModulesForm,
-  InteractionsForm,
-  SEOForm,
-  DeploymentForm
+  DeploymentForm,
+  FaviconForm,
+  HelpForm,
+  ImageSettingsForm
 } from "./components/Forms"
 
 function App() {
@@ -25,10 +26,12 @@ function App() {
       case 'identity': return <IdentityForm />
       case 'theme': return <ThemeForm />
       case 'layouts': return <LayoutsForm />
+      case 'images': return <ImageSettingsForm />
       case 'modules': return <ModulesForm />
-      case 'interactions': return <InteractionsForm />
-      case 'seo': return <SEOForm />
+
+      case 'favicon': return <FaviconForm />
       case 'deployment': return <DeploymentForm />
+      case 'help': return <HelpForm />
       default: return <div>Select a section from the sidebar.</div>
     }
   }

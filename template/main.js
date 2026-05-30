@@ -30,34 +30,36 @@
   let stageX = 0;
   let stageY = 0;
 
-  // Helper to wrap a module with prefix/suffix without polluting the clickable link
-function wrapModule(el) {
-  const pfxText = siteConfig.module_prefix !== undefined ? siteConfig.module_prefix : "[";
-  const sfxText = siteConfig.module_suffix !== undefined ? siteConfig.module_suffix : "]";
+  // Helper to wrap a UI module element with prefix/suffix brackets.
+  // Accepts prefix and suffix as explicit parameters (not from the closure)
+  // so the output is always consistent with the values at the point of call.
+  function wrapModule(el, prefix, suffix) {
+    const pfxText = prefix !== undefined ? prefix : "[";
+    const sfxText = suffix !== undefined ? suffix : "]";
   
-  if (!pfxText && !sfxText) return el;
+    if (!pfxText && !sfxText) return el;
 
-  const wrapper = document.createElement("span");
-  wrapper.className = "module-wrapper";
+    const wrapper = document.createElement("span");
+    wrapper.className = "module-wrapper";
   
-  if (pfxText) {
-    const pfxNode = document.createElement("span");
-    pfxNode.className = "module-prefix";
-    pfxNode.textContent = pfxText;
-    wrapper.appendChild(pfxNode);
+    if (pfxText) {
+      const pfxNode = document.createElement("span");
+      pfxNode.className = "module-prefix";
+      pfxNode.textContent = pfxText;
+      wrapper.appendChild(pfxNode);
+    }
+  
+    wrapper.appendChild(el);
+  
+    if (sfxText) {
+      const sfxNode = document.createElement("span");
+      sfxNode.className = "module-suffix";
+      sfxNode.textContent = sfxText;
+      wrapper.appendChild(sfxNode);
+    }
+  
+    return wrapper;
   }
-  
-  wrapper.appendChild(el);
-  
-  if (sfxText) {
-    const sfxNode = document.createElement("span");
-    sfxNode.className = "module-suffix";
-    sfxNode.textContent = sfxText;
-    wrapper.appendChild(sfxNode);
-  }
-  
-  return wrapper;
-}
 
 // Store initial view state for reset
   let initialZoom = 1;
@@ -134,12 +136,12 @@ function wrapModule(el) {
   // Interaction state
   let spaceDown = false;
 
-  // Phase 6 State
+  // ── Lightbox / canvas-expand state ──────────────────────────────────────────
   let expandedEl = null;
   let visibleLightboxItems = [];
   let currentLightboxIndex = -1;
 
-  // Phase 7 State
+  // ── Category filter state ──────────────────────────────────────────────────
   let focusedGroup = null;
 
   window.addEventListener("keydown", (e) => {
@@ -730,29 +732,81 @@ function wrapModule(el) {
     if (!cfg || typeof cfg !== "object") return;
     
     // Store previous layout properties to detect actual layout changes
-    const prevScarcity = siteConfig.random_scarcity;
-    const prevOverlap = siteConfig.random_overlap_ratio;
-    const prevRowHeight = siteConfig.rows_row_height;
-    const prevRowGap = siteConfig.rows_gap;
+    const prevScarcity      = siteConfig.random_scarcity;
+    const prevOverlap       = siteConfig.random_overlap_ratio;
+    const prevRowHeight     = siteConfig.rows_row_height;
+    const prevRowGap        = siteConfig.rows_gap;
     const prevStacksSpacing = siteConfig.stacks_spacing;
-    const prevStacksDepth = siteConfig.stacks_depth_order;
+    const prevStacksDepth   = siteConfig.stacks_depth_order;
+
+    // Snapshot UI-structure fields so we can skip nav/panel rebuilds when only
+    // theme/colour values changed (avoids flicker from unnecessary DOM teardown).
+    const prevNavSnapshot = JSON.stringify({
+      name:             siteConfig.name,
+      email:            siteConfig.email,
+      show_title:       siteConfig.show_title,
+      title_mode:       siteConfig.title_mode,
+      logo_file:        siteConfig.logo_file,
+      logo_scale:       siteConfig.logo_scale,
+      show_email:       siteConfig.show_email,
+      show_info:        siteConfig.show_info,
+      info_label:       siteConfig.info_label,
+      info_button_style:siteConfig.info_button_style,
+      show_categories:  siteConfig.show_categories,
+      show_layout:      siteConfig.show_layout,
+      show_zoom:        siteConfig.show_zoom,
+      module_prefix:    siteConfig.module_prefix,
+      module_suffix:    siteConfig.module_suffix,
+      layout_names:     JSON.stringify(siteConfig.layout_names),
+    });
 
     window._siteConfigRaw = cfg;
     mapConfig(cfg);
     applyConfigCSS();
-    applyTheme(cfg);          // Phase 3: apply theme colours, bg effect, noise, shadow
-    applyImageEffects(cfg);   // Phase 5: apply image effects
-    
+    applyTheme(cfg);          // Apply theme colours, bg effect, noise, shadow
+    applyImageEffects(cfg);   // Apply image effects (desaturate, duotone, etc.)
+
     // Rebuild zone containers and UI modules so positions & options update in real-time
     buildZoneContainers();
-    
+
     // Toggle zoom module visibility dynamically
     const zoomPanel = document.getElementById("zoom-panel");
     if (zoomPanel) {
       zoomPanel.style.display = (siteConfig.show_zoom !== false) ? "flex" : "none";
     }
 
-    // Phase 6 hot-reload resets
+    // Only rebuild nav/panels when UI-structure fields actually changed.
+    // Pure theme/colour updates skip this to avoid flicker.
+    const nextNavSnapshot = JSON.stringify({
+      name:             siteConfig.name,
+      email:            siteConfig.email,
+      show_title:       siteConfig.show_title,
+      title_mode:       siteConfig.title_mode,
+      logo_file:        siteConfig.logo_file,
+      logo_scale:       siteConfig.logo_scale,
+      show_email:       siteConfig.show_email,
+      show_info:        siteConfig.show_info,
+      info_label:       siteConfig.info_label,
+      info_button_style:siteConfig.info_button_style,
+      show_categories:  siteConfig.show_categories,
+      show_layout:      siteConfig.show_layout,
+      show_zoom:        siteConfig.show_zoom,
+      module_prefix:    siteConfig.module_prefix,
+      module_suffix:    siteConfig.module_suffix,
+      layout_names:     JSON.stringify(siteConfig.layout_names),
+    });
+    const navNeedsRebuild = prevNavSnapshot !== nextNavSnapshot;
+
+    if (navNeedsRebuild) {
+      const navRight = document.getElementById("nav-right");
+      if (navRight) {
+        navRight.innerHTML = "";
+      }
+      buildNav();
+      buildCategoryPanel();
+      buildLayoutPanel();
+      buildZoomModule();
+    }
     if (cfg.imageClick) {
       if (!cfg.imageClick.lightbox?.enabled) {
         const dialog = document.getElementById("lightbox");
@@ -765,7 +819,7 @@ function wrapModule(el) {
       }
     }
 
-    // Phase 7 hot-reload resets
+    // Category filter hot-reload resets
     if (cfg.categories) {
       const nextBehaviour = cfg.categories.behaviour || "hide-on-click";
       if (nextBehaviour === "hide-on-click") {
@@ -781,8 +835,7 @@ function wrapModule(el) {
       }
     }
 
-    // Phase 8 hot-reload resets for active info overlay
-    // Use a local variable name that does NOT shadow the outer `cfg` parameter.
+    // Info overlay hot-reload resets
     const overlay = document.getElementById("info-overlay");
     if (overlay && overlay.classList.contains("is-visible")) {
       document.body.classList.remove("info-blur-bg", "info-darken", "info-colour-overlay");
@@ -802,15 +855,6 @@ function wrapModule(el) {
       }
     }
 
-    // Rebuild UI modules that depend on config
-    const navRight = document.getElementById("nav-right");
-    if (navRight) {
-      navRight.innerHTML = "";
-    }
-    buildNav();
-    buildCategoryPanel();
-    buildLayoutPanel();
-    buildZoomModule();
 
     // Refresh info text if overlay is open
     const infoOverlay2 = document.getElementById("info-overlay");
@@ -848,7 +892,7 @@ function wrapModule(el) {
     }
   };
 
-  // Phase 14: Listen for config-update from GUI Setup Tool via both postMessage
+  // Listen for config-update from GUI Setup Tool via both postMessage
   // and BroadcastChannel — so any open portfolio tab auto-refreshes when config is saved,
   // without needing to be embedded in an iframe.
   window.addEventListener("message", (event) => {
@@ -1240,7 +1284,7 @@ function wrapModule(el) {
     return null;
   }
 
-  // Phase 5: Dynamic Image Effects System
+  // ── Dynamic Image Effects System ─────────────────────────────────────────────
   function applyImageEffects(cfg) {
     if (!cfg || !cfg.imageEffects) return;
     const fx = cfg.imageEffects;
@@ -1349,7 +1393,7 @@ function wrapModule(el) {
     };
   }
 
-  // Phase 5: Unified click interaction for media items
+  // ── Unified click interaction for media items ────────────────────────────────
   function handleItemClick(el, cfg) {
     if (!cfg || !cfg.imageEffects) return;
     const fx = cfg.imageEffects;
@@ -1471,7 +1515,7 @@ function wrapModule(el) {
   function openInfoOverlay(overlayEl, textEl) {
     overlayEl.classList.add("is-visible");
 
-    // Phase 8: Apply body class for canvas overlay effects
+    // Apply body class for canvas overlay effects when info overlay opens
     const cfg = window._siteConfigRaw || {};
     const infoCfg = (cfg.ui && cfg.ui.modules && cfg.ui.modules.info) || {};
     const effect = infoCfg.overlayEffect || siteConfig.info_overlay_effect || "none";
@@ -1515,7 +1559,7 @@ function wrapModule(el) {
   function closeInfoOverlay(overlayEl) {
     overlayEl.classList.remove("is-visible");
 
-    // Phase 8: Remove body classes for canvas overlay effects
+    // Remove body classes for canvas overlay effects when info overlay closes
     document.body.classList.remove("info-open", "info-blur-bg", "info-darken", "info-colour-overlay");
 
     updateInfoButtonState(false);
@@ -1634,7 +1678,7 @@ function wrapModule(el) {
         const span = document.createElement("span");
         span.className = "nav-title-text";
         span.textContent = siteConfig.name;
-        titleEl.appendChild(wrapModule(span));
+        titleEl.appendChild(wrapModule(span, siteConfig.module_prefix, siteConfig.module_suffix));
       };
 
       if (titleMode === "text")       buildText();
@@ -1684,7 +1728,7 @@ function wrapModule(el) {
         emailEl.href = "mailto:" + email;
         emailEl.textContent = email;
         emailEl.style.pointerEvents = "auto";
-        emailZone.appendChild(wrapModule(emailEl));
+        emailZone.appendChild(wrapModule(emailEl, siteConfig.module_prefix, siteConfig.module_suffix));
       }
 
       // Info module
@@ -1696,7 +1740,7 @@ function wrapModule(el) {
         infoBtn.className = "nav-btn nav-info zone-info-module";
         infoBtn.style.pointerEvents = "auto";
         infoBtn.addEventListener("click", toggleInfo);
-        infoZone.appendChild(wrapModule(infoBtn));
+        infoZone.appendChild(wrapModule(infoBtn, siteConfig.module_prefix, siteConfig.module_suffix));
         // Set initial state
         updateInfoButtonState(isOverlayOpen);
       }
@@ -2009,7 +2053,7 @@ function wrapModule(el) {
       el.style.zIndex = String(zCounter);
     });
 
-    // Phase 14: Touch hover-reveal fallback.
+    // Touch hover-reveal fallback: tap to toggle colour reveal on mobile
     // On mobile, :hover never fires; first tap toggles colour, second tap removes it.
     if (isMobile) {
       let _touchMoved = false;
@@ -2034,7 +2078,7 @@ function wrapModule(el) {
     // Unified click handler (Phase 5 + Phase 6)
     el.addEventListener("click", () => {
       if (el.dataset.preventClick === "true") return;
-      handleItemClick(el, window._siteConfigRaw); // Phase 5 visual trigger runs first
+      handleItemClick(el, window._siteConfigRaw); // Image click/effect handler runs first
       handleItemInteraction(el, "single");
     });
 
@@ -2107,11 +2151,6 @@ function wrapModule(el) {
     });
   }
 
-  // Light-touch helper (currently unused) left here for future experimentation
-  // if we ever want to nudge a few tiles toward the initial viewport.
-  function ensureInitialVisibility(_count = 4) {
-    return;
-  }
 
   // Dragging logic for the stage (background drag)
   let isPanning = false;
@@ -2755,7 +2794,7 @@ function wrapModule(el) {
 
       el.textContent = g;
       el.addEventListener("click", () => toggleGroup(g, el));
-      panel.appendChild(wrapModule(el));
+      panel.appendChild(wrapModule(el, siteConfig.module_prefix, siteConfig.module_suffix));
 
       if (layout === "horizontal" && idx < groups.length - 1) {
         const sep = document.createElement("span");
@@ -2841,7 +2880,7 @@ function wrapModule(el) {
 
       btn.textContent = label;
       btn.addEventListener("click", () => applyLayout(mode));
-      panel.appendChild(wrapModule(btn));
+      panel.appendChild(wrapModule(btn, siteConfig.module_prefix, siteConfig.module_suffix));
 
       if (layout === "horizontal" && idx < validModes.length - 1) {
         const sep = document.createElement("span");
@@ -2923,7 +2962,7 @@ function wrapModule(el) {
         else if (b.action === "out") zoomOut();
         else resetView();
       });
-      panel.appendChild(wrapModule(btn));
+      panel.appendChild(wrapModule(btn, siteConfig.module_prefix, siteConfig.module_suffix));
 
       if ((layout === "horizontal" || layout === "full-width") && idx < buttons.length - 1) {
         const sep = document.createElement("span");
@@ -3059,7 +3098,7 @@ function wrapModule(el) {
         }
       });
 
-      // Phase 14: Touch swipe navigation inside lightbox (left/right swipe = prev/next)
+      // Touch swipe navigation inside lightbox (left swipe = next, right swipe = prev)
       let _lbTouchStartX = 0;
       dialog.addEventListener("touchstart", (e) => {
         if (e.touches.length === 1) _lbTouchStartX = e.touches[0].clientX;
@@ -3249,7 +3288,7 @@ function wrapModule(el) {
       if (mode === "lightbox") {
         openLightbox(el);
       } else if (mode === "canvasExpand" || mode === "canvas-expand") {
-        // Phase 14: Canvas expand is desktop-only; on mobile fall back to lightbox or no-op.
+        // Canvas expand is desktop-only; on mobile fall back to lightbox or no-op.
         if (isMobile) {
           // If lightbox is also available, open it instead. Otherwise silently do nothing.
           if (cfg?.imageClick?.lightbox?.enabled) {
@@ -3276,11 +3315,11 @@ function wrapModule(el) {
       currentLayout = siteConfig.default_layout;
     }
 
-    // Phase 3: apply theme immediately after config is loaded
+    // Apply theme immediately after config is loaded
     applyTheme(window._siteConfigRaw);
     applyImageEffects(window._siteConfigRaw);
 
-    // Phase 2: build zone containers before any UI panels
+    // Build zone containers before any UI panels
     buildZoneContainers();
 
     const isSlideshow = isMobile && siteConfig.mobile_mode === "slideshow";
@@ -3339,12 +3378,12 @@ function wrapModule(el) {
       if (!btn.parentNode.classList.contains('module-wrapper')) {
         const parent = btn.parentNode;
         const next = btn.nextSibling;
-        const wrapper = wrapModule(btn);
+        const wrapper = wrapModule(btn, siteConfig.module_prefix, siteConfig.module_suffix);
         parent.insertBefore(wrapper, next);
       }
     });
 
-    // Phase 12.5 Bug 1: Signal GUI that the canvas is ready for hot-reload
+    // Signal GUI that the canvas is ready for hot-reload
     try {
       window.parent.postMessage({ type: 'canvas-ready' }, '*');
     } catch (_) { /* not in iframe — noop */ }

@@ -313,7 +313,7 @@ a.zone-title-module:hover .nav-title-text {
   font-size: 14px;
   text-transform: var(--text-transform, uppercase);
   color: inherit;
-mix-blend-mode: var(--text-blend-mode, normal);
+  mix-blend-mode: var(--text-blend-mode, normal);
 }
 
 .reload-badge:hover {
@@ -362,7 +362,7 @@ mix-blend-mode: var(--text-blend-mode, normal);
 
 .media-item.video-embed .play-badge-text {
   color: inherit;
-mix-blend-mode: var(--text-blend-mode, normal);
+  mix-blend-mode: var(--text-blend-mode, normal);
   font-size: 14px;
   letter-spacing: 0.16em;
   text-align: center;
@@ -395,7 +395,7 @@ mix-blend-mode: var(--text-blend-mode, normal);
   background: transparent;
   border: none;
   color: inherit;
-mix-blend-mode: var(--text-blend-mode, normal);
+  mix-blend-mode: var(--text-blend-mode, normal);
   font-family: inherit;
   font-size: 14px;
   letter-spacing: 0.1em;
@@ -536,7 +536,7 @@ body.info-open.info-colour-overlay::after {
   pointer-events: none;
   mix-blend-mode: var(--text-blend-mode, normal);
   color: inherit;
-font-family: var(--font-family);
+  font-family: var(--font-family);
   font-size: 14px;
   line-height: 1;
 }
@@ -637,7 +637,7 @@ font-family: var(--font-family);
   pointer-events: none;
   mix-blend-mode: var(--text-blend-mode, normal);
   color: inherit;
-font-family: inherit;
+  font-family: inherit;
   font-size: var(--ui-text-size, 18px);
   text-transform: var(--text-transform, uppercase);
   letter-spacing: 0.08em;
@@ -655,13 +655,12 @@ font-family: inherit;
   pointer-events: none;
   mix-blend-mode: var(--text-blend-mode, normal);
   color: inherit;
-font-family: inherit;
+  font-family: inherit;
   font-size: var(--ui-text-size, 18px);
   text-transform: var(--text-transform, uppercase);
   letter-spacing: 0.08em;
+  /* flex-direction and align-items are set dynamically by buildLayoutPanel() */
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
 }
 
 .layout-option {
@@ -711,7 +710,7 @@ body.no-shadow .media-item {
   pointer-events: none;
   mix-blend-mode: var(--text-blend-mode, normal);
   color: inherit;
-font-family: inherit;
+  font-family: inherit;
   font-size: var(--ui-text-size, 18px);
   text-transform: var(--text-transform, uppercase);
   letter-spacing: 0.08em;

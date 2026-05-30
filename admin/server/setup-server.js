@@ -71,10 +71,21 @@ function serveFile(filePath, res) {
   });
 }
 
+// 512KB is plenty for a config.json payload.
+const MAX_BODY_SIZE = 512 * 1024;
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    req.on('data', c => chunks.push(c));
+    let totalSize = 0;
+    req.on('data', c => {
+      totalSize += c.length;
+      if (totalSize > MAX_BODY_SIZE) {
+        req.destroy();
+        return reject(Object.assign(new Error('Payload too large'), { statusCode: 413 }));
+      }
+      chunks.push(c);
+    });
     req.on('end',  () => resolve(Buffer.concat(chunks).toString('utf8')));
     req.on('error', reject);
   });
@@ -121,7 +132,15 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url === '/api/config' && method === 'POST') {
-    const body = await readBody(req);
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      const status = e.statusCode || 400;
+      res.writeHead(status, { ...corsHeaders(), 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+      return;
+    }
     try {
       JSON.parse(body); // validate JSON before writing
     } catch (e) {

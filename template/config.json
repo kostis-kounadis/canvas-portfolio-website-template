@@ -22,7 +22,7 @@
   "ui": {
     "modules": {
       "title": {
-        "visible": true,
+        "visible": false,
         "position": "middle-center",
         "mode": "svg",
         "text": "My Portfolio",

@@ -9,6 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import {
+  DEFAULT_IMAGE_SHADOW,
+  DEFAULT_IMAGE_EFFECTS,
+  DEFAULT_IMAGE_CLICK,
+  DEFAULT_LIGHTBOX,
+  DEFAULT_CANVAS_EXPAND,
+} from '@/lib/defaults';
 
 function CompactColorPicker({ label, desc, value, onChange }: { label: string, desc: string, value: string, onChange: (v: string) => void }) {
   return (
@@ -1025,7 +1032,7 @@ export function ImageSettingsForm() {
               id="shadowEnabled" 
               checked={config.theme.imageShadow?.enabled !== false}
               onCheckedChange={(v) => updateConfig(c => { 
-                if (!c.theme.imageShadow) c.theme.imageShadow = { enabled: true, opacity: 0.06, blur: 30, color: '#000000' };
+                if (!c.theme.imageShadow) c.theme.imageShadow = { ...DEFAULT_IMAGE_SHADOW };
                 c.theme.imageShadow.enabled = v; 
               })}
             />
@@ -1049,7 +1056,7 @@ export function ImageSettingsForm() {
                     onValueChange={(val: number | readonly number[]) => {
                       const num = Array.isArray(val) ? val[0] : (val as number);
                       updateConfig(c => { 
-                        if (!c.theme.imageShadow) c.theme.imageShadow = { enabled: true, opacity: 0.06, blur: 30, color: '#000000' };
+                        if (!c.theme.imageShadow) c.theme.imageShadow = { ...DEFAULT_IMAGE_SHADOW };
                         c.theme.imageShadow.opacity = num; 
                       });
                     }}
@@ -1071,7 +1078,7 @@ export function ImageSettingsForm() {
                     onValueChange={(val: number | readonly number[]) => {
                       const num = Array.isArray(val) ? val[0] : (val as number);
                       updateConfig(c => { 
-                        if (!c.theme.imageShadow) c.theme.imageShadow = { enabled: true, opacity: 0.06, blur: 30, color: '#000000' };
+                        if (!c.theme.imageShadow) c.theme.imageShadow = { ...DEFAULT_IMAGE_SHADOW };
                         c.theme.imageShadow.blur = num; 
                       });
                     }}
@@ -1085,7 +1092,7 @@ export function ImageSettingsForm() {
                 desc="The tint color of the image drop shadow"
                 value={config.theme.imageShadow?.color || '#000000'}
                 onChange={(val) => updateConfig(c => {
-                  if (!c.theme.imageShadow) c.theme.imageShadow = { enabled: true, opacity: 0.06, blur: 30, color: '#000000' };
+                  if (!c.theme.imageShadow) c.theme.imageShadow = { ...DEFAULT_IMAGE_SHADOW };
                   c.theme.imageShadow.color = val;
                 })}
               />
@@ -1102,7 +1109,7 @@ export function ImageSettingsForm() {
           <Select 
             value={config.imageEffects?.initialState || 'colour'} 
             onValueChange={(v) => updateConfig(c => { 
-              if (!c.imageEffects) c.imageEffects = { initialState: 'colour', clickMode: 'none', clickStickyMode: 'multi', blurOthersOnClick: false };
+              if (!c.imageEffects) c.imageEffects = { ...DEFAULT_IMAGE_EFFECTS };
               c.imageEffects.initialState = v || 'colour';
             })}
           >
@@ -1126,7 +1133,7 @@ export function ImageSettingsForm() {
                 desc="Darker tone replacement (shadows)"
                 value={config.imageEffects.duotoneColor1 || '#000000'}
                 onChange={(val) => updateConfig(c => {
-                  if (!c.imageEffects) c.imageEffects = { initialState: 'colour', clickMode: 'none', clickStickyMode: 'multi', blurOthersOnClick: false };
+                  if (!c.imageEffects) c.imageEffects = { ...DEFAULT_IMAGE_EFFECTS };
                   c.imageEffects.duotoneColor1 = val;
                 })}
               />
@@ -1135,7 +1142,7 @@ export function ImageSettingsForm() {
                 desc="Lighter tone replacement (highlights)"
                 value={config.imageEffects.duotoneColor2 || '#ffffff'}
                 onChange={(val) => updateConfig(c => {
-                  if (!c.imageEffects) c.imageEffects = { initialState: 'colour', clickMode: 'none', clickStickyMode: 'multi', blurOthersOnClick: false };
+                  if (!c.imageEffects) c.imageEffects = { ...DEFAULT_IMAGE_EFFECTS };
                   c.imageEffects.duotoneColor2 = val;
                 })}
               />
@@ -1152,7 +1159,7 @@ export function ImageSettingsForm() {
           <Switch 
             checked={config.imageEffects?.enlargeOnHover || false} 
             onCheckedChange={(checked) => updateConfig(c => { 
-              if (!c.imageEffects) c.imageEffects = { initialState: 'colour', clickMode: 'none', clickStickyMode: 'multi', blurOthersOnClick: false };
+              if (!c.imageEffects) c.imageEffects = { ...DEFAULT_IMAGE_EFFECTS };
               c.imageEffects.enlargeOnHover = checked;
             })}
           />
@@ -1167,7 +1174,7 @@ export function ImageSettingsForm() {
           <Select 
             value={config.imageEffects?.blendMode || 'normal'} 
             onValueChange={(v) => updateConfig(c => { 
-              if (!c.imageEffects) c.imageEffects = { initialState: 'colour', clickMode: 'none', clickStickyMode: 'multi', blurOthersOnClick: false };
+              if (!c.imageEffects) c.imageEffects = { ...DEFAULT_IMAGE_EFFECTS };
               c.imageEffects.blendMode = v || 'normal';
             })}
           >
@@ -1193,9 +1200,9 @@ export function ImageSettingsForm() {
         <RadioGroup 
           value={config.imageClick?.lightbox?.enabled ? "lightbox" : (config.imageClick?.canvasExpand?.enabled ? "canvasExpand" : "none")}
           onValueChange={(v) => updateConfig(c => { 
-            if (!c.imageClick) c.imageClick = { lightbox: { enabled: true, backdropEffect: 'darken' }, canvasExpand: { enabled: false } };
-            if (!c.imageClick.lightbox) c.imageClick.lightbox = { enabled: true, backdropEffect: 'darken' };
-            if (!c.imageClick.canvasExpand) c.imageClick.canvasExpand = { enabled: false };
+            if (!c.imageClick) c.imageClick = { ...DEFAULT_IMAGE_CLICK, lightbox: { ...DEFAULT_LIGHTBOX }, canvasExpand: { ...DEFAULT_CANVAS_EXPAND } };
+            if (!c.imageClick.lightbox) c.imageClick.lightbox = { ...DEFAULT_LIGHTBOX };
+            if (!c.imageClick.canvasExpand) c.imageClick.canvasExpand = { ...DEFAULT_CANVAS_EXPAND };
             c.imageClick.lightbox.enabled = v === "lightbox";
             c.imageClick.canvasExpand.enabled = v === "canvasExpand";
             c.imageClick.mode = v || 'none';

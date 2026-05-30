@@ -1,12 +1,13 @@
 # Node & Dependency files
 node_modules/
-admin/node_modules/
+admin/build-setup-app/node_modules/
 package-lock.json
-admin/package-lock.json
+admin/build-setup-app/package-lock.json
 
 # OS files
 .DS_Store
 Thumbs.db
 
 # GUI local setup temp / files
-admin/setup-server.log
+admin/server/setup-server.log
+utilities/

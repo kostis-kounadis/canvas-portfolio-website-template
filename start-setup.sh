@@ -14,4 +14,4 @@ if ! command -v node &>/dev/null; then
   exit 1
 fi
 
-node admin/setup-server.js
+node admin/server/setup-server.js

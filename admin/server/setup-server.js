@@ -25,6 +25,10 @@ const PORT     = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const rootDir  = path.join(__dirname, '../../template');
 const setupDir = path.join(__dirname, '../app');
 
+// Write mutex: ensures concurrent POST /api/config requests are serialised,
+// preventing a race condition that could truncate or corrupt config.json.
+let writeLock = Promise.resolve();
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css':  'text/css; charset=utf-8',
@@ -104,9 +108,15 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: 'config.json not found' }));
       return;
     }
-    const raw = fs.readFileSync(configPath, 'utf8');
-    res.writeHead(200, { ...corsHeaders(), 'Content-Type': 'application/json' });
-    res.end(raw);
+    // Use async readFile to avoid blocking the event loop during the read.
+    try {
+      const raw = await fs.promises.readFile(configPath, 'utf8');
+      res.writeHead(200, { ...corsHeaders(), 'Content-Type': 'application/json' });
+      res.end(raw);
+    } catch (e) {
+      res.writeHead(500, { ...corsHeaders(), 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Failed to read config: ' + e.message }));
+    }
     return;
   }
 
@@ -114,13 +124,24 @@ const server = http.createServer(async (req, res) => {
     const body = await readBody(req);
     try {
       JSON.parse(body); // validate JSON before writing
-      fs.writeFileSync(path.join(rootDir, 'config.json'), body, 'utf8');
-      res.writeHead(200, { ...corsHeaders(), 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true }));
     } catch (e) {
       res.writeHead(400, { ...corsHeaders(), 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Invalid JSON: ' + e.message }));
+      return;
     }
+    // Queue the write behind the mutex so concurrent saves can't interleave
+    // and corrupt the file with a partial write.
+    writeLock = writeLock.then(async () => {
+      try {
+        await fs.promises.writeFile(path.join(rootDir, 'config.json'), body, 'utf8');
+        res.writeHead(200, { ...corsHeaders(), 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(500, { ...corsHeaders(), 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Write failed: ' + e.message }));
+      }
+    });
+    await writeLock;
     return;
   }
 

@@ -414,7 +414,7 @@ function wrapModule(el) {
   let announceTimer = null;
 
   function announce(msg) {
-    if (!announcerEl) announcerEl = announcerEl = buildAnnouncer();
+    if (!announcerEl) announcerEl = buildAnnouncer();
     // Clear then set — forces screen readers to re-read even identical messages
     announcerEl.textContent = "";
     window.clearTimeout(announceTimer);
@@ -597,6 +597,7 @@ function wrapModule(el) {
   }
 
   let infoLoaded = false;
+  let infoFetching = false; // Guard: prevents duplicate concurrent fetches when INFO is clicked rapidly
   let infoBodyText = ""; // info body text from config.json
 
   // ── Map config.json → flat siteConfig ─────────────────────────────────────
@@ -781,12 +782,13 @@ function wrapModule(el) {
     }
 
     // Phase 8 hot-reload resets for active info overlay
+    // Use a local variable name that does NOT shadow the outer `cfg` parameter.
     const overlay = document.getElementById("info-overlay");
     if (overlay && overlay.classList.contains("is-visible")) {
       document.body.classList.remove("info-blur-bg", "info-darken", "info-colour-overlay");
       
-      const cfg = window._siteConfigRaw || {};
-      const infoCfg = (cfg.ui && cfg.ui.modules && cfg.ui.modules.info) || {};
+      const infoCfgRaw = window._siteConfigRaw || {};
+      const infoCfg = (infoCfgRaw.ui && infoCfgRaw.ui.modules && infoCfgRaw.ui.modules.info) || {};
       const effect = infoCfg.overlayEffect || siteConfig.info_overlay_effect || "none";
       
       if (effect !== "none") {
@@ -1488,17 +1490,22 @@ function wrapModule(el) {
     updateInfoButtonState(true);
 
     if (!infoLoaded) {
-      // Config wasn't pre-loaded (unusual); fetch config.json now
-      fetch("config.json")
-        .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
-        .then((cfg) => {
-          window._siteConfigRaw = cfg;
-          mapConfig(cfg);
-          applyConfigCSS();
-          textEl.innerHTML = renderMarkdown(infoBodyText);
-          requestAnimationFrame(() => autoscaleText(overlayEl, textEl));
-        })
-        .catch(() => { textEl.textContent = "INFO NOT FOUND"; infoLoaded = true; });
+      // Config wasn't pre-loaded (unusual); fetch config.json now.
+      // Guard with `infoFetching` so rapid button clicks don't fire duplicate requests.
+      if (!infoFetching) {
+        infoFetching = true;
+        fetch("config.json")
+          .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+          .then((cfg) => {
+            window._siteConfigRaw = cfg;
+            mapConfig(cfg);
+            applyConfigCSS();
+            textEl.innerHTML = renderMarkdown(infoBodyText);
+            requestAnimationFrame(() => autoscaleText(overlayEl, textEl));
+          })
+          .catch(() => { textEl.textContent = "INFO NOT FOUND"; infoLoaded = true; })
+          .finally(() => { infoFetching = false; });
+      }
     } else {
       if (!textEl.innerHTML) textEl.innerHTML = renderMarkdown(infoBodyText);
       requestAnimationFrame(() => autoscaleText(overlayEl, textEl));

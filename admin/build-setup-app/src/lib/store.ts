@@ -162,7 +162,10 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     // Debounced auto-save
     if (_saveTimeout) clearTimeout(_saveTimeout);
     _saveTimeout = setTimeout(() => {
-      get().saveConfig().catch(() => {});
+      // Surface save failures so the UI can warn the user rather than silently losing changes.
+      get().saveConfig().catch((err: any) => {
+        set({ error: err?.message || 'Auto-save failed. Check that the setup server is running.' });
+      });
     }, 400);
 
     // Hot-reload

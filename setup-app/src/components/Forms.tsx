@@ -4,6 +4,7 @@ import { useConfigStore } from '@/lib/store';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -38,6 +39,57 @@ export function LayoutsForm() {
   const { config, updateConfig } = useConfigStore();
   if (!config) return null;
 
+  const handleToggleEnable = (mode: string, enabled: boolean) => {
+    updateConfig(c => {
+      let available = c.layouts.available || [];
+      if (enabled) {
+        if (!available.includes(mode)) available.push(mode);
+      } else {
+        available = available.filter(m => m !== mode);
+      }
+      
+      const order = ["random", "rows", "stacks"];
+      c.layouts.available = order.filter(m => available.includes(m));
+
+      const activeCount = c.layouts.available.length;
+      
+      if (activeCount === 1) {
+        c.layouts.default = c.layouts.available[0];
+        c.ui.modules.layouts.visible = false;
+      } else if (activeCount > 1) {
+        c.ui.modules.layouts.visible = true;
+      }
+      
+      if (!c.layouts.available.includes(c.layouts.default) && activeCount > 0) {
+        c.layouts.default = c.layouts.available[0];
+      }
+    });
+  };
+
+  const handleSetDefault = (mode: string, isDefault: boolean) => {
+    if (!isDefault) return;
+    updateConfig(c => {
+      c.layouts.default = mode;
+      if (!c.layouts.available.includes(mode)) {
+        c.layouts.available.push(mode);
+        const order = ["random", "rows", "stacks"];
+        c.layouts.available = order.filter(m => c.layouts.available.includes(m));
+      }
+      const activeCount = c.layouts.available.length;
+      if (activeCount === 1) {
+        c.ui.modules.layouts.visible = false;
+      } else if (activeCount > 1) {
+        c.ui.modules.layouts.visible = true;
+      }
+    });
+  };
+
+  const MODES = [
+    { id: 'random', label: 'Random (Scattered)', desc: 'Scattered items on the canvas grid' },
+    { id: 'rows', label: 'Rows (Masonry)', desc: 'Vertical height scale of image columns' },
+    { id: 'stacks', label: 'Stacks (Depth)', desc: 'Depth distance spacing between depth-stacked slides' }
+  ] as const;
+
   return (
     <div className="space-y-8 max-w-2xl">
       <div>
@@ -47,25 +99,6 @@ export function LayoutsForm() {
 
       <div className="space-y-6">
         <h3 className="text-sm font-semibold text-zinc-900 border-b border-zinc-200 pb-2">Layout Styles Settings</h3>
-
-        {/* Default Layout Dropdown Card */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-zinc-200 rounded-lg bg-white gap-4 shadow-sm hover:border-zinc-300 transition-colors">
-          <div className="flex flex-col gap-0.5">
-            <span className="font-medium text-sm text-zinc-900">Default Layout Style</span>
-            <span className="text-xs text-zinc-500">The default visual arrangement of media items</span>
-          </div>
-          <Select 
-            value={config.layouts.default} 
-            onValueChange={(v) => updateConfig(c => { c.layouts.default = v as string })}
-          >
-            <SelectTrigger className="w-[180px] h-9 border-zinc-200 text-xs font-semibold"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="random" className="text-xs font-medium">Random (Scattered)</SelectItem>
-              <SelectItem value="rows" className="text-xs font-medium">Rows (Masonry)</SelectItem>
-              <SelectItem value="stacks" className="text-xs font-medium">Stacks (Depth)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         {/* Universal Draggable Items Card */}
         <div className="bg-zinc-50/50 p-4 rounded-xl border border-zinc-100">
@@ -87,147 +120,198 @@ export function LayoutsForm() {
           </div>
         </div>
 
-        {/* Options for ALL Styles */}
-        <div className="space-y-8 pt-4">
-          {/* Random Style settings */}
-          <div className="pl-6 py-2 border-l-2 border-zinc-200 space-y-6 bg-zinc-50/10 rounded-r-lg">
-            <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Random Layout Settings</h4>
-            
-            {/* Scarcity Slider */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-zinc-700">Canvas Scarcity</span>
-                <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.random.scarcity}px</span>
-              </div>
-              <p className="text-[11px] text-zinc-400">Controls the density spacing between scattered items on the canvas grid</p>
-              <div className="flex items-center gap-4">
-                <Slider 
-                  className="flex-1"
-                  min={100} max={1000} step={10}
-                  value={[config.layouts.random.scarcity]}
-                  onValueChange={(val: number | readonly number[]) => {
-                    const num = Array.isArray(val) ? val[0] : (val as number);
-                    updateConfig(c => { c.layouts.random.scarcity = num; });
-                  }}
-                />
-              </div>
-            </div>
+        <Accordion multiple className="w-full space-y-4 pt-4">
+          {MODES.map((modeData, idx) => {
+            const mode = modeData.id;
+            const isEnabled = config.layouts.available.includes(mode);
+            const isDefault = config.layouts.default === mode;
+            const isOnlyOne = config.layouts.available.length <= 1 && isEnabled;
 
-            {/* Overlap Ratio Slider */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-zinc-700">Overlap Ratio</span>
-                <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.random.overlapRatio}</span>
-              </div>
-              <p className="text-[11px] text-zinc-400">Determines how much media items can visually overlap on the canvas stage</p>
-              <div className="flex items-center gap-4">
-                <Slider 
-                  className="flex-1"
-                  min={0} max={0.8} step={0.05}
-                  value={[config.layouts.random.overlapRatio]}
-                  onValueChange={(val: number | readonly number[]) => {
-                    const num = Array.isArray(val) ? val[0] : (val as number);
-                    updateConfig(c => { c.layouts.random.overlapRatio = num; });
-                  }}
-                />
-              </div>
-            </div>
-          </div>
+            return (
+              <AccordionItem key={mode} value={mode} className="border border-zinc-200 rounded-lg bg-white overflow-hidden shadow-sm data-[state=open]:border-zinc-300 transition-colors border-b-0">
+                <AccordionTrigger 
+                  className="hover:no-underline px-4 py-4 flex flex-1 items-start justify-start gap-3 border-b border-zinc-100 bg-zinc-50/80 border-none !no-underline"
+                  actions={
+                    <div className="flex items-center gap-6 shrink-0">
+                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}>
+                        <Label className="text-xs text-zinc-500 font-medium cursor-pointer">Default</Label>
+                        <Switch 
+                          checked={isDefault}
+                          disabled={isOnlyOne || !isEnabled}
+                          onCheckedChange={(v) => handleSetDefault(mode, v)}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}>
+                        <Label className="text-xs text-zinc-500 font-medium cursor-pointer">Enabled</Label>
+                        <Switch 
+                          checked={isEnabled}
+                          disabled={isOnlyOne} // Can't disable the last one
+                          onCheckedChange={(v) => handleToggleEnable(mode, v)}
+                        />
+                      </div>
+                    </div>
+                  }
+                >
+                  <div className="flex flex-col items-start gap-0.5 text-left flex-1">
+                    <span className="font-semibold text-sm text-zinc-900 capitalize">{modeData.label}</span>
+                    <span className="text-xs text-zinc-500 font-normal">{modeData.desc}</span>
+                  </div>
+                </AccordionTrigger>
 
-          {/* Rows Style settings */}
-          <div className="pl-6 py-2 border-l-2 border-zinc-200 space-y-6 bg-zinc-50/10 rounded-r-lg">
-            <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Rows Layout Settings</h4>
-            
-            {/* Row Height Slider */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-zinc-700">Default Row Height</span>
-                <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.rows.rowHeight}px</span>
-              </div>
-              <p className="text-[11px] text-zinc-400">Controls the vertical height scale of image columns</p>
-              <div className="flex items-center gap-4">
-                <Slider 
-                  className="flex-1"
-                  min={150} max={500} step={10}
-                  value={[config.layouts.rows.rowHeight]}
-                  onValueChange={(val: number | readonly number[]) => {
-                    const num = Array.isArray(val) ? val[0] : (val as number);
-                    updateConfig(c => { c.layouts.rows.rowHeight = num; });
-                  }}
-                />
-              </div>
-            </div>
+                <AccordionContent className={!isEnabled ? "opacity-50 pointer-events-none transition-opacity" : "transition-opacity"}>
+                  <div className="p-4 space-y-6">
+                    {/* Layout Name Input */}
+                    <div className="space-y-3">
+                      <div className="flex flex-col gap-0.5">
+                        <Label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Layout Name</Label>
+                        <span className="text-xs text-zinc-500">The name displayed for this layout in the view styles module</span>
+                      </div>
+                      <Input 
+                        className="h-8 text-xs font-mono max-w-[240px]" 
+                        value={config.layouts.labels[idx]} 
+                        onChange={(e) => updateConfig(c => { c.layouts.labels[idx] = e.target.value })} 
+                      />
+                    </div>
 
-            {/* Gap Slider */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-zinc-700">Grid Column Gap</span>
-                <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.rows.gap}px</span>
-              </div>
-              <p className="text-[11px] text-zinc-400">Horizontal spacing margins between items within row columns</p>
-              <div className="flex items-center gap-4">
-                <Slider 
-                  className="flex-1"
-                  min={0} max={80} step={4}
-                  value={[config.layouts.rows.gap]}
-                  onValueChange={(val: number | readonly number[]) => {
-                    const num = Array.isArray(val) ? val[0] : (val as number);
-                    updateConfig(c => { c.layouts.rows.gap = num; });
-                  }}
-                />
-              </div>
-            </div>
-          </div>
+                    {mode === 'random' && (
+                      <div className="pt-4 border-t border-zinc-100 space-y-6">
+                        {/* Scarcity Slider */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs font-medium">
+                            <span className="text-zinc-700">Canvas Scarcity</span>
+                            <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.random.scarcity}px</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400">Controls the density spacing between scattered items on the canvas grid</p>
+                          <div className="flex items-center gap-4">
+                            <Slider 
+                              className="flex-1"
+                              min={100} max={1000} step={10}
+                              value={[config.layouts.random.scarcity]}
+                              onValueChange={(val: number | readonly number[]) => {
+                                const num = Array.isArray(val) ? val[0] : (val as number);
+                                updateConfig(c => { c.layouts.random.scarcity = num; });
+                              }}
+                            />
+                          </div>
+                        </div>
 
-          {/* Stacks Style settings */}
-          <div className="pl-6 py-2 border-l-2 border-zinc-200 space-y-6 bg-zinc-50/10 rounded-r-lg">
-            <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Stacks Layout Settings</h4>
-            
-            {/* Spacing Slider */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-zinc-700">Stacks Column Spacing</span>
-                <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.stacks.spacing}px</span>
-              </div>
-              <p className="text-[11px] text-zinc-400">Depth distance spacing between depth-stacked visual slides</p>
-              <div className="flex items-center gap-4">
-                <Slider 
-                  className="flex-1"
-                  min={200} max={2000} step={50}
-                  value={[config.layouts.stacks.spacing]}
-                  onValueChange={(val: number | readonly number[]) => {
-                    const num = Array.isArray(val) ? val[0] : (val as number);
-                    updateConfig(c => { c.layouts.stacks.spacing = num; });
-                  }}
-                />
-              </div>
-            </div>
+                        {/* Overlap Ratio Slider */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs font-medium">
+                            <span className="text-zinc-700">Overlap Ratio</span>
+                            <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.random.overlapRatio}</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400">Determines how much media items can visually overlap on the canvas stage</p>
+                          <div className="flex items-center gap-4">
+                            <Slider 
+                              className="flex-1"
+                              min={0} max={0.8} step={0.05}
+                              value={[config.layouts.random.overlapRatio]}
+                              onValueChange={(val: number | readonly number[]) => {
+                                const num = Array.isArray(val) ? val[0] : (val as number);
+                                updateConfig(c => { c.layouts.random.overlapRatio = num; });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-            {/* Card Stacking Order Card */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-zinc-200 rounded-lg bg-white gap-4 shadow-sm hover:border-zinc-300 transition-colors">
-              <div className="flex flex-col gap-0.5">
-                <span className="font-medium text-xs text-zinc-900">Card Stacking Order</span>
-                <span className="text-[10px] text-zinc-500">Determine whether the top-left item is at the front or the back</span>
-              </div>
-              <Select 
-                value={config.layouts.stacks.depthOrder ?? 'front-to-back'} 
-                onValueChange={(v) => updateConfig(c => { 
-                  if (!c.layouts.stacks) c.layouts.stacks = { spacing: 1000, depthOrder: 'front-to-back' };
-                  c.layouts.stacks.depthOrder = v || 'front-to-back';
-                })}
-              >
-                <SelectTrigger className="w-[160px] h-8 border-zinc-200 text-[11px] font-semibold"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="front-to-back" className="text-[11px] font-medium">Top-Left is Front</SelectItem>
-                  <SelectItem value="back-to-front" className="text-[11px] font-medium">Top-Left is Back</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
+                    {mode === 'rows' && (
+                      <div className="pt-4 border-t border-zinc-100 space-y-6">
+                        {/* Row Height Slider */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs font-medium">
+                            <span className="text-zinc-700">Default Row Height</span>
+                            <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.rows.rowHeight}px</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400">Controls the vertical height scale of image columns</p>
+                          <div className="flex items-center gap-4">
+                            <Slider 
+                              className="flex-1"
+                              min={150} max={500} step={10}
+                              value={[config.layouts.rows.rowHeight]}
+                              onValueChange={(val: number | readonly number[]) => {
+                                const num = Array.isArray(val) ? val[0] : (val as number);
+                                updateConfig(c => { c.layouts.rows.rowHeight = num; });
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Gap Slider */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs font-medium">
+                            <span className="text-zinc-700">Grid Column Gap</span>
+                            <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.rows.gap}px</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400">Horizontal spacing margins between items within row columns</p>
+                          <div className="flex items-center gap-4">
+                            <Slider 
+                              className="flex-1"
+                              min={0} max={80} step={4}
+                              value={[config.layouts.rows.gap]}
+                              onValueChange={(val: number | readonly number[]) => {
+                                const num = Array.isArray(val) ? val[0] : (val as number);
+                                updateConfig(c => { c.layouts.rows.gap = num; });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {mode === 'stacks' && (
+                      <div className="pt-4 border-t border-zinc-100 space-y-6">
+                        {/* Spacing Slider */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs font-medium">
+                            <span className="text-zinc-700">Stacks Column Spacing</span>
+                            <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.stacks.spacing}px</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400">Depth distance spacing between depth-stacked visual slides</p>
+                          <div className="flex items-center gap-4">
+                            <Slider 
+                              className="flex-1"
+                              min={200} max={2000} step={50}
+                              value={[config.layouts.stacks.spacing]}
+                              onValueChange={(val: number | readonly number[]) => {
+                                const num = Array.isArray(val) ? val[0] : (val as number);
+                                updateConfig(c => { c.layouts.stacks.spacing = num; });
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Card Stacking Order Card */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-zinc-200 rounded-lg bg-zinc-50 gap-4 shadow-sm">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-xs text-zinc-900">Card Stacking Order</span>
+                            <span className="text-[10px] text-zinc-500">Determine whether the top-left item is at the front or the back</span>
+                          </div>
+                          <Select 
+                            value={config.layouts.stacks.depthOrder ?? 'front-to-back'} 
+                            onValueChange={(v) => updateConfig(c => { 
+                              if (!c.layouts.stacks) c.layouts.stacks = { spacing: 1000, depthOrder: 'front-to-back' };
+                              c.layouts.stacks.depthOrder = v || 'front-to-back';
+                            })}
+                          >
+                            <SelectTrigger className="w-[160px] h-8 border-zinc-200 text-[11px] font-semibold bg-white"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="front-to-back" className="text-[11px] font-medium">Top-Left is Front</SelectItem>
+                              <SelectItem value="back-to-front" className="text-[11px] font-medium">Top-Left is Back</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
       </div>
-
-
     </div>
   );
 }
@@ -243,7 +327,8 @@ const MODULE_LABELS: Record<string, string> = {
   email: 'Email',
   info: 'Info',
   categories: 'Categories',
-  layouts: 'Layouts'
+  layouts: 'Layouts',
+  zoom: 'Zoom Settings'
 };
 
 const ZONES = [
@@ -251,6 +336,7 @@ const ZONES = [
   { value: 'top-center', label: 'Top Center' },
   { value: 'top-right', label: 'Top Right' },
   { value: 'middle-left', label: 'Middle Left' },
+  { value: 'middle-center', label: 'Middle Center' },
   { value: 'middle-right', label: 'Middle Right' },
   { value: 'bottom-left', label: 'Bottom Left' },
   { value: 'bottom-center', label: 'Bottom Center' },
@@ -330,38 +416,176 @@ export function ModulesForm() {
         </p>
       </div>
 
-      {/* Modules List */}
-      <div className="space-y-4">
-        {['title', 'email', 'info', 'categories', 'layouts'].map((modKey) => {
-          const mod = config.ui.modules[modKey as keyof typeof config.ui.modules];
-          return (
-            <div key={modKey} className="flex flex-col gap-4 p-4 border border-zinc-200 rounded-lg hover:border-zinc-300 transition-colors bg-white">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-medium text-sm text-zinc-900">{MODULE_LABELS[modKey] || modKey}</span>
-                  <span className="text-xs text-zinc-500">Toggle visibility and canvas location</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Select 
-                    value={mod.position} 
-                    disabled={!mod.visible}
-                    onValueChange={(v) => updateConfig(c => { c.ui.modules[modKey as keyof typeof config.ui.modules].position = v as string })}
-                  >
-                    <SelectTrigger className="w-[140px] h-8 text-xs font-medium border-zinc-200"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {ZONES.map(z => <SelectItem key={z.value} value={z.value} className="text-xs font-medium">{z.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Switch 
-                    checked={mod.visible}
-                    onCheckedChange={(v) => updateConfig(c => { c.ui.modules[modKey as keyof typeof config.ui.modules].visible = v })}
-                  />
-                </div>
+      <Accordion className="mb-8">
+        <AccordionItem value="global" className="border border-zinc-200 rounded-lg hover:border-zinc-300 transition-colors bg-white overflow-hidden shadow-sm">
+          <AccordionTrigger className="px-4 py-4 hover:no-underline">
+            <div className="flex flex-col gap-0.5 text-left">
+              <span className="font-medium text-sm text-zinc-900">Global Settings</span>
+              <span className="text-xs text-zinc-500">Configure enclosing characters for all modules</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="px-4 pb-4 flex gap-4">
+              <div className="flex-1 space-y-1">
+                <Label htmlFor="global-prefix" className="text-xs font-medium text-zinc-900">Prefix Character</Label>
+                <Input 
+                  id="global-prefix"
+                  value={config.ui.module_prefix ?? "["}
+                  onChange={(e) => updateConfig(c => { c.ui.module_prefix = e.target.value })}
+                  placeholder="e.g. ["
+                  className="bg-white"
+                />
               </div>
+              <div className="flex-1 space-y-1">
+                <Label htmlFor="global-suffix" className="text-xs font-medium text-zinc-900">Suffix Character</Label>
+                <Input 
+                  id="global-suffix"
+                  value={config.ui.module_suffix ?? "]"}
+                  onChange={(e) => updateConfig(c => { c.ui.module_suffix = e.target.value })}
+                  placeholder="e.g. ]"
+                  className="bg-white"
+                />
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
-              {/* Module-specific options conditionally rendered */}
-              {mod.visible && modKey === 'info' && (
+      <Accordion multiple className="space-y-4">
+        {['title', 'email', 'info', 'categories', 'layouts', 'zoom'].map((modKey) => {
+          const mod = config.ui.modules[modKey as keyof typeof config.ui.modules];
+          const isLayoutsForcedOff = modKey === 'layouts' && config.layouts.available.length <= 1;
+
+          return (
+            <AccordionItem key={modKey} value={modKey} disabled={isLayoutsForcedOff} className={`flex flex-col border border-zinc-200 rounded-lg transition-colors overflow-hidden shadow-sm border-b-0 ${isLayoutsForcedOff ? 'opacity-50 pointer-events-none bg-zinc-50/50' : 'bg-white hover:border-zinc-300 data-[state=open]:border-zinc-300'}`}>
+              <AccordionTrigger 
+                className="px-4 py-4 hover:no-underline flex flex-1 items-center justify-start gap-3 w-full"
+                actions={
+                  <div 
+                    className="flex items-center gap-4 shrink-0" 
+                    onClick={(e) => e.stopPropagation()} 
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <Select 
+                      value={mod.position} 
+                      disabled={!mod.visible || isLayoutsForcedOff}
+                      onValueChange={(v) => updateConfig(c => { c.ui.modules[modKey as keyof typeof config.ui.modules].position = v as string })}
+                    >
+                      <SelectTrigger className="w-[140px] h-8 text-xs font-medium border-zinc-200 bg-white"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {ZONES.map(z => <SelectItem key={z.value} value={z.value} className="text-xs font-medium">{z.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Switch 
+                      checked={mod.visible} 
+                      disabled={isLayoutsForcedOff}
+                      onCheckedChange={(v) => updateConfig(c => { c.ui.modules[modKey as keyof typeof config.ui.modules].visible = v })}
+                    />
+                  </div>
+                }
+              >
+                <div className="flex flex-col gap-0.5 text-left flex-1">
+                  <span className="font-medium text-sm text-zinc-900">{MODULE_LABELS[modKey] || modKey}</span>
+                  <span className="text-xs text-zinc-500">
+                    {isLayoutsForcedOff ? "Requires multiple active layout modes" : "Toggle visibility and canvas location"}
+                  </span>
+                </div>
+              </AccordionTrigger>
+
+              {/* Module-specific options inside AccordionContent */}
+              <AccordionContent className={!mod.visible ? "opacity-50 pointer-events-none transition-opacity" : "transition-opacity"}>
+                <div className="px-4 pb-4 flex flex-col gap-4">
+              
+              {modKey === 'title' && (
                 <div className="pt-4 border-t border-zinc-100 space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Appearance Mode</Label>
+                    <RadioGroup 
+                      value={config.ui.modules.title.mode || 'text'}
+                      onValueChange={(v) => updateConfig(c => { 
+                        if (!c.ui.modules.title.mode) c.ui.modules.title.mode = 'text';
+                        c.ui.modules.title.mode = v;
+                      })}
+                      className="flex flex-col gap-3 bg-zinc-50 p-4 rounded-lg border border-zinc-100"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <RadioGroupItem value="text" id="title-mode-text" className="mt-0.5" />
+                        <div className="flex flex-col">
+                          <Label htmlFor="title-mode-text" className="text-sm font-medium cursor-pointer">Text Only</Label>
+                          <span className="text-xs text-zinc-500">Displays the Site Title text.</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <RadioGroupItem value="svg" id="title-mode-svg" className="mt-0.5" />
+                        <div className="flex flex-col">
+                          <Label htmlFor="title-mode-svg" className="text-sm font-medium cursor-pointer">SVG Logo Only</Label>
+                          <span className="text-xs text-zinc-500">Replaces text with your SVG logo.</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <RadioGroupItem value="svg_text" id="title-mode-svg-text" className="mt-0.5" />
+                        <div className="flex flex-col">
+                          <Label htmlFor="title-mode-svg-text" className="text-sm font-medium cursor-pointer">SVG Logo + Text</Label>
+                          <span className="text-xs text-zinc-500">Shows the SVG icon followed by the text.</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <RadioGroupItem value="text_svg" id="title-mode-text-svg" className="mt-0.5" />
+                        <div className="flex flex-col">
+                          <Label htmlFor="title-mode-text-svg" className="text-sm font-medium cursor-pointer">Text + SVG Logo</Label>
+                          <span className="text-xs text-zinc-500">Shows the text followed by the SVG icon.</span>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {config.ui.modules.title.mode !== 'text' && (
+                    <div className="space-y-3 p-4 bg-zinc-50 rounded-lg border border-zinc-100">
+                      <div className="flex flex-col gap-1">
+                        <Label htmlFor="title-logo-file" className="text-sm font-medium text-zinc-900">SVG File Path</Label>
+                        <span className="text-xs text-zinc-500 leading-relaxed">
+                          Path to your SVG file (e.g., <code className="bg-zinc-200/50 px-1 py-0.5 rounded">assets/logo.svg</code>).
+                        </span>
+                      </div>
+                      <Input 
+                        id="title-logo-file"
+                        value={config.ui.modules.title.logoFile || ''}
+                        onChange={(e) => updateConfig(c => { c.ui.modules.title.logoFile = e.target.value })}
+                        placeholder="assets/logo.svg"
+                        className="bg-white"
+                      />
+                      <div className="flex flex-col gap-1 mt-2">
+                        <Label className="text-sm font-medium text-zinc-900">SVG Scale</Label>
+                        <span className="text-xs text-zinc-500 leading-relaxed">
+                          Adjust the relative size of the SVG logo.
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Slider 
+                          min={0.8}
+                          max={2.5}
+                          step={0.1}
+                          value={[config.ui.modules.title.logoScale ?? 0.8]}
+                          onValueChange={(val: number | readonly number[]) => updateConfig(c => { c.ui.modules.title.logoScale = Array.isArray(val) ? val[0] : val; })}
+                          className="flex-1"
+                        />
+                        <span className="text-xs font-medium text-zinc-600 w-8">{config.ui.modules.title.logoScale ?? 0.8}em</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {modKey === 'info' && (
+                <div className="pt-4 border-t border-zinc-100 space-y-6">
+                  {/* Info Button Label */}
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Button Label</Label>
+                    <Input 
+                      className="h-8 text-sm max-w-[240px]" 
+                      value={(config.ui.modules.info as any).label ?? 'INFO'} 
+                      onChange={(e) => updateConfig(c => { c.ui.modules.info.label = e.target.value })} 
+                    />
+                  </div>
                   {/* Info Button Style */}
                   <div className="space-y-3">
                     <Label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Button Style</Label>
@@ -477,8 +701,8 @@ export function ModulesForm() {
                 </div>
               )}
 
-              {mod.visible && (modKey === 'categories' || modKey === 'layouts') && (() => {
-                const modConfig = config.ui.modules[modKey as 'categories' | 'layouts'];
+              {(modKey === 'categories' || modKey === 'layouts' || modKey === 'zoom') && (() => {
+                const modConfig = config.ui.modules[modKey as 'categories' | 'layouts' | 'zoom'];
                 return (
                   <div className="pt-4 border-t border-zinc-100 space-y-6">
                     {modKey === 'categories' && (
@@ -516,7 +740,7 @@ export function ModulesForm() {
                       <RadioGroup 
                         value={modConfig.layout || 'vertical'}
                         onValueChange={(v) => updateConfig(c => { 
-                          const target = c.ui.modules[modKey as 'categories' | 'layouts'];
+                          const target = c.ui.modules[modKey as 'categories' | 'layouts' | 'zoom'];
                           if (!target.layout) target.layout = 'vertical';
                           target.layout = v;
                         })}
@@ -530,10 +754,16 @@ export function ModulesForm() {
                           <RadioGroupItem value="horizontal" id={`${modKey}-horiz`} />
                           <Label htmlFor={`${modKey}-horiz`} className="text-sm font-normal cursor-pointer">Horizontal (Side by Side)</Label>
                         </div>
+                        {modKey === 'zoom' && (
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="full-width" id={`${modKey}-full`} />
+                            <Label htmlFor={`${modKey}-full`} className="text-sm font-normal cursor-pointer">Full Width</Label>
+                          </div>
+                        )}
                       </RadioGroup>
                     </div>
 
-                    {modConfig.layout === 'horizontal' ? (
+                    {(modConfig.layout === 'horizontal' || modConfig.layout === 'full-width') ? (
                       <div className="grid grid-cols-2 gap-6 bg-zinc-50 p-4 rounded-lg border border-zinc-100">
                         {/* Separator Input */}
                         <div className="space-y-2">
@@ -542,7 +772,7 @@ export function ModulesForm() {
                             id={`${modKey}-sep`}
                             className="h-8 text-sm"
                             value={modConfig.separator ?? '|'}
-                            onChange={(e) => updateConfig(c => { c.ui.modules[modKey as 'categories' | 'layouts'].separator = e.target.value })}
+                            onChange={(e) => updateConfig(c => { c.ui.modules[modKey as 'categories' | 'layouts' | 'zoom'].separator = e.target.value })}
                             placeholder="e.g. | or /"
                           />
                         </div>
@@ -555,14 +785,42 @@ export function ModulesForm() {
                             <Slider 
                               className="flex-1"
                               min={0} max={40} step={2}
-                              value={[modConfig.spacing ?? 10]}
+                      value={[modConfig.spacing ?? 10]}
                               onValueChange={(val: number | readonly number[]) => {
-                                const num = Array.isArray(val) ? val[0] : (val as number);
-                                updateConfig(c => { c.ui.modules[modKey as 'categories' | 'layouts'].spacing = num });
+                                const v = Array.isArray(val) ? val[0] : val;
+                                updateConfig(c => { c.ui.modules[modKey as 'categories' | 'layouts' | 'zoom'].spacing = v })
                               }}
                             />
                           </div>
                         </div>
+                        {modKey === 'zoom' && (
+                          <div className="col-span-2 space-y-3 pt-4 mt-2 border-t border-zinc-100">
+                            <Label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider block mb-2">Button Labels</Label>
+                            <div className="grid grid-cols-3 gap-4">
+                              <div className="space-y-1.5">
+                                <Label className="text-[10px] uppercase text-zinc-500">Zoom Out</Label>
+                                <Input className="h-8 text-xs" value={(modConfig as any).labels?.[0] ?? '-'} onChange={(e) => updateConfig(c => { 
+                                  if (!c.ui.modules.zoom.labels) c.ui.modules.zoom.labels = ['-', '0', '+'];
+                                  c.ui.modules.zoom.labels[0] = e.target.value;
+                                })} />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-[10px] uppercase text-zinc-500">Reset</Label>
+                                <Input className="h-8 text-xs" value={(modConfig as any).labels?.[1] ?? '0'} onChange={(e) => updateConfig(c => { 
+                                  if (!c.ui.modules.zoom.labels) c.ui.modules.zoom.labels = ['-', '0', '+'];
+                                  c.ui.modules.zoom.labels[1] = e.target.value;
+                                })} />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-[10px] uppercase text-zinc-500">Zoom In</Label>
+                                <Input className="h-8 text-xs" value={(modConfig as any).labels?.[2] ?? '+'} onChange={(e) => updateConfig(c => { 
+                                  if (!c.ui.modules.zoom.labels) c.ui.modules.zoom.labels = ['-', '0', '+'];
+                                  c.ui.modules.zoom.labels[2] = e.target.value;
+                                })} />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="bg-zinc-50 p-4 rounded-lg border border-zinc-100 space-y-3">
@@ -594,22 +852,14 @@ export function ModulesForm() {
                   </div>
                 );
               })()}
-            </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           );
         })}
-      </div>
+      </Accordion>
 
-      {/* Zoom visible switch */}
-      <div className="flex items-center justify-between p-4 border border-zinc-200 rounded-lg bg-zinc-50/50">
-        <div className="flex flex-col gap-0.5">
-          <span className="font-medium text-sm text-zinc-900">Zoom Controls</span>
-          <span className="text-xs text-zinc-500">Show canvas magnifying / zoom controls at bottom-right</span>
-        </div>
-        <Switch 
-          checked={config.ui.zoom.visible}
-          onCheckedChange={(v) => updateConfig(c => { c.ui.zoom.visible = v })}
-        />
-      </div>
+
     </div>
   );
 }

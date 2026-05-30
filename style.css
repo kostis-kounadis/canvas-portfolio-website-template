@@ -47,10 +47,11 @@ body {
   height: 100%;
   overflow: hidden;
   background: var(--bg-colour);
-  color: #111111;
+  color: var(--text-colour, #111111);
   font-family: var(--font-family);
-  font-weight: 400;
-  text-transform: uppercase;
+  font-weight: var(--font-weight, 400);
+  font-stretch: var(--font-stretch, 100%);
+  text-transform: var(--text-transform, uppercase);
   font-size: var(--ui-text-size, 18px);
   font-size-adjust: from-font;
 }
@@ -81,13 +82,13 @@ figure {
   pointer-events: none; /* Container ignores events, children re-enable */
   mix-blend-mode: var(--text-blend-mode, normal);
   background: transparent;
-  color: var(--text-colour, #ffff00); /* yellow -> appears blue-ish with difference on white */
-  text-transform: uppercase;
+  color: inherit;
+  text-transform: var(--text-transform, uppercase);
 }
 
 .nav-left {
   letter-spacing: 0.08em;
-  text-transform: uppercase;
+  text-transform: var(--text-transform, uppercase);
   font-size: var(--ui-text-size, 18px);
   pointer-events: auto; /* Re-enable for the brand/name if needed, or keep it none */
   display: flex;
@@ -95,10 +96,22 @@ figure {
   gap: 8px;
 }
 
+a.nav-left {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.zone-title-module:hover .nav-title-text {
+  text-decoration: underline;
+}
+
 .site-logo {
-  height: 20px;
-  width: auto;
-  object-fit: contain;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.site-logo svg {
+  display: block;
 }
 
 /* Nav right — shared base for all injected items */
@@ -119,7 +132,8 @@ figure {
   font-family: inherit;
   font-size: var(--ui-text-size, 18px);
   font-weight: inherit;
-  text-transform: uppercase;
+  font-stretch: inherit;
+  text-transform: var(--text-transform, uppercase);
   letter-spacing: 0.08em;
   text-decoration: none;
   padding: 0;
@@ -130,6 +144,22 @@ figure {
 
 .nav-btn:hover {
   text-decoration: underline;
+}
+
+
+/* Global Module Wrapper (separates brackets from clickable links) */
+.module-wrapper {
+  display: inline-flex;
+  align-items: baseline;
+  pointer-events: none;
+}
+.module-wrapper > * {
+  pointer-events: auto;
+}
+.module-prefix, .module-suffix {
+  pointer-events: none;
+  user-select: none;
+  white-space: pre;
 }
 
 /* Separator pipe between nav items */
@@ -229,6 +259,8 @@ figure {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .media-item video {
@@ -279,9 +311,9 @@ figure {
   cursor: pointer;
   letter-spacing: 0.16em;
   font-size: 14px;
-  text-transform: uppercase;
-  color: var(--text-colour, #ffff00);
-  mix-blend-mode: var(--text-blend-mode, normal);
+  text-transform: var(--text-transform, uppercase);
+  color: inherit;
+mix-blend-mode: var(--text-blend-mode, normal);
 }
 
 .reload-badge:hover {
@@ -329,8 +361,8 @@ figure {
 }
 
 .media-item.video-embed .play-badge-text {
-  color: var(--text-colour, #ffff00);
-  mix-blend-mode: var(--text-blend-mode, normal);
+  color: inherit;
+mix-blend-mode: var(--text-blend-mode, normal);
   font-size: 14px;
   letter-spacing: 0.16em;
   text-align: center;
@@ -362,8 +394,8 @@ figure {
   z-index: 10;
   background: transparent;
   border: none;
-  color: var(--text-colour, #ffff00);
-  mix-blend-mode: var(--text-blend-mode, normal);
+  color: inherit;
+mix-blend-mode: var(--text-blend-mode, normal);
   font-family: inherit;
   font-size: 14px;
   letter-spacing: 0.1em;
@@ -377,49 +409,7 @@ figure {
   opacity: 0.7;
 }
 
-/* Footer with zoom controls */
 
-.footer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 32px;
-  z-index: 1000;
-  pointer-events: none; /* Container ignores events */
-  mix-blend-mode: var(--text-blend-mode, normal);
-  background: transparent;
-  color: var(--text-colour, #ffff00); /* yellow -> appears blue-ish with difference on white */
-  text-transform: uppercase;
-}
-
-.zoom-btn {
-  width: auto;
-  height: auto;
-  border-radius: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font-family: inherit;
-  font-size: var(--ui-text-size, 18px);
-  font-weight: inherit;
-  padding: 0;
-  cursor: pointer;
-  letter-spacing: 0.12em;
-  pointer-events: auto; /* Re-enable for buttons */
-}
-
-.zoom-btn:hover {
-  text-decoration: none;
-}
-
-.zoom-btn:active {
-  opacity: 0.75;
-}
 
 /* Small helper for subtle debug text (if needed) */
 
@@ -504,8 +494,9 @@ body.info-open.info-colour-overlay::after {
   -webkit-hyphens: auto;
   font-family: inherit;
   font-weight: inherit;
-  text-transform: uppercase;
-  color: var(--text-colour, #ffff00); /* yellow blended via parent difference = blue on white bg */
+  font-stretch: inherit;
+  text-transform: var(--text-transform, uppercase);
+  color: inherit;
   line-height: 1.15;
   letter-spacing: 0.04em;
   /* font-size controlled by JS autoscaler */
@@ -526,7 +517,7 @@ body.info-open.info-colour-overlay::after {
 }
 
 #info-text strong {
-  font-weight: 500;
+  font-weight: bolder;
 }
 
 #info-text em {
@@ -544,8 +535,8 @@ body.info-open.info-colour-overlay::after {
   z-index: 2000;
   pointer-events: none;
   mix-blend-mode: var(--text-blend-mode, normal);
-  color: var(--text-colour, #ffff00);
-  font-family: var(--font-family);
+  color: inherit;
+font-family: var(--font-family);
   font-size: 14px;
   line-height: 1;
 }
@@ -564,7 +555,7 @@ body.info-open.info-colour-overlay::after {
   left: 32px;
   font-size: 14px;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
+  text-transform: var(--text-transform, uppercase);
 }
 
 /* Mobile adjustments */
@@ -645,10 +636,10 @@ body.info-open.info-colour-overlay::after {
   z-index: 1000;
   pointer-events: none;
   mix-blend-mode: var(--text-blend-mode, normal);
-  color: var(--text-colour, #ffff00);
-  font-family: inherit;
+  color: inherit;
+font-family: inherit;
   font-size: var(--ui-text-size, 18px);
-  text-transform: uppercase;
+  text-transform: var(--text-transform, uppercase);
   letter-spacing: 0.08em;
   display: flex;
   flex-direction: column;
@@ -663,10 +654,10 @@ body.info-open.info-colour-overlay::after {
   z-index: 1000;
   pointer-events: none;
   mix-blend-mode: var(--text-blend-mode, normal);
-  color: var(--text-colour, #ffff00);
-  font-family: inherit;
+  color: inherit;
+font-family: inherit;
   font-size: var(--ui-text-size, 18px);
-  text-transform: uppercase;
+  text-transform: var(--text-transform, uppercase);
   letter-spacing: 0.08em;
   display: flex;
   flex-direction: column;
@@ -680,7 +671,8 @@ body.info-open.info-colour-overlay::after {
   font-family: inherit;
   font-size: var(--ui-text-size, 18px);
   font-weight: inherit;
-  text-transform: uppercase;
+  font-stretch: inherit;
+  text-transform: var(--text-transform, uppercase);
   letter-spacing: 0.08em;
   text-decoration: line-through; /* default: struck = inactive */
   padding: 0;
@@ -718,10 +710,10 @@ body.no-shadow .media-item {
   gap: 4px;
   pointer-events: none;
   mix-blend-mode: var(--text-blend-mode, normal);
-  color: var(--text-colour, #ffff00);
-  font-family: inherit;
+  color: inherit;
+font-family: inherit;
   font-size: var(--ui-text-size, 18px);
-  text-transform: uppercase;
+  text-transform: var(--text-transform, uppercase);
   letter-spacing: 0.08em;
   /* Ensure children can still get pointer events */
 }
@@ -732,6 +724,7 @@ body.no-shadow .media-item {
 .zone-bottom-left    { align-items: flex-start; }
 
 .zone-top-center,
+.zone-middle-center,
 .zone-bottom-center  { align-items: center; }
 
 .zone-top-right,
@@ -743,10 +736,11 @@ body.no-shadow .media-item {
 .zone-top-center   { top: var(--zone-edge, 32px); left: 50%; transform: translateX(-50%); }
 .zone-top-right    { top: var(--zone-edge, 32px); right: var(--zone-edge, 32px); }
 .zone-middle-left  { top: 50%; left: var(--zone-edge, 32px); transform: translateY(-50%); }
+.zone-middle-center{ top: 50%; left: 50%; transform: translate(-50%, -50%); }
 .zone-middle-right { top: 50%; right: var(--zone-edge, 32px); transform: translateY(-50%); }
-.zone-bottom-left  { bottom: calc(var(--zone-edge, 32px) + 48px); left: var(--zone-edge, 32px); }
-.zone-bottom-center{ bottom: calc(var(--zone-edge, 32px) + 48px); left: 50%; transform: translateX(-50%); }
-.zone-bottom-right { bottom: calc(var(--zone-edge, 32px) + 48px); right: var(--zone-edge, 32px); }
+.zone-bottom-left  { bottom: var(--zone-edge, 32px); left: var(--zone-edge, 32px); }
+.zone-bottom-center{ bottom: var(--zone-edge, 32px); left: 50%; transform: translateX(-50%); }
+.zone-bottom-right { bottom: var(--zone-edge, 32px); right: var(--zone-edge, 32px); }
 
 /* Mobile: hide all zone containers (the legacy <nav> handles mobile layout) */
 @media (max-width: 768px) {
@@ -1096,13 +1090,13 @@ body.is-slideshow .media-item video {
   bottom: 16px;
   z-index: 1100;
   mix-blend-mode: var(--text-blend-mode, normal);
-  color: var(--text-colour, #ffff00);
-  background: transparent;
+  color: inherit;
+background: transparent;
   border: none;
   font-family: inherit;
   font-size: var(--ui-text-size, 18px);
   font-weight: 400;
-  text-transform: uppercase;
+  text-transform: var(--text-transform, uppercase);
   letter-spacing: 0.08em;
   padding: 0;
   cursor: pointer;
@@ -1201,13 +1195,13 @@ dialog.lightbox-dialog.backdrop-blur {
   right: 32px;
   background: transparent;
   border: none;
-  color: var(--text-colour, #ffff00);
-  font-family: inherit;
+  color: inherit;
+font-family: inherit;
   font-size: 24px;
   cursor: pointer;
   z-index: 9100;
   padding: 0;
-  text-transform: uppercase;
+  text-transform: var(--text-transform, uppercase);
 }
 .lightbox-nav {
   position: fixed;
@@ -1215,8 +1209,8 @@ dialog.lightbox-dialog.backdrop-blur {
   transform: translateY(-50%);
   background: transparent;
   border: none;
-  color: var(--text-colour, #ffff00);
-  font-family: inherit;
+  color: inherit;
+font-family: inherit;
   font-size: 32px;
   cursor: pointer;
   z-index: 9100;

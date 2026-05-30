@@ -46,12 +46,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
               <div className="flex items-center gap-3">
                 {/* Auto-save status indicator */}
-                <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-400 select-none mr-2 font-medium">
-                  <div className={`h-1.5 w-1.5 rounded-full ${isSaving ? 'bg-amber-400 animate-pulse' : isDirty ? 'bg-zinc-300' : 'bg-green-500'}`} />
-                  <span>
-                    {isSaving ? 'Auto-saving to disk...' : isDirty ? 'Unsaved draft...' : 'All changes saved to config.json'}
-                  </span>
-                </div>
+                {(isSaving || isDirty) && (
+                  <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-400 select-none mr-2 font-medium">
+                    <div className={`h-1.5 w-1.5 rounded-full ${isSaving ? 'bg-amber-400 animate-pulse' : 'bg-zinc-300'}`} />
+                    <span>
+                      {isSaving ? 'Auto-saving to disk...' : 'Unsaved draft...'}
+                    </span>
+                  </div>
+                )}
 
                 <Button 
                   variant="outline" 

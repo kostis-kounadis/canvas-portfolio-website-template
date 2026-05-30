@@ -19,20 +19,25 @@ export interface SiteConfig {
     sameAs: string[];
   };
   ui: {
+    module_prefix?: string;
+    module_suffix?: string;
     modules: {
-      title: { visible: boolean; position: string; mode: string; text: string; logoFile: string; icon: { enabled: boolean; file: string; position: string } };
+      title: { visible: boolean; position: string; mode: string; text: string; logoFile: string; logoScale?: number; icon: { enabled: boolean; file: string; position: string } };
       email: { visible: boolean; position: string };
-      info: { visible: boolean; position: string; buttonStyle?: string; overlayEffect?: string; overlayColor?: string; overlayOpacity?: number; overlayBlendMode?: string; };
+      info: { visible: boolean; position: string; buttonStyle?: string; overlayEffect?: string; overlayColor?: string; overlayOpacity?: number; overlayBlendMode?: string; label?: string };
       categories: { visible: boolean; position: string; behaviour?: string; layout?: string; alignment?: string; separator?: string; spacing?: number };
       layouts: { visible: boolean; position: string; layout?: string; alignment?: string; separator?: string; spacing?: number };
+      zoom: { visible: boolean; position: string; layout?: string; alignment?: string; separator?: string; spacing?: number; labels?: string[] };
     };
-    zoom: { visible: boolean };
   };
   typography: {
     fontMode: string;
+    fontWeight?: number;
+    fontWidth?: number;
     googleEmbedCode: string;
     localFontUrl: string;
     baseSize: string;
+    textCase?: string;
     textColor: string;
     gradientColor1: string;
     gradientColor2: string;

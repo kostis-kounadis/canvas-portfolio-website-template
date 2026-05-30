@@ -65,13 +65,15 @@ export function ThemeForm() {
   // Defensive fallback for cached older config structures
   const typo = config.typography || {
     fontMode: 'google',
+    fontWeight: 400,
+    fontWidth: 100,
     googleEmbedCode: '',
     localFontUrl: '',
     baseSize: '18px',
     textColor: '#0066ff',
     blendMode: false,
     textAnimation: 'none'
-  };
+  } as any;
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -97,15 +99,38 @@ export function ThemeForm() {
             className="flex flex-col gap-3"
           >
             {[
-              { value: 'google', id: 'f-google', label: 'Google Fonts', desc: 'Load a font via Google Fonts embed code' },
+              { value: 'archivo', id: 'f-archivo', label: 'Archivo', desc: 'Grotesque sans-serif with variable width & weight' },
+              { value: 'jost', id: 'f-jost', label: 'Jost', desc: 'Futura-inspired sans-serif' },
+              { value: 'space-grotesk', id: 'f-space', label: 'Space Grotesk', desc: 'Quirky geometric sans-serif' },
+              { value: 'eb-garamond', id: 'f-garamond', label: 'EB Garamond', desc: 'Classic, elegant serif' },
+              { value: 'fraunces', id: 'f-fraunces', label: 'Fraunces', desc: 'Old style serif with variable weight' },
+              { value: 'syne-tactile', id: 'f-syne', label: 'Syne Tactile', desc: 'Expressive, textured script' },
+              { value: 'monospace', id: 'f-monospace', label: 'JetBrains Mono', desc: 'Clean, legible monospace' },
+              { value: 'google', id: 'f-google', label: 'Custom Google Font', desc: 'Load a font via Google Fonts embed code' },
               { value: 'local', id: 'f-local', label: 'Local Font File', desc: 'Host your own .woff2 or .ttf font file' }
             ].map(opt => {
               const active = (typo.fontMode || 'google') === opt.value;
+              
+              let hasWeight = true;
+              let hasWidth = false;
+              let weightMin = 100, weightMax = 900;
+              let widthMin = 50, widthMax = 200;
+
+              if (opt.value === 'syne-tactile') hasWeight = false;
+              if (opt.value === 'eb-garamond') { weightMin = 400; weightMax = 800; }
+              if (opt.value === 'space-grotesk') { weightMin = 300; weightMax = 700; }
+              if (opt.value === 'monospace') { weightMin = 100; weightMax = 800; }
+              
+              if (opt.value === 'archivo') { hasWidth = true; widthMin = 62; widthMax = 125; }
+              if (opt.value === 'google' || opt.value === 'local') { hasWidth = true; }
+
+              const showOptions = opt.value === 'google' || opt.value === 'local' || hasWeight || hasWidth;
+
               return (
                 <div key={opt.value} className={`border rounded-lg transition-all ${active ? 'border-zinc-900 shadow-sm' : 'border-zinc-200 hover:border-zinc-300'} bg-white`}>
                   <label 
                     htmlFor={opt.id}
-                    className={`flex items-start gap-3 p-3.5 cursor-pointer ${active ? 'rounded-t-lg' : 'rounded-lg hover:bg-zinc-50'}`}
+                    className={`flex items-start gap-3 p-3.5 cursor-pointer ${active ? (showOptions ? 'rounded-t-lg' : 'rounded-lg') : 'rounded-lg hover:bg-zinc-50'}`}
                   >
                     <RadioGroupItem value={opt.value} id={opt.id} className="mt-0.5" />
                     <div className="flex-1 select-none">
@@ -114,41 +139,80 @@ export function ThemeForm() {
                     </div>
                   </label>
                   
-                  {active && opt.value === 'google' && (
-                    <div className="bg-zinc-50/80 p-4 border-t border-zinc-100 rounded-b-lg space-y-2">
-                      <div className="flex justify-between items-end">
-                        <Label className="text-xs font-semibold text-zinc-700">Embed Code</Label>
-                        <a href="https://fonts.google.com" target="_blank" rel="noreferrer" className="text-[10px] font-medium text-blue-600 hover:underline">
-                          Browse Google Fonts ↗
-                        </a>
-                      </div>
-                      <textarea
-                        value={typo.googleEmbedCode || ''}
-                        onChange={(e) => updateConfig(c => { 
-                          if (!c.typography) c.typography = { ...typo };
-                          c.typography.googleEmbedCode = e.target.value; 
-                        })}
-                        placeholder={'<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">'}
-                        className="w-full h-24 p-3 text-xs font-mono bg-white border border-zinc-200 rounded-md focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 outline-none transition-all placeholder:text-zinc-300"
-                      />
-                      <p className="text-[11px] text-zinc-500 leading-tight">Paste the standard HTML embed code. The system will automatically extract and apply the font family globally.</p>
-                    </div>
-                  )}
+                  {active && showOptions && (
+                    <div className="bg-zinc-50/80 p-4 border-t border-zinc-100 rounded-b-lg space-y-4">
+                      {opt.value === 'google' && (
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-end">
+                            <Label className="text-xs font-semibold text-zinc-700">Embed Code</Label>
+                            <a href="https://fonts.google.com" target="_blank" rel="noreferrer" className="text-[10px] font-medium text-blue-600 hover:underline">
+                              Browse Google Fonts ↗
+                            </a>
+                          </div>
+                          <textarea
+                            value={typo.googleEmbedCode || ''}
+                            onChange={(e) => updateConfig(c => { 
+                              if (!c.typography) c.typography = { ...typo };
+                              c.typography.googleEmbedCode = e.target.value; 
+                            })}
+                            placeholder={'<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">'}
+                            className="w-full h-24 p-3 text-xs font-mono bg-white border border-zinc-200 rounded-md focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 outline-none transition-all placeholder:text-zinc-300"
+                          />
+                          <p className="text-[11px] text-zinc-500 leading-tight">Paste the standard HTML embed code. The system will automatically extract and apply the font family globally.</p>
+                        </div>
+                      )}
 
-                  {active && opt.value === 'local' && (
-                    <div className="bg-zinc-50/80 p-4 border-t border-zinc-100 rounded-b-lg space-y-2">
-                      <Label className="text-xs font-semibold text-zinc-700">Font File Path</Label>
-                      <input
-                        type="text"
-                        value={typo.localFontUrl || ''}
-                        onChange={(e) => updateConfig(c => { 
-                          if (!c.typography) c.typography = { ...typo };
-                          c.typography.localFontUrl = e.target.value; 
-                        })}
-                        placeholder="./fonts/myfont.woff2"
-                        className="w-full p-2.5 text-xs font-mono bg-white border border-zinc-200 rounded-md focus:border-zinc-400 outline-none"
-                      />
-                      <p className="text-[11px] text-zinc-500 leading-tight">Provide the path to your .woff2 or .ttf file relative to the root directory (e.g. <code className="bg-zinc-100 px-1 py-0.5 rounded">./fonts/Geist.woff2</code>).</p>
+                      {opt.value === 'local' && (
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-zinc-700">Font File Path</Label>
+                          <input
+                            type="text"
+                            value={typo.localFontUrl || ''}
+                            onChange={(e) => updateConfig(c => { 
+                              if (!c.typography) c.typography = { ...typo };
+                              c.typography.localFontUrl = e.target.value; 
+                            })}
+                            placeholder="./fonts/myfont.woff2"
+                            className="w-full p-2.5 text-xs font-mono bg-white border border-zinc-200 rounded-md focus:border-zinc-400 outline-none"
+                          />
+                          <p className="text-[11px] text-zinc-500 leading-tight">Provide the path to your .woff2 or .ttf file relative to the root directory (e.g. <code className="bg-zinc-100 px-1 py-0.5 rounded">./fonts/Geist.woff2</code>).</p>
+                        </div>
+                      )}
+                      
+                      {/* Weight and Width Sliders */}
+                      {hasWeight && (
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs font-medium">
+                            <span className="text-zinc-700">Font Weight</span>
+                            <span className="text-zinc-900 font-mono bg-white border border-zinc-200 px-1.5 py-0.5 rounded font-bold">{typo.fontWeight || 400}</span>
+                          </div>
+                          <Slider 
+                            min={weightMin} max={weightMax} step={100}
+                            value={[typo.fontWeight || 400]}
+                            onValueChange={(val) => updateConfig(c => { 
+                              if (!c.typography) c.typography = { ...typo };
+                              c.typography.fontWeight = Array.isArray(val) ? val[0] : val; 
+                            })}
+                          />
+                        </div>
+                      )}
+                      
+                      {hasWidth && (
+                        <div className="space-y-2 pt-2 border-t border-zinc-100">
+                          <div className="flex justify-between text-xs font-medium">
+                            <span className="text-zinc-700">Font Width (Stretch) %</span>
+                            <span className="text-zinc-900 font-mono bg-white border border-zinc-200 px-1.5 py-0.5 rounded font-bold">{typo.fontWidth || 100}%</span>
+                          </div>
+                          <Slider 
+                            min={widthMin} max={widthMax} step={1}
+                            value={[typo.fontWidth || 100]}
+                            onValueChange={(val) => updateConfig(c => { 
+                              if (!c.typography) c.typography = { ...typo };
+                              c.typography.fontWidth = Array.isArray(val) ? val[0] : val; 
+                            })}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -178,6 +242,39 @@ export function ThemeForm() {
             />
             <span className="text-zinc-900 font-mono bg-white border border-zinc-200 px-2 py-1 rounded font-bold text-sm shrink-0">{typo.baseSize || '18px'}</span>
           </div>
+        </div>
+
+        {/* Text Case Selector */}
+        <div className="space-y-3">
+          <div className="flex flex-col gap-0.5">
+            <Label className="text-sm font-medium text-zinc-900 block mb-1">Base Text Case</Label>
+            <span className="text-xs text-zinc-500">Choose the default capitalization style for your portfolio content.</span>
+          </div>
+          <RadioGroup 
+            value={typo.textCase || 'uppercase'} 
+            onValueChange={(v) => updateConfig(c => { 
+              if (!c.typography) c.typography = { ...typo };
+              c.typography.textCase = v; 
+            })}
+            className="flex flex-col gap-3 sm:flex-row"
+          >
+            {[
+              { value: 'uppercase', label: 'UPPERCASE' },
+              { value: 'lowercase', label: 'lowercase' },
+              { value: 'capitalize', label: 'Capitalize' },
+              { value: 'normal', label: 'Normal' }
+            ].map(opt => (
+              <label 
+                key={opt.value}
+                className={`flex-1 flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-all ${
+                  (typo.textCase || 'uppercase') === opt.value ? 'border-zinc-900 bg-zinc-50 shadow-sm' : 'border-zinc-200 hover:border-zinc-300 bg-white'
+                }`}
+              >
+                <RadioGroupItem value={opt.value} id={`tc-${opt.value}`} />
+                <span className={`font-medium text-sm text-zinc-900`} style={{ textTransform: opt.value as any }}>{opt.label}</span>
+              </label>
+            ))}
+          </RadioGroup>
         </div>
 
         {/* Text Style & Animation */}

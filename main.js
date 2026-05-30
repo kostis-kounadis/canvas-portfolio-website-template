@@ -30,7 +30,36 @@
   let stageX = 0;
   let stageY = 0;
 
-  // Store initial view state for reset
+  // Helper to wrap a module with prefix/suffix without polluting the clickable link
+function wrapModule(el) {
+  const pfxText = siteConfig.module_prefix !== undefined ? siteConfig.module_prefix : "[";
+  const sfxText = siteConfig.module_suffix !== undefined ? siteConfig.module_suffix : "]";
+  
+  if (!pfxText && !sfxText) return el;
+
+  const wrapper = document.createElement("span");
+  wrapper.className = "module-wrapper";
+  
+  if (pfxText) {
+    const pfxNode = document.createElement("span");
+    pfxNode.className = "module-prefix";
+    pfxNode.textContent = pfxText;
+    wrapper.appendChild(pfxNode);
+  }
+  
+  wrapper.appendChild(el);
+  
+  if (sfxText) {
+    const sfxNode = document.createElement("span");
+    sfxNode.className = "module-suffix";
+    sfxNode.textContent = sfxText;
+    wrapper.appendChild(sfxNode);
+  }
+  
+  return wrapper;
+}
+
+// Store initial view state for reset
   let initialZoom = 1;
   let initialStageX = 0;
   let initialStageY = 0;
@@ -70,6 +99,8 @@
     show_categories: true,
     show_layout:     true,
     show_zoom:       true,
+    module_prefix:   "[",
+    module_suffix:   "]",
     // theme
     text_colour:      "#ffff00",
     background_colour: "#f7f5f0",
@@ -450,10 +481,11 @@
       // Show the View All button
       const viewAllBtn = document.getElementById("category-view-all");
       if (viewAllBtn) {
+        const targetEl = viewAllBtn.parentNode?.classList.contains("module-wrapper") ? viewAllBtn.parentNode : viewAllBtn;
         if (siteConfig.categories_view_all_enabled !== false) {
-          viewAllBtn.style.display = "";
+          targetEl.style.display = "";
         } else {
-          viewAllBtn.style.display = "none";
+          targetEl.style.display = "none";
         }
       }
     }
@@ -496,7 +528,8 @@
       // Hide the View All button
       const viewAllBtn = document.getElementById("category-view-all");
       if (viewAllBtn) {
-        viewAllBtn.style.display = "none";
+        const targetEl = viewAllBtn.parentNode?.classList.contains("module-wrapper") ? viewAllBtn.parentNode : viewAllBtn;
+        targetEl.style.display = "none";
       }
     }
 
@@ -589,18 +622,18 @@
         siteConfig.show_title = mods.title.visible !== false;
         siteConfig.title_mode = mods.title.mode || "text";
         siteConfig.logo_file  = mods.title.logoFile || "";
-        // Phase 12.5 Bug 3: SVG icon config
-        if (mods.title.icon) {
-          siteConfig.title_icon_enabled  = mods.title.icon.enabled === true;
-          siteConfig.title_icon_file     = mods.title.icon.file || "";
-          siteConfig.title_icon_position = mods.title.icon.position || "before";
-        }
+        siteConfig.logo_scale = mods.title.logoScale ?? 0.8;
       }
       if (mods.email    != null) siteConfig.show_email      = mods.email.visible    !== false;
-      if (mods.info     != null) siteConfig.show_info       = mods.info.visible     !== false;
+      if (mods.info     != null) {
+        siteConfig.show_info       = mods.info.visible     !== false;
+        siteConfig.info_label      = mods.info.label || "INFO";
+      }
       if (mods.categories != null) siteConfig.show_categories = mods.categories.visible !== false;
       if (mods.layouts  != null) siteConfig.show_layout     = mods.layouts.visible  !== false;
-      if (cfg.ui.zoom   != null) siteConfig.show_zoom       = cfg.ui.zoom.visible   !== false;
+      if (mods.zoom     != null) siteConfig.show_zoom       = mods.zoom.visible     !== false;
+      if (cfg.ui.module_prefix !== undefined) siteConfig.module_prefix = cfg.ui.module_prefix;
+      if (cfg.ui.module_suffix !== undefined) siteConfig.module_suffix = cfg.ui.module_suffix;
       if (cfg.ui.textSize)       siteConfig.ui_text_size    = cfg.ui.textSize;
     }
 
@@ -712,10 +745,10 @@
     // Rebuild zone containers and UI modules so positions & options update in real-time
     buildZoneContainers();
     
-    // Toggle zoom controls footer visibility dynamically
-    const footer = document.querySelector(".footer");
-    if (footer) {
-      footer.style.display = (siteConfig.show_zoom !== false) ? "flex" : "none";
+    // Toggle zoom module visibility dynamically
+    const zoomPanel = document.getElementById("zoom-panel");
+    if (zoomPanel) {
+      zoomPanel.style.display = (siteConfig.show_zoom !== false) ? "flex" : "none";
     }
 
     // Phase 6 hot-reload resets
@@ -775,6 +808,7 @@
     buildNav();
     buildCategoryPanel();
     buildLayoutPanel();
+    buildZoomModule();
 
     // Refresh info text if overlay is open
     const infoOverlay2 = document.getElementById("info-overlay");
@@ -836,7 +870,7 @@
 
   const ZONE_IDS = [
     "top-left", "top-center", "top-right",
-    "middle-left", "middle-right",
+    "middle-left", "middle-center", "middle-right",
     "bottom-left", "bottom-center", "bottom-right",
   ];
 
@@ -987,7 +1021,71 @@
     oldEmbeds.forEach(el => el.remove());
 
     const DEFAULT_FONT = '"JetBrains Mono", "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace';
-    const DEFAULT_EMBED = `<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">`;
+    const DEFAULT_EMBED = `<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">`;
+
+    const PREDEFINED_FONTS = {
+      "monospace": {
+        family: DEFAULT_FONT,
+        googleFamily: "JetBrains+Mono",
+        weightRange: "100..800",
+        widthRange: null
+      },
+      "archivo": {
+        family: '"Archivo", sans-serif',
+        googleFamily: "Archivo",
+        weightRange: "100..900",
+        widthRange: "62..125"
+      },
+      "jost": {
+        family: '"Jost", sans-serif',
+        googleFamily: "Jost",
+        weightRange: "100..900",
+        widthRange: null
+      },
+      "eb-garamond": {
+        family: '"EB Garamond", serif',
+        googleFamily: "EB+Garamond",
+        weightRange: "400..800",
+        widthRange: null
+      },
+      "fraunces": {
+        family: '"Fraunces", serif',
+        googleFamily: "Fraunces",
+        weightRange: "100..900",
+        widthRange: null
+      },
+      "space-grotesk": {
+        family: '"Space Grotesk", sans-serif',
+        googleFamily: "Space+Grotesk",
+        weightRange: "300..700",
+        widthRange: null
+      },
+      "syne-tactile": {
+        family: '"Syne Tactile", cursive',
+        googleFamily: "Syne+Tactile",
+        weightRange: null,
+        widthRange: null
+      }
+    };
+
+    if (typo.fontWeight) {
+      root.style.setProperty("--font-weight", typo.fontWeight);
+    } else {
+      root.style.setProperty("--font-weight", "400");
+    }
+
+    if (typo.fontWidth) {
+      root.style.setProperty("--font-stretch", typo.fontWidth + "%");
+    } else {
+      root.style.setProperty("--font-stretch", "100%");
+    }
+
+    if (typo.textCase) {
+      const cssVal = typo.textCase === "normal" ? "none" : typo.textCase;
+      root.style.setProperty("--text-transform", cssVal);
+    } else {
+      root.style.setProperty("--text-transform", "uppercase");
+    }
 
     if (typo.fontMode === "local" && typo.localFontUrl) {
       // Inject @font-face
@@ -1003,12 +1101,38 @@
       document.head.appendChild(style);
       root.style.setProperty("--font-family", '"CustomLocalFont", sans-serif');
     } else {
-      // Google mode (or fallback)
-      let embedToUse = typo.googleEmbedCode ? typo.googleEmbedCode.trim() : "";
-      let isDefault = !embedToUse;
+      let embedToUse = "";
+      let parsedFamily = null;
+      let isDefault = false;
 
-      if (isDefault) {
-        embedToUse = DEFAULT_EMBED;
+      if (PREDEFINED_FONTS[typo.fontMode]) {
+        const fontDef = PREDEFINED_FONTS[typo.fontMode];
+        parsedFamily = fontDef.family;
+        
+        let axesStr = "";
+        let valStr = "";
+        
+        if (fontDef.widthRange && fontDef.weightRange) {
+           axesStr = "wdth,wght";
+           valStr = `${fontDef.widthRange},${fontDef.weightRange}`;
+        } else if (fontDef.weightRange) {
+           axesStr = "wght";
+           valStr = `${fontDef.weightRange}`;
+        }
+        
+        if (axesStr) {
+           embedToUse = `<link href="https://fonts.googleapis.com/css2?family=${fontDef.googleFamily}:${axesStr}@${valStr}&display=swap" rel="stylesheet">`;
+        } else {
+           embedToUse = `<link href="https://fonts.googleapis.com/css2?family=${fontDef.googleFamily}&display=swap" rel="stylesheet">`;
+        }
+        isDefault = true;
+      } else {
+        // Custom google font
+        embedToUse = typo.googleEmbedCode ? typo.googleEmbedCode.trim() : "";
+        if (!embedToUse) {
+          embedToUse = DEFAULT_EMBED;
+          isDefault = true;
+        }
       }
 
       // Convert raw URL or raw @import into HTML tags
@@ -1031,8 +1155,12 @@
       }
 
       // Parse font-family from the embed code
-      const parsedFamily = parseFontFamilyFromEmbed(embedToUse);
+      if (!parsedFamily) {
+        parsedFamily = parseFontFamilyFromEmbed(embedToUse);
+      }
       if (parsedFamily && !isDefault) {
+        root.style.setProperty("--font-family", parsedFamily);
+      } else if (parsedFamily && isDefault) {
         root.style.setProperty("--font-family", parsedFamily);
       } else {
         root.style.setProperty("--font-family", DEFAULT_FONT);
@@ -1324,9 +1452,9 @@
     if (isOpen) {
       infoBtn.classList.remove("is-struck");
       if (btnStyle === "x-close") {
-        infoBtn.textContent = "[×]";
+        infoBtn.textContent = "×";
       } else {
-        infoBtn.textContent = "[INFO]";
+        infoBtn.textContent = siteConfig.info_label || "INFO";
       }
     } else {
       if (btnStyle === "strikethrough") {
@@ -1334,7 +1462,7 @@
       } else {
         infoBtn.classList.remove("is-struck");
       }
-      infoBtn.textContent = "[INFO]";
+      infoBtn.textContent = siteConfig.info_label || "INFO";
     }
   }
 
@@ -1370,7 +1498,7 @@
           textEl.innerHTML = renderMarkdown(infoBodyText);
           requestAnimationFrame(() => autoscaleText(overlayEl, textEl));
         })
-        .catch(() => { textEl.textContent = "[INFO NOT FOUND]"; infoLoaded = true; });
+        .catch(() => { textEl.textContent = "INFO NOT FOUND"; infoLoaded = true; });
     } else {
       if (!textEl.innerHTML) textEl.innerHTML = renderMarkdown(infoBodyText);
       requestAnimationFrame(() => autoscaleText(overlayEl, textEl));
@@ -1438,7 +1566,8 @@
       // Remove any existing title module in any zone
       document.querySelectorAll(".zone-title-module").forEach((el) => el.remove());
 
-      const titleEl = document.createElement("div");
+      const titleEl = document.createElement("a");
+      titleEl.href = "/";
       titleEl.className = "zone-title-module nav-left";
       titleEl.style.display = "flex";
       titleEl.style.gap = "8px";
@@ -1457,6 +1586,7 @@
             return r.text();
           })
           .then(svgText => {
+            const scale = siteConfig.logo_scale ?? 0.8;
             const parser = new DOMParser();
             const doc = parser.parseFromString(svgText, "image/svg+xml");
             const svgEl = doc.querySelector("svg");
@@ -1464,12 +1594,14 @@
               svgEl.removeAttribute("width");
               svgEl.removeAttribute("height");
               svgEl.style.display = "block";
-              svgEl.style.height = "1em";
+              svgEl.style.height = scale + "em";
               svgEl.style.width = "auto";
               svgEl.style.fill = "currentColor";
               svgEl.querySelectorAll("path, circle, rect, polygon, ellipse").forEach(shape => {
                 shape.style.fill = "currentColor";
               });
+              container.style.maxHeight = "0.8em";
+              container.style.overflow = "visible";
               container.innerHTML = svgEl.outerHTML;
             } else {
               throw new Error("Invalid SVG content");
@@ -1477,10 +1609,14 @@
           })
           .catch(err => {
             console.error("[nav] Logo error:", err);
+            const scale = siteConfig.logo_scale ?? 0.8;
             const img = document.createElement("img");
+            img.draggable = false;
             img.src = siteConfig.logo_file;
-            img.style.height = "1em";
+            img.style.height = scale + "em";
             img.style.width = "auto";
+            container.style.maxHeight = "0.8em";
+            container.style.overflow = "visible";
             container.appendChild(img);
           });
         titleEl.appendChild(container);
@@ -1489,56 +1625,15 @@
       const buildText = () => {
         if (!siteConfig.name) return;
         const span = document.createElement("span");
+        span.className = "nav-title-text";
         span.textContent = siteConfig.name;
-        titleEl.appendChild(span);
+        titleEl.appendChild(wrapModule(span));
       };
-
-      // Phase 12.5 Bug 3: build decorative SVG icon adjacent to the title
-      const buildIcon = () => {
-        const iconFile = siteConfig.title_icon_file;
-        if (!iconFile) return;
-        const iconContainer = document.createElement("div");
-        iconContainer.className = "site-icon";
-        fetch(iconFile)
-          .then(r => {
-            if (!r.ok) throw new Error("Icon fetch failed");
-            return r.text();
-          })
-          .then(svgText => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(svgText, "image/svg+xml");
-            const svgEl = doc.querySelector("svg");
-            if (svgEl) {
-              svgEl.removeAttribute("width");
-              svgEl.removeAttribute("height");
-              svgEl.style.display = "block";
-              svgEl.style.height = "1em";
-              svgEl.style.width = "auto";
-              svgEl.style.fill = "currentColor";
-              svgEl.querySelectorAll("path, circle, rect, polygon, ellipse").forEach(shape => {
-                shape.style.fill = "currentColor";
-              });
-              iconContainer.innerHTML = svgEl.outerHTML;
-            }
-          })
-          .catch(err => {
-            console.error("[nav] Icon error:", err);
-          });
-        titleEl.appendChild(iconContainer);
-      };
-
-      // Determine icon placement (before or after the main content)
-      const iconEnabled = siteConfig.title_icon_enabled;
-      const iconPos     = siteConfig.title_icon_position || "before";
-
-      if (iconEnabled && iconPos === "before") buildIcon();
 
       if (titleMode === "text")       buildText();
       else if (titleMode === "svg")       buildSvg();
       else if (titleMode === "svg_text") { buildSvg(); buildText(); }
       else if (titleMode === "text_svg") { buildText(); buildSvg(); }
-
-      if (iconEnabled && iconPos === "after") buildIcon();
 
       titleZone.appendChild(titleEl);
     }
@@ -1549,9 +1644,17 @@
         legacyLeft.style.display = "none";
       } else {
         legacyLeft.innerHTML = "";
+        const a = document.createElement("a");
+        a.href = "/";
+        a.style.color = "inherit";
+        a.style.textDecoration = "none";
+        
         const span = document.createElement("span");
+        span.className = "nav-title-text";
         span.textContent = siteConfig.name;
-        legacyLeft.appendChild(span);
+        
+        a.appendChild(span);
+        legacyLeft.appendChild(a);
       }
     }
 
@@ -1572,9 +1675,9 @@
         const emailEl   = document.createElement("a");
         emailEl.className = "nav-btn nav-email zone-email-module";
         emailEl.href = "mailto:" + email;
-        emailEl.textContent = "[" + email.toUpperCase() + "]";
+        emailEl.textContent = email;
         emailEl.style.pointerEvents = "auto";
-        emailZone.appendChild(emailEl);
+        emailZone.appendChild(wrapModule(emailEl));
       }
 
       // Info module
@@ -1586,7 +1689,7 @@
         infoBtn.className = "nav-btn nav-info zone-info-module";
         infoBtn.style.pointerEvents = "auto";
         infoBtn.addEventListener("click", toggleInfo);
-        infoZone.appendChild(infoBtn);
+        infoZone.appendChild(wrapModule(infoBtn));
         // Set initial state
         updateInfoButtonState(isOverlayOpen);
       }
@@ -1596,10 +1699,10 @@
         legacyRight.innerHTML = "";
         const navItems = [];
         if (email && siteConfig.show_email !== false) {
-          navItems.push({ type: "email", label: email.toUpperCase() });
+          navItems.push({ type: "email", label: email });
         }
         if (siteConfig.show_info !== false) {
-          navItems.push({ type: "info", label: "INFO" });
+          navItems.push({ type: "info", label: siteConfig.info_label || "INFO" });
         }
         navItems.forEach((item, i) => {
           if (i > 0) {
@@ -1620,7 +1723,7 @@
             el = document.createElement("a");
             el.href = "mailto:" + email;
             el.className = "nav-btn nav-email";
-            el.textContent = "[" + item.label + "]";
+            el.textContent = item.label;
           }
           legacyRight.appendChild(el);
           if (item.type === "info") {
@@ -1667,7 +1770,7 @@
       const filledCount = Math.round((loaded / total) * totalChars);
       const emptyCount  = totalChars - filledCount;
       barEl.textContent     = "▓".repeat(filledCount) + "░".repeat(emptyCount);
-      counterEl.textContent = "[" + loaded + "/" + total + "]";
+      counterEl.textContent = (siteConfig.module_prefix !== undefined ? siteConfig.module_prefix : "[") + loaded + "/" + total + (siteConfig.module_suffix !== undefined ? siteConfig.module_suffix : "]");
     }
 
     render(); // initial state: empty bar
@@ -1723,6 +1826,7 @@
     // Different rendering depending on type
     if (item.type === "image") {
       const img = document.createElement("img");
+      img.draggable = false;
       img.alt = "";
       // Removed decoding="async" to ensure simpler synchronous/load behavior
 
@@ -1814,6 +1918,7 @@
       placeholder.className = "video-placeholder";
 
       const thumb = document.createElement("img");
+      thumb.draggable = false;
       thumb.alt = "";
 
       const handleThumbLoad = () => {
@@ -2298,19 +2403,7 @@
     { passive: false }
   );
 
-  // Footer zoom buttons
-  document.querySelectorAll(".zoom-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const mode = btn.dataset.zoom;
-      if (mode === "in") {
-        zoomIn();
-      } else if (mode === "out") {
-        zoomOut();
-      } else if (mode === "reset") {
-        resetView();
-      }
-    });
-  });
+
 
   // ── Layout modes ──
 
@@ -2653,9 +2746,9 @@
         el.setAttribute("aria-pressed", "false");
       }
 
-      el.textContent = "[" + g.toUpperCase() + "]";
+      el.textContent = g;
       el.addEventListener("click", () => toggleGroup(g, el));
-      panel.appendChild(el);
+      panel.appendChild(wrapModule(el));
 
       if (layout === "horizontal" && idx < groups.length - 1) {
         const sep = document.createElement("span");
@@ -2668,30 +2761,7 @@
       }
     });
 
-    // Add "View All" button for focus-on-click mode
-    if (behaviour === "focus-on-click") {
-      if (layout === "horizontal" && groups.length > 0) {
-        const sep = document.createElement("span");
-        sep.textContent = separator;
-        sep.className = "nav-category-sep nav-category-view-all-sep";
-        sep.style.fontSize = "12px";
-        sep.style.color = "inherit";
-        sep.style.opacity = "0.5";
-        sep.style.display = focusedGroup !== null ? "" : "none";
-        panel.appendChild(sep);
-      }
 
-      const viewAllBtn = document.createElement("button");
-      viewAllBtn.type = "button";
-      viewAllBtn.id = "category-view-all";
-      viewAllBtn.className = "nav-btn nav-category-view-all";
-      const viewAllLabel = siteConfig.categories_view_all_label || "ALL";
-      viewAllBtn.textContent = "[" + viewAllLabel.toUpperCase() + "]";
-      viewAllBtn.style.display = focusedGroup !== null ? "" : "none";
-      if (layout === "vertical") viewAllBtn.style.marginTop = "8px";
-      viewAllBtn.addEventListener("click", restoreAllGroups);
-      panel.appendChild(viewAllBtn);
-    }
 
     // Append into configured zone (or body fallback)
     getZone(catPos).appendChild(panel);
@@ -2757,14 +2827,14 @@
       btn.className = "layout-option" + (mode === defaultLayout ? " is-active" : "");
       btn.dataset.layout = mode;
 
-      let label = mode.toUpperCase();
+      let label = mode;
       if (Array.isArray(siteConfig.layout_names) && siteConfig.layout_names[allModesIdx]) {
-        label = siteConfig.layout_names[allModesIdx].toUpperCase();
+        label = siteConfig.layout_names[allModesIdx];
       }
 
-      btn.textContent = "[" + label + "]";
+      btn.textContent = label;
       btn.addEventListener("click", () => applyLayout(mode));
-      panel.appendChild(btn);
+      panel.appendChild(wrapModule(btn));
 
       if (layout === "horizontal" && idx < validModes.length - 1) {
         const sep = document.createElement("span");
@@ -2780,16 +2850,98 @@
     getZone(layoutPos).appendChild(panel);
   }
 
+  function buildZoomModule() {
+    if (isMobile) return;
+    
+    const cfg = window._siteConfigRaw || {};
+    const zoomCfg = (cfg.ui && cfg.ui.modules && cfg.ui.modules.zoom) || {};
+    
+    // Config controls visibility via show_zoom setting
+    const existing = document.getElementById("zoom-panel");
+    if (existing) existing.remove();
+
+    if (siteConfig.show_zoom === false) return;
+
+    const panel = document.createElement("div");
+    panel.id = "zoom-panel";
+
+    const layout = zoomCfg.layout || "full-width";
+    const alignment = zoomCfg.alignment || "left";
+    const separator = zoomCfg.separator || "|";
+    const spacing = zoomCfg.spacing ?? 10;
+    const zoomPos = zoomCfg.position || "bottom-center";
+
+    // Apply layout styles
+    if (layout === "horizontal" || layout === "full-width") {
+      panel.style.display = "flex";
+      panel.style.flexDirection = "row";
+      panel.style.alignItems = "center";
+      panel.style.gap = spacing + "px";
+      panel.style.flexWrap = "nowrap";
+      if (layout === "full-width") {
+        panel.style.width = "calc(100vw - (var(--zone-edge, 32px) * 2))";
+        panel.style.justifyContent = "space-between";
+      }
+    } else {
+      panel.style.display = "flex";
+      panel.style.flexDirection = "column";
+      panel.style.gap = spacing + "px";
+      if (alignment === "center") {
+        panel.style.alignItems = "center";
+        panel.style.textAlign = "center";
+      } else if (alignment === "right") {
+        panel.style.alignItems = "flex-end";
+        panel.style.textAlign = "right";
+      } else {
+        panel.style.alignItems = "flex-start";
+        panel.style.textAlign = "left";
+      }
+    }
+
+    const zoomLabels = zoomCfg.labels || ["-", "0", "+"];
+    const buttons = [
+      { label: zoomLabels[0] || "-", action: "out" },
+      { label: zoomLabels[1] || "0", action: "reset" },
+      { label: zoomLabels[2] || "+", action: "in" }
+    ];
+
+    buttons.forEach((b, idx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "zoom-btn nav-btn";
+      btn.dataset.zoom = b.action;
+      btn.textContent = b.label;
+      btn.addEventListener("click", () => {
+        if (b.action === "in") zoomIn();
+        else if (b.action === "out") zoomOut();
+        else resetView();
+      });
+      panel.appendChild(wrapModule(btn));
+
+      if ((layout === "horizontal" || layout === "full-width") && idx < buttons.length - 1) {
+        const sep = document.createElement("span");
+        sep.textContent = separator;
+        sep.className = "nav-layout-sep";
+        sep.style.fontSize = "12px";
+        sep.style.color = "inherit";
+        sep.style.opacity = "0.5";
+        panel.appendChild(sep);
+      }
+    });
+
+    getZone(zoomPos).appendChild(panel);
+  }
+
   function toggleMobileMode() {
     const isCurrentlySlideshow = document.body.classList.contains("is-slideshow");
     const switcher = document.getElementById("mode-switcher");
-    const footer = document.querySelector(".footer");
+    const zoomPanel = document.getElementById("zoom-panel");
 
     if (isCurrentlySlideshow) {
       // Switch to Canvas
       document.body.classList.remove("is-slideshow");
       if (switcher) switcher.textContent = "[SCROLL]";
-      if (footer) footer.style.display = (siteConfig.show_zoom !== false) ? "flex" : "none";
+      if (zoomPanel) zoomPanel.style.display = (siteConfig.show_zoom !== false) ? "flex" : "none";
       
       // Setup stage for canvas mode
       stage.style.width = STAGE_WIDTH + "px";
@@ -2810,7 +2962,7 @@
       // Switch to Slideshow
       document.body.classList.add("is-slideshow");
       if (switcher) switcher.textContent = "[DRAG]";
-      if (footer) footer.style.display = "none";
+      if (zoomPanel) zoomPanel.style.display = "none";
       
       // Reset transforms and layout
       stage.style.transform = "none";
@@ -2834,7 +2986,7 @@
     btn.id = "mode-switcher";
     
     const isInitiallySlideshow = document.body.classList.contains("is-slideshow");
-    btn.textContent = isInitiallySlideshow ? "[DRAG]" : "[SCROLL]";
+    btn.textContent = isInitiallySlideshow ? "DRAG" : "SCROLL";
     
     btn.addEventListener("click", toggleMobileMode);
     document.body.appendChild(btn);
@@ -2951,6 +3103,7 @@
 
     if (mediaItem.type === "image") {
       const img = document.createElement("img");
+      img.draggable = false;
       img.src = mediaItem.src;
       img.className = "lightbox-image";
       img.alt = "";
@@ -3126,13 +3279,13 @@
     const isSlideshow = isMobile && siteConfig.mobile_mode === "slideshow";
     if (isSlideshow) {
       document.body.classList.add("is-slideshow");
-      const footer = document.querySelector(".footer");
-      if (footer) footer.style.display = "none";
+      const zoomPanel = document.getElementById("zoom-panel");
+      if (zoomPanel) zoomPanel.style.display = "none";
     } else {
-      // Apply zoom footer visibility
+      // Apply zoom panel visibility
       if (siteConfig.show_zoom === false) {
-        const footer = document.querySelector(".footer");
-        if (footer) footer.style.display = "none";
+        const zoomPanel = document.getElementById("zoom-panel");
+        if (zoomPanel) zoomPanel.style.display = "none";
       }
     }
 
@@ -3173,6 +3326,16 @@
     buildCategoryPanel();
     buildLayoutPanel();
     buildModeSwitcher();
+
+    // Wrap zoom buttons in DOM
+    document.querySelectorAll('.zoom-btn').forEach(btn => {
+      if (!btn.parentNode.classList.contains('module-wrapper')) {
+        const parent = btn.parentNode;
+        const next = btn.nextSibling;
+        const wrapper = wrapModule(btn);
+        parent.insertBefore(wrapper, next);
+      }
+    });
 
     // Phase 12.5 Bug 1: Signal GUI that the canvas is ready for hot-reload
     try {

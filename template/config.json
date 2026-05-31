@@ -156,10 +156,10 @@
     "defaultMode": "canvas"
   },
   "typography": {
-    "fontMode": "archivo",
+    "fontMode": "syne-tactile",
     "googleEmbedCode": "",
     "localFontUrl": "",
-    "baseSize": "15px",
+    "baseSize": "32px",
     "textColor": "#001eff",
     "gradientColor1": "#000000",
     "gradientColor2": "#e0e9f5",
@@ -175,6 +175,6 @@
     "textAnimationTrigger": "always",
     "fontWeight": 300,
     "fontWidth": 101,
-    "textCase": "uppercase"
+    "textCase": "lowercase"
   }
 }

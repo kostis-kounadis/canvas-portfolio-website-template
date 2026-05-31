@@ -22,7 +22,7 @@
   "ui": {
     "modules": {
       "title": {
-        "visible": false,
+        "visible": true,
         "position": "middle-center",
         "mode": "svg",
         "text": "My Portfolio",
@@ -34,7 +34,7 @@
         "position": "bottom-center"
       },
       "info": {
-        "visible": false,
+        "visible": true,
         "position": "middle-center",
         "buttonStyle": "x-close",
         "overlayEffect": "none",
@@ -44,7 +44,7 @@
         "label": "Info"
       },
       "categories": {
-        "visible": false,
+        "visible": true,
         "position": "middle-center",
         "behaviour": "focus-on-click",
         "layout": "vertical",

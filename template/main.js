@@ -30,6 +30,16 @@
   let stageX = 0;
   let stageY = 0;
 
+  // PERF-09: Module-level cache of all .media-item elements.
+  // Populated by scatterItems() and cleared by the hot-reload re-scatter path.
+  // Avoids repeated querySelectorAll('.media-item') walks for bulk operations.
+  let allMediaItems = [];
+
+  // PERF-07: Remember the last font embed string injected into <head>.
+  // If applyTheme() is called again with the same font, skip the
+  // remove-then-re-inject round-trip (prevents flicker on slider drag).
+  let _lastFontEmbedCode = null;
+
   // Helper to wrap a UI module element with prefix/suffix brackets.
   // Accepts prefix and suffix as explicit parameters (not from the closure)
   // so the output is always consistent with the values at the point of call.
@@ -355,21 +365,26 @@
     };
   }
 
-  // Preload thumbnails — only used for video-embed thumbnails (external URLs).
-  // Local images are NOT preloaded here because createMediaElement already
-  // requests them; duplicate requests compete for HTTP connections and slow
-  // initial render.
+  // Preload video-embed thumbnails via <link rel="preload"> so the browser
+  // handles prioritisation natively. Avoids the throwaway new Image() pattern
+  // that creates GC pressure and competes with the main image requests.
   function preloadMedia() {
     if (!Array.isArray(window.mediaItems)) return;
     window.mediaItems.forEach((item) => {
       try {
         if (item.type === "video-embed" && item.videoId) {
-          const img = new Image();
-          if (item.provider === "vimeo") {
-            img.src = `https://vumbnail.com/${item.videoId}.jpg`;
-          } else {
-            img.src = `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`;
-          }
+          const thumbUrl = item.provider === "vimeo"
+            ? `https://vumbnail.com/${item.videoId}.jpg`
+            : `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`;
+
+          // Skip if already injected for this URL
+          if (document.head.querySelector(`link[rel="preload"][href="${thumbUrl}"]`)) return;
+
+          const link = document.createElement("link");
+          link.rel    = "preload";
+          link.as     = "image";
+          link.href   = thumbUrl;
+          document.head.appendChild(link);
         }
       } catch (_e) {
         // best-effort; ignore individual preload failures
@@ -493,7 +508,7 @@
     }
 
     // 2. Update media items visibility/blur
-    stage.querySelectorAll(".media-item").forEach((el) => {
+    allMediaItems.forEach((el) => {
       const elGrp = el.dataset.group || "";
       if (elGrp === group) {
         el.style.display = "";
@@ -536,7 +551,7 @@
     }
 
     // 2. Restore all media items to visible and unblurred
-    stage.querySelectorAll(".media-item").forEach((el) => {
+    allMediaItems.forEach((el) => {
       el.style.display = "";
       el.classList.remove("is-focus-blurred");
     });
@@ -586,7 +601,9 @@
     const isMobileNow = window.innerWidth < 768;
     if (isMobileNow) hi = 48; // cap at 48px on mobile
 
-    for (let i = 0; i < 22; i++) {
+    // Binary-search font-size over 14 iterations (precision: ~0.003px — imperceptible).
+    // Each iteration forces one scrollHeight read, so fewer = fewer reflows.
+    for (let i = 0; i < 14; i++) {
       const mid = (lo + hi) / 2;
       textEl.style.fontSize = mid + "px";
       if (textEl.scrollHeight < target) {
@@ -882,7 +899,8 @@
         // Clear previous random placement and re-scatter to apply new scarcity/overlapRatio!
         placedRects.length = 0;
         overlapCount.clear();
-        stage.querySelectorAll(".media-item").forEach((el) => el.remove());
+        allMediaItems.forEach((el) => el.remove()); // use cache — same as querySelectorAll
+        allMediaItems = [];                          // reset cache before scatterItems() repopulates it
         scatterItems();
       }
       
@@ -1062,9 +1080,13 @@
       document.body.classList.add("text-anim-hover");
     }
 
-    // Clean up existing dynamic font elements
-    const oldEmbeds = document.querySelectorAll(".dynamic-font-embed");
-    oldEmbeds.forEach(el => el.remove());
+    // Clean up existing dynamic font elements only when the font changed
+    // (the guard below in the else-branch handles the actual skip;
+    //  local fonts always re-inject their @font-face on change)
+    if (typo.fontMode === "local") {
+      const oldEmbeds = document.querySelectorAll(".dynamic-font-embed");
+      oldEmbeds.forEach(el => el.remove());
+    }
 
     const DEFAULT_FONT = '"JetBrains Mono", "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace';
     const DEFAULT_EMBED = `<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">`;
@@ -1190,14 +1212,24 @@
         }
       }
 
-      // Inject into head
-      if (embedToUse) {
-        const container = document.createElement("div");
-        container.innerHTML = embedToUse;
-        Array.from(container.children).forEach(child => {
-          child.classList.add("dynamic-font-embed");
-          document.head.appendChild(child);
-        });
+      // PERF-07: Only remove+reinject the font <link> when it actually changed.
+      // Slider drags (font-weight, font-size) call applyTheme() on every tick;
+      // skipping identical embeds eliminates the flicker and redundant network hit.
+      if (embedToUse !== _lastFontEmbedCode) {
+        _lastFontEmbedCode = embedToUse;
+
+        // Remove old embeds
+        document.querySelectorAll(".dynamic-font-embed").forEach(el => el.remove());
+
+        // Inject new embed
+        if (embedToUse) {
+          const container = document.createElement("div");
+          container.innerHTML = embedToUse;
+          Array.from(container.children).forEach(child => {
+            child.classList.add("dynamic-font-embed");
+            document.head.appendChild(child);
+          });
+        }
       }
 
       // Parse font-family from the embed code
@@ -1344,7 +1376,7 @@
 
     // Clear any previous stickiness/blurs if config is completely reset
     if (fx.clickMode === "none") {
-      document.querySelectorAll(".media-item").forEach(item => {
+      allMediaItems.forEach(item => {
         item.classList.remove("is-coloured", "is-blurred", "is-focused-click");
       });
     }
@@ -1400,7 +1432,7 @@
     const clickMode = fx.clickMode || "none";
     const blurOthers = fx.blurOthersOnClick === true;
 
-    const allItems = document.querySelectorAll(".media-item");
+    const allItems = allMediaItems;
 
     if (clickMode === "spotlight") {
       const isAlreadyColoured = el.classList.contains("is-coloured");
@@ -2148,6 +2180,9 @@
       const finalX = rect ? rect.x : 0;
       const finalY = rect ? rect.y : 0;
       el._randomPos = { x: finalX, y: finalY };
+
+      // PERF-09: track every item in the module-level cache
+      allMediaItems.push(el);
     });
   }
 
@@ -2432,8 +2467,7 @@
   let itemDraggingWired = false;
   function wireItemDragging() {
     if (itemDraggingWired) return;
-    const allItems = stage.querySelectorAll(".media-item");
-    allItems.forEach((el) => enableItemDrag(el));
+    allMediaItems.forEach((el) => enableItemDrag(el));
     itemDraggingWired = true;
   }
 
@@ -2515,14 +2549,12 @@
   }
 
   function getVisibleItems() {
-    return Array.from(stage.querySelectorAll(".media-item")).filter(
-      (el) => el.style.display !== "none"
-    );
+    return allMediaItems.filter((el) => el.style.display !== "none");
   }
 
   function layoutRandom() {
     // Restore saved scatter positions
-    stage.querySelectorAll(".media-item").forEach((el) => {
+    allMediaItems.forEach((el) => {
       if (!el._randomPos) return;
       // Free items that are not stack-free keep their dropped position;
       // cards still in stacks (or items from ROWS) go back to scatter pos
@@ -2542,7 +2574,7 @@
     // Clear stacks state
     activeStacks = [];
     // Clear stack-free flags
-    stage.querySelectorAll(".media-item").forEach((el) => {
+    allMediaItems.forEach((el) => {
       delete el.dataset.stackFree;
     });
   }
@@ -2638,7 +2670,7 @@
     const STACK_SPACING_X = siteConfig.stacks_spacing !== undefined ? siteConfig.stacks_spacing : 1000;
 
     // Restore widths from ROWS if needed
-    stage.querySelectorAll(".media-item").forEach((el) => {
+    allMediaItems.forEach((el) => {
       if (el._originalWidth !== undefined) {
         el.style.width = el._originalWidth + "px";
         delete el._originalWidth;
@@ -2692,7 +2724,7 @@
     currentLayout = mode;
 
     // Add transition class to all items
-    const allItems = stage.querySelectorAll(".media-item");
+    const allItems = allMediaItems;
     allItems.forEach((el) => el.classList.add("is-layouting"));
 
     // Run the correct layout
@@ -2994,7 +3026,7 @@
       stage.style.height = STAGE_HEIGHT + "px";
       
       // Apply saved random positions
-      stage.querySelectorAll(".media-item").forEach(el => {
+      allMediaItems.forEach(el => {
         if (el._randomPos) {
           el.style.left = el._randomPos.x + "px";
           el.style.top  = el._randomPos.y + "px";
@@ -3015,7 +3047,7 @@
       stage.style.width = "100%";
       stage.style.height = "auto";
       
-      stage.querySelectorAll(".media-item").forEach(el => {
+      allMediaItems.forEach(el => {
         el.style.left = "auto";
         el.style.top  = "auto";
       });
@@ -3193,7 +3225,7 @@
   }
 
   function openLightbox(el) {
-    visibleLightboxItems = Array.from(document.querySelectorAll(".media-item"))
+    visibleLightboxItems = allMediaItems
       .filter(item => item.style.display !== "none");
     currentLightboxIndex = visibleLightboxItems.indexOf(el);
 

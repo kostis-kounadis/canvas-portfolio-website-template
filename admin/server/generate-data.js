@@ -62,8 +62,10 @@ async function main() {
       }
     }
 
-    // Process files
-    for (const fileObj of fileObjects) {
+    // PERF-10: Process all files concurrently — sharp.metadata() is I/O-bound
+    // so firing them in parallel (Promise.all) instead of sequentially cuts
+    // build time by roughly N× for a group with N images.
+    await Promise.all(fileObjects.map(async (fileObj) => {
       const src = `assets/images/${group}/${fileObj.name}`;
       let width = DISPLAY_WIDTH;
       let height = Math.round(DISPLAY_WIDTH * (340 / 520)); // fallback ~16:10
@@ -98,7 +100,7 @@ async function main() {
         group: group,
         _name: fileObj.name // for sorting
       });
-    }
+    }));
 
     // Process videos.txt
     const videosTxtPath = path.join(groupDir, 'videos.txt');

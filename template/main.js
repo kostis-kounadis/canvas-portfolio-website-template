@@ -783,17 +783,10 @@
     applyTheme(cfg);          // Apply theme colours, bg effect, noise, shadow
     applyImageEffects(cfg);   // Apply image effects (desaturate, duotone, etc.)
 
-    // Rebuild zone containers and UI modules so positions & options update in real-time
-    buildZoneContainers();
-
-    // Toggle zoom module visibility dynamically
-    const zoomPanel = document.getElementById("zoom-panel");
-    if (zoomPanel) {
-      zoomPanel.style.display = (siteConfig.show_zoom !== false) ? "flex" : "none";
-    }
-
-    // Only rebuild nav/panels when UI-structure fields actually changed.
-    // Pure theme/colour updates skip this to avoid flicker.
+    // Only rebuild zone containers and nav/panels when UI-structure fields
+    // actually changed. Zone containers hold all nav content, so they must be
+    // rebuilt together — rebuilding containers without their contents empties them.
+    // Pure theme/colour updates skip this entire block; CSS vars handle those.
     const nextNavSnapshot = JSON.stringify({
       name:             siteConfig.name,
       email:            siteConfig.email,
@@ -815,6 +808,7 @@
     const navNeedsRebuild = prevNavSnapshot !== nextNavSnapshot;
 
     if (navNeedsRebuild) {
+      buildZoneContainers();
       const navRight = document.getElementById("nav-right");
       if (navRight) {
         navRight.innerHTML = "";
@@ -824,6 +818,7 @@
       buildLayoutPanel();
       buildZoomModule();
     }
+
     if (cfg.imageClick) {
       if (!cfg.imageClick.lightbox?.enabled) {
         const dialog = document.getElementById("lightbox");

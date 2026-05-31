@@ -1,6 +1,6 @@
 {
   "site": {
-    "title": "Tester",
+    "title": "Kostis K.",
     "email": "test@test.com",
     "url": "https://example.com",
     "infoText": "This is a longer **text**. To try out a _few_ things and [links](test.com).",
@@ -156,7 +156,7 @@
     "defaultMode": "canvas"
   },
   "typography": {
-    "fontMode": "monospace",
+    "fontMode": "archivo",
     "googleEmbedCode": "",
     "localFontUrl": "",
     "baseSize": "15px",
@@ -174,7 +174,7 @@
     "textAnimation": "none",
     "textAnimationTrigger": "always",
     "fontWeight": 300,
-    "fontWidth": 75,
+    "fontWidth": 101,
     "textCase": "uppercase"
   }
 }

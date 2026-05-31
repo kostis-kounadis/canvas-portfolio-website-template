@@ -55,7 +55,7 @@ export function LayoutsForm() {
         available = available.filter(m => m !== mode);
       }
       
-      const order = ["random", "rows", "stacks"];
+      const order = ["random", "rows", "stacks", "infinite"];
       c.layouts.available = order.filter(m => available.includes(m));
 
       const activeCount = c.layouts.available.length;
@@ -79,7 +79,7 @@ export function LayoutsForm() {
       c.layouts.default = mode;
       if (!c.layouts.available.includes(mode)) {
         c.layouts.available.push(mode);
-        const order = ["random", "rows", "stacks"];
+      const order = ["random", "rows", "stacks", "infinite"];
         c.layouts.available = order.filter(m => c.layouts.available.includes(m));
       }
       const activeCount = c.layouts.available.length;
@@ -94,7 +94,8 @@ export function LayoutsForm() {
   const MODES = [
     { id: 'random', label: 'Random (Scattered)', desc: 'Scattered items on the canvas grid' },
     { id: 'rows', label: 'Rows (Masonry)', desc: 'Vertical height scale of image columns' },
-    { id: 'stacks', label: 'Stacks (Depth)', desc: 'Depth distance spacing between depth-stacked slides' }
+    { id: 'stacks', label: 'Stacks (Depth)', desc: 'Depth distance spacing between depth-stacked slides' },
+    { id: 'infinite', label: 'Infinite Grid', desc: 'Infinite panning masonry grid of repeating images' }
   ] as const;
 
   return (
@@ -309,6 +310,76 @@ export function LayoutsForm() {
                               <SelectItem value="back-to-front" className="text-[11px] font-medium">Top-Left is Back</SelectItem>
                             </SelectContent>
                           </Select>
+                        </div>
+                      </div>
+                    )}
+
+                    {mode === 'infinite' && (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-4 p-4 border border-zinc-200 rounded-lg bg-zinc-50 shadow-sm">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-xs text-zinc-900">Column Width</span>
+                            <span className="text-[10px] text-zinc-500">Base width of each column (100–1200px)</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.infinite?.columnWidth ?? 520}px</span>
+                            <Slider
+                              className="flex-1"
+                              min={100} max={1200} step={10}
+                              value={[config.layouts.infinite?.columnWidth ?? 520]}
+                              onValueChange={(val: number | readonly number[]) => {
+                                const num = Array.isArray(val) ? val[0] : (val as number);
+                                updateConfig(c => {
+                                  if (!c.layouts.infinite) c.layouts.infinite = { columnWidth: 520, gap: 8, numCols: 6 };
+                                  c.layouts.infinite.columnWidth = num;
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-4 p-4 border border-zinc-200 rounded-lg bg-zinc-50 shadow-sm">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-xs text-zinc-900">Item Gap</span>
+                            <span className="text-[10px] text-zinc-500">Spacing between items (0–64px)</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.infinite?.gap ?? 8}px</span>
+                            <Slider
+                              className="flex-1"
+                              min={0} max={64} step={2}
+                              value={[config.layouts.infinite?.gap ?? 8]}
+                              onValueChange={(val: number | readonly number[]) => {
+                                const num = Array.isArray(val) ? val[0] : (val as number);
+                                updateConfig(c => {
+                                  if (!c.layouts.infinite) c.layouts.infinite = { columnWidth: 520, gap: 8, numCols: 6 };
+                                  c.layouts.infinite.gap = num;
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-4 p-4 border border-zinc-200 rounded-lg bg-zinc-50 shadow-sm">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-xs text-zinc-900">Number of Columns</span>
+                            <span className="text-[10px] text-zinc-500">How many columns in one repeating tile (1–12)</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.5 rounded font-bold">{config.layouts.infinite?.numCols ?? 6}</span>
+                            <Slider
+                              className="flex-1"
+                              min={1} max={12} step={1}
+                              value={[config.layouts.infinite?.numCols ?? 6]}
+                              onValueChange={(val: number | readonly number[]) => {
+                                const num = Array.isArray(val) ? val[0] : (val as number);
+                                updateConfig(c => {
+                                  if (!c.layouts.infinite) c.layouts.infinite = { columnWidth: 520, gap: 8, numCols: 6 };
+                                  c.layouts.infinite.numCols = num;
+                                });
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
                     )}

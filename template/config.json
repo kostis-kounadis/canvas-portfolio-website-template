@@ -53,7 +53,7 @@
         "spacing": 2
       },
       "layouts": {
-        "visible": false,
+        "visible": true,
         "position": "middle-right",
         "layout": "vertical",
         "alignment": "left",
@@ -96,14 +96,16 @@
   },
   "layouts": {
     "available": [
-      "random"
+      "random",
+      "infinite"
     ],
-    "default": "random",
+    "default": "infinite",
     "draggable": true,
     "labels": [
       "▩▩▩ RRAANNDDOOMM",
       "▤▤▤ RRROOOWWWSSS",
-      "▧▧▧"
+      "▧▧▧",
+      "▧▧▧ IINNNFFFIINN"
     ],
     "random": {
       "scarcity": 520,
@@ -117,6 +119,11 @@
     "stacks": {
       "spacing": 1000,
       "depthOrder": "front-to-back"
+    },
+    "infinite": {
+      "columnWidth": 670,
+      "gap": 12,
+      "numCols": 3
     }
   },
   "categories": {
@@ -125,11 +132,11 @@
     "viewAllLabel": "ALL"
   },
   "imageEffects": {
-    "initialState": "desaturated",
+    "initialState": "colour",
     "duotoneColor1": "#000000",
     "duotoneColor2": "#ffffff",
     "enlargeOnHover": false,
-    "blendMode": "multiply",
+    "blendMode": "normal",
     "clickMode": "none",
     "clickStickyMode": "multi",
     "blurOthersOnClick": false
@@ -156,10 +163,10 @@
     "defaultMode": "canvas"
   },
   "typography": {
-    "fontMode": "syne-tactile",
+    "fontMode": "archivo",
     "googleEmbedCode": "",
     "localFontUrl": "",
-    "baseSize": "32px",
+    "baseSize": "14px",
     "textColor": "#001eff",
     "gradientColor1": "#000000",
     "gradientColor2": "#e0e9f5",
@@ -173,8 +180,8 @@
     "blendMode": "difference",
     "textAnimation": "none",
     "textAnimationTrigger": "always",
-    "fontWeight": 300,
+    "fontWeight": 200,
     "fontWidth": 101,
-    "textCase": "lowercase"
+    "textCase": "uppercase"
   }
 }

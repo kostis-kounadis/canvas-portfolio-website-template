@@ -118,7 +118,7 @@
     background_colour: "#f7f5f0",
     blend_mode:       true,
     // layouts
-    layout_names:    ["\u2569\u2569\u2569", "\u2564\u2564\u2564", "\u2567\u2567\u2567"],
+    layout_names:    ["\u2569\u2569\u2569", "\u2564\u2564\u2564", "\u2567\u2567\u2567", "\u25A6\u25A6\u25A6"],
     default_layout:  "random",
     draggable:       true,
     random_scarcity: 100,
@@ -127,6 +127,9 @@
     rows_gap: 24,
     stacks_spacing: 1000,
     stacks_depth_order: "front-to-back",
+    infinite_column_width: 520,
+    infinite_gap: 8,
+    infinite_num_cols: 6,
     // misc
     mobile_mode:     "canvas",
     ui_text_size:    "18px",
@@ -142,6 +145,11 @@
 
   // Active stack objects built by layoutStacks(); cleared on exit.
   let activeStacks = [];
+
+  // Infinite Grid state
+  let infinitePool   = [];
+  let infiniteActive = new Map();
+  let infiniteTile   = null;
 
   // Interaction state
   let spaceDown = false;
@@ -226,12 +234,16 @@
     const translateX = stageX;
     const translateY = stageY;
     stage.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${zoomLevel})`;
+    if (currentLayout === "infinite") refreshInfiniteGrid();
   }
 
   // Zoom helpers
   function setZoom(nextZoom, centerX, centerY) {
     const oldZoom = zoomLevel;
-    const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, nextZoom));
+    
+    // Dynamic minimum zoom guard:
+    const safeMinZoom = currentLayout === "infinite" ? Math.max(0.35, ZOOM_MIN) : ZOOM_MIN;
+    const clamped = Math.max(safeMinZoom, Math.min(ZOOM_MAX, nextZoom));
     if (clamped === oldZoom) return;
 
     stage.classList.add("is-interacting");
@@ -685,6 +697,11 @@
         if (cfg.layouts.stacks.spacing != null)      siteConfig.stacks_spacing = cfg.layouts.stacks.spacing;
         if (cfg.layouts.stacks.depthOrder != null)   siteConfig.stacks_depth_order = cfg.layouts.stacks.depthOrder;
       }
+      if (cfg.layouts.infinite) {
+        if (cfg.layouts.infinite.columnWidth != null) siteConfig.infinite_column_width = cfg.layouts.infinite.columnWidth;
+        if (cfg.layouts.infinite.gap != null)         siteConfig.infinite_gap = cfg.layouts.infinite.gap;
+        if (cfg.layouts.infinite.numCols != null)     siteConfig.infinite_num_cols = cfg.layouts.infinite.numCols;
+      }
     }
 
     // categories
@@ -755,6 +772,9 @@
     const prevRowGap        = siteConfig.rows_gap;
     const prevStacksSpacing = siteConfig.stacks_spacing;
     const prevStacksDepth   = siteConfig.stacks_depth_order;
+    const prevInfiniteColWidth = siteConfig.infinite_column_width;
+    const prevInfiniteGap      = siteConfig.infinite_gap;
+    const prevInfiniteNumCols  = siteConfig.infinite_num_cols;
 
     // Snapshot UI-structure fields so we can skip nav/panel rebuilds when only
     // theme/colour values changed (avoids flicker from unnecessary DOM teardown).
@@ -886,7 +906,8 @@
     const randomParamsChanged = (prevScarcity !== siteConfig.random_scarcity) || (prevOverlap !== siteConfig.random_overlap_ratio);
     const rowsParamsChanged = (prevRowHeight !== siteConfig.rows_row_height) || (prevRowGap !== siteConfig.rows_gap);
     const stacksParamsChanged = (prevStacksSpacing !== siteConfig.stacks_spacing) || (prevStacksDepth !== siteConfig.stacks_depth_order);
-    const layoutParamsChanged = randomParamsChanged || rowsParamsChanged || stacksParamsChanged;
+    const infiniteParamsChanged = (prevInfiniteColWidth !== siteConfig.infinite_column_width) || (prevInfiniteGap !== siteConfig.infinite_gap) || (prevInfiniteNumCols !== siteConfig.infinite_num_cols);
+    const layoutParamsChanged = randomParamsChanged || rowsParamsChanged || stacksParamsChanged || infiniteParamsChanged;
 
     // Re-apply layout parameters only if a layout property changed
     if (currentLayout) {
@@ -897,6 +918,23 @@
         allMediaItems.forEach((el) => el.remove()); // use cache — same as querySelectorAll
         allMediaItems = [];                          // reset cache before scatterItems() repopulates it
         scatterItems();
+      }
+
+      if (currentLayout === "infinite" && !layoutModeChanged && infiniteParamsChanged) {
+        // Recompute tile if infinite settings changed
+        const items = allMediaItems.map(el => el._mediaItem).filter(Boolean);
+        const newTile = computeInfiniteGridTile(
+          items,
+          siteConfig.infinite_column_width,
+          siteConfig.infinite_gap,
+          siteConfig.infinite_num_cols
+        );
+        
+        // Release all, recompute
+        for (const [, el] of infiniteActive) igRelease(el);
+        infiniteActive.clear();
+        infiniteTile = newTile;
+        refreshInfiniteGrid();
       }
       
       if (layoutModeChanged || layoutParamsChanged) {
@@ -2525,7 +2563,10 @@
     const padding = 160;
     const scaleX = viewportRect.width  / (bounds.width  + padding);
     const scaleY = viewportRect.height / (bounds.height + padding);
-    ZOOM_MIN = Math.max(0.08, Math.min(1, Math.min(scaleX, scaleY)));
+    // STACKS and ROWS need zooming out to see everything.
+    // INFINITE must not zoom out too far because of mathematically enormous repeating tiles.
+    const calculatedMinZoom = Math.max(0.08, Math.min(1, Math.min(scaleX, scaleY)));
+    ZOOM_MIN = currentLayout === "infinite" ? Math.max(0.35, calculatedMinZoom) : calculatedMinZoom;
     const viewCx = viewportRect.width  / 2;
     const viewCy = viewportRect.height / 2;
     // For ROWS/STACKS zoom out enough to show all content comfortably
@@ -2715,7 +2756,212 @@
     });
   }
 
+  // ── Infinite Grid Pool ──
+  const infinitePools = new Map();
+
+  function igAcquire(item) {
+    if (!infinitePools.has(item.id)) {
+      infinitePools.set(item.id, []);
+    }
+    const pool = infinitePools.get(item.id);
+    let el = pool.pop();
+    if (!el) {
+      const original = allMediaItems.find(e => e.dataset.id === item.id);
+      if (original) {
+        el = original.cloneNode(true);
+      } else {
+        // Fallback if missing
+        el = createMediaElement(item);
+      }
+      el.classList.add("ig-cell");
+      el.style.position = "absolute";
+      el._mediaItem = item;
+      
+      // Ensure hover interactions work and it's treated correctly by effects
+      // Clean up inline transforms from scatter layout
+      el.style.transform = "";
+    }
+    return el;
+  }
+
+  function igRelease(el) {
+    el.remove();
+    const itemId = el.dataset.id;
+    if (itemId) {
+      if (!infinitePools.has(itemId)) infinitePools.set(itemId, []);
+      infinitePools.get(itemId).push(el);
+    }
+  }
+
+  function refreshInfiniteGrid() {
+    if (!infiniteTile) return;
+    const { cols, tileWidth } = infiniteTile;
+    if (tileWidth <= 0 || cols.length === 0) return;
+
+    const vw = stageWrapper.clientWidth;
+    const vh = stageWrapper.clientHeight;
+    const bufX = vw / zoomLevel;
+    const bufY = vh / zoomLevel;
+
+    // Visible stage-coordinate rectangle (with buffer)
+    const visMinX = -stageX / zoomLevel - bufX;
+    const visMinY = -stageY / zoomLevel - bufY;
+    const visMaxX = (vw - stageX) / zoomLevel + bufX;
+    const visMaxY = (vh - stageY) / zoomLevel + bufY;
+
+    // Which tile copies (integer offsets) intersect the visible rect?
+    const txMin = Math.floor(visMinX / tileWidth);
+    const txMax = Math.ceil(visMaxX / tileWidth);
+
+    // Build the set of keys that SHOULD be visible
+    const wantedKeys = new Set();
+    
+    for (let tx = txMin; tx <= txMax; tx++) {
+      const offsetX = tx * tileWidth;
+      
+      cols.forEach((colData, c) => {
+        const colHeight = colData.height;
+        if (colHeight <= 0) return; // empty column
+        
+        const tyMin = Math.floor(visMinY / colHeight);
+        const tyMax = Math.ceil(visMaxY / colHeight);
+        
+        for (let ty = tyMin; ty <= tyMax; ty++) {
+          const offsetY = ty * colHeight;
+          
+          colData.items.forEach((p, pi) => {
+            if (hiddenGroups.has(p.item.group)) return;
+            const absX = p.x + offsetX;
+            const absY = p.y + offsetY;
+            if (absX + p.w < visMinX || absX > visMaxX) return;
+            if (absY + p.h < visMinY || absY > visMaxY) return;
+            wantedKeys.add(`${tx}:${c}:${ty}:${pi}`);
+          });
+        }
+      });
+    }
+
+    // Release elements no longer needed
+    for (const [key, el] of infiniteActive) {
+      if (!wantedKeys.has(key)) {
+        igRelease(el);
+        infiniteActive.delete(key);
+      }
+    }
+
+    // Acquire elements for new visible cells
+    for (let tx = txMin; tx <= txMax; tx++) {
+      const offsetX = tx * tileWidth;
+      cols.forEach((colData, c) => {
+        const colHeight = colData.height;
+        if (colHeight <= 0) return;
+        
+        const tyMin = Math.floor(visMinY / colHeight);
+        const tyMax = Math.ceil(visMaxY / colHeight);
+        
+        for (let ty = tyMin; ty <= tyMax; ty++) {
+          const offsetY = ty * colHeight;
+          
+          colData.items.forEach((p, pi) => {
+            if (hiddenGroups.has(p.item.group)) return;
+            const absX = p.x + offsetX;
+            const absY = p.y + offsetY;
+            if (absX + p.w < visMinX || absX > visMaxX) return;
+            if (absY + p.h < visMinY || absY > visMaxY) return;
+            
+            const key = `${tx}:${c}:${ty}:${pi}`;
+            if (infiniteActive.has(key)) return; // already rendered
+
+            const el = igAcquire(p.item);
+            el.style.left   = absX + "px";
+            el.style.top    = absY + "px";
+            el.style.width  = p.w + "px";
+            el.style.height = p.h + "px";
+            stage.appendChild(el);
+            infiniteActive.set(key, el);
+          });
+        }
+      });
+    }
+  }
+
+  function computeInfiniteGridTile(items, colWidth, gap, numCols) {
+    const cols = Array.from({ length: numCols }, () => ({ height: 0, items: [] }));
+
+    items.forEach(item => {
+      // Find shortest column
+      let c = 0;
+      for (let i = 1; i < numCols; i++) {
+        if (cols[i].height < cols[c].height) c = i;
+      }
+      const x = c * (colWidth + gap);
+      const y = cols[c].height;
+      const ratio = (item.width && item.height) ? item.width / item.height : 520 / 340;
+      const h = Math.round(colWidth / ratio);
+      
+      cols[c].items.push({ item, x, y, w: colWidth, h });
+      cols[c].height += h + gap;
+    });
+
+    const tileWidth  = numCols * (colWidth + gap);
+    return { cols, tileWidth };
+  }
+
+  function layoutInfinite() {
+    // 1. Remove scatter items from DOM
+    allMediaItems.forEach(el => el.remove());
+
+    // 2. Remove stage size constraints so items can be placed at any coordinate
+    stage.style.width  = "";
+    stage.style.height = "";
+
+    // 3. Compute the tile geometry from current config
+    const colWidth = siteConfig.infinite_column_width;
+    const gap      = siteConfig.infinite_gap;
+    const numCols  = siteConfig.infinite_num_cols;
+    const items    = allMediaItems.map(el => el._mediaItem).filter(Boolean).sort(() => Math.random() - 0.5);
+    infiniteTile   = computeInfiniteGridTile(items, colWidth, gap, numCols);
+
+    // 4. Centre the view on the origin tile
+    const vw = stageWrapper.clientWidth;
+    const vh = stageWrapper.clientHeight;
+    
+    // Find maximum column height to determine center Y approximately
+    const maxH = Math.max(...infiniteTile.cols.map(c => c.height));
+    stageX = vw / 2 - (infiniteTile.tileWidth  / 2) * zoomLevel;
+    stageY = vh / 2 - (maxH / 2) * zoomLevel;
+
+    // 5. Initial render
+    refreshInfiniteGrid();
+    updateStageTransform();
+  }
+
+  function exitInfiniteGrid() {
+    // Release all active infinite grid elements back to pool
+    for (const [, el] of infiniteActive) {
+      igRelease(el);
+    }
+    infiniteActive.clear();
+
+    // Drain the pools
+    for (const pool of infinitePools.values()) {
+      pool.forEach(el => el.remove());
+    }
+    infinitePools.clear();
+
+    // Clear tile state
+    infiniteTile = null;
+
+    // Restore stage size constraints
+    stage.style.width  = STAGE_WIDTH + "px";
+    stage.style.height = STAGE_HEIGHT + "px";
+
+    // Re-append scatter items so other layouts can find them
+    allMediaItems.forEach(el => stage.appendChild(el));
+  }
+
   function applyLayout(mode) {
+    if (currentLayout === "infinite" && mode !== "infinite") exitInfiniteGrid();
     currentLayout = mode;
 
     // Add transition class to all items
@@ -2726,6 +2972,7 @@
     if (mode === "random")     layoutRandom();
     else if (mode === "rows")  layoutRows();
     else if (mode === "stacks") layoutStacks();
+    else if (mode === "infinite") layoutInfinite();
 
     // Update panel button states
     document.querySelectorAll(".layout-option").forEach((btn) => {
@@ -2887,7 +3134,7 @@
     const available = (cfg && cfg.layouts && Array.isArray(cfg.layouts.available))
       ? cfg.layouts.available
       : ["random", "rows", "stacks"];
-    const allModes = ["random", "rows", "stacks"];
+    const allModes = ["random", "rows", "stacks", "infinite"];
     const defaultLayout = siteConfig.default_layout || "random";
     
     // Filter available to only valid modes
@@ -3383,7 +3630,8 @@
         const padding = 400;
         const scaleX = viewportRect.width  / (bounds.width  + padding);
         const scaleY = viewportRect.height / (bounds.height + padding);
-        ZOOM_MIN = Math.max(0.08, Math.min(1, Math.min(scaleX, scaleY)));
+        const calculatedMinZoom = Math.max(0.08, Math.min(1, Math.min(scaleX, scaleY)));
+        ZOOM_MIN = currentLayout === "infinite" ? Math.max(0.35, calculatedMinZoom) : calculatedMinZoom;
         const viewCx = viewportRect.width  / 2;
         const viewCy = viewportRect.height / 2;
         

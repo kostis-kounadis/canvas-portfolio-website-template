@@ -68,6 +68,7 @@ export interface SiteConfig {
     random: { scarcity: number; overlapRatio: number; draggable?: boolean };
     rows: { rowHeight: number; gap: number };
     stacks: { spacing: number; depthOrder?: string };
+    infinite?: { columnWidth: number; gap: number; numCols: number };
   };
   categories: {
     behaviour: string;

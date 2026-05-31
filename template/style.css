@@ -1274,3 +1274,14 @@ dialog.lightbox-dialog[open] .lightbox-media-container {
   z-index: 900 !important;
   transition: transform 0.4s ease;
 }
+
+/* Infinite grid managed cells — not individually draggable */
+.ig-cell {
+  cursor: default !important;
+  transition: none !important;
+  will-change: transform;
+}
+
+.ig-cell:hover {
+  cursor: pointer !important; /* lightbox/click still works */
+}

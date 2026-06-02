@@ -472,16 +472,16 @@
       hiddenGroups.delete(group);
       btnEl.classList.remove("is-struck");
       btnEl.setAttribute("aria-pressed", "false");
-      stage.querySelectorAll(`.media-item[data-group="${group}"]`).forEach((el) => {
-        el.style.display = "";
+      allMediaItems.forEach((el) => {
+        if (el.dataset.group === group) el.style.display = "";
       });
       announce(group.toUpperCase() + " VISIBLE");
     } else {
       hiddenGroups.add(group);
       btnEl.classList.add("is-struck");
       btnEl.setAttribute("aria-pressed", "true");
-      stage.querySelectorAll(`.media-item[data-group="${group}"]`).forEach((el) => {
-        el.style.display = "none";
+      allMediaItems.forEach((el) => {
+        if (el.dataset.group === group) el.style.display = "none";
       });
       announce(group.toUpperCase() + " HIDDEN");
     }
@@ -2911,6 +2911,13 @@
     // 1. Remove scatter items from DOM
     allMediaItems.forEach(el => el.remove());
 
+    // 1.5. Release any currently active infinite clones back to the pool
+    // This is required when filtering categories, as the tile structure completely changes.
+    for (const [, el] of infiniteActive) {
+      igRelease(el);
+    }
+    infiniteActive.clear();
+
     // 2. Remove stage size constraints so items can be placed at any coordinate
     stage.style.width  = "";
     stage.style.height = "";
@@ -2919,7 +2926,11 @@
     const colWidth = siteConfig.infinite_column_width;
     const gap      = siteConfig.infinite_gap;
     const numCols  = siteConfig.infinite_num_cols;
-    const items    = allMediaItems.map(el => el._mediaItem).filter(Boolean).sort(() => Math.random() - 0.5);
+    const items    = allMediaItems
+      .filter(el => el.style.display !== "none")
+      .map(el => el._mediaItem)
+      .filter(Boolean)
+      .sort(() => Math.random() - 0.5);
     infiniteTile   = computeInfiniteGridTile(items, colWidth, gap, numCols);
 
     // 4. Centre the view on the origin tile

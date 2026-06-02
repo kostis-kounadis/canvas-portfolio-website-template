@@ -522,7 +522,7 @@ body.info-open.info-colour-overlay::after {
 
 #info-text em {
   font-style: italic;
-  text-transform: none; /* preserve case for italic phrases */
+  text-transform: inherit;
 }
 
 /* ── Preloader ───────────────────────────────────────────────────────────── */

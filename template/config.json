@@ -1,7 +1,7 @@
 {
   "site": {
-    "title": "Kostis K.",
-    "email": "test@test.com",
+    "title": "Site Title",
+    "email": "email@address.com",
     "url": "https://example.com",
     "infoText": "This is a longer **text**. To try out a _few_ things and [links](test.com).",
     "author": "Your Name"
@@ -23,7 +23,7 @@
     "modules": {
       "title": {
         "visible": true,
-        "position": "middle-center",
+        "position": "top-left",
         "mode": "svg",
         "text": "My Portfolio",
         "logoFile": "assets/logo.svg",
@@ -35,7 +35,7 @@
       },
       "info": {
         "visible": true,
-        "position": "middle-center",
+        "position": "middle-left",
         "buttonStyle": "x-close",
         "overlayEffect": "none",
         "overlayColor": "#000000",
@@ -89,8 +89,8 @@
     },
     "imageShadow": {
       "enabled": false,
-      "opacity": 0.1,
-      "blur": 11,
+      "opacity": 0.17,
+      "blur": 31,
       "color": "#000000"
     }
   },
@@ -99,7 +99,7 @@
       "random",
       "infinite"
     ],
-    "default": "infinite",
+    "default": "random",
     "draggable": true,
     "labels": [
       "▩▩▩ RRAANNDDOOMM",
@@ -122,7 +122,7 @@
     },
     "infinite": {
       "columnWidth": 670,
-      "gap": 12,
+      "gap": 40,
       "numCols": 3
     }
   },
@@ -135,7 +135,7 @@
     "initialState": "colour",
     "duotoneColor1": "#000000",
     "duotoneColor2": "#ffffff",
-    "enlargeOnHover": false,
+    "enlargeOnHover": true,
     "blendMode": "normal",
     "clickMode": "none",
     "clickStickyMode": "multi",
@@ -145,14 +145,14 @@
     "lightbox": {
       "enabled": false,
       "backdropEffect": "darken",
-      "overlayColor": "#000000",
-      "overlayBlendMode": "normal",
+      "overlayColor": "#ea9a9a",
+      "overlayBlendMode": "exclusion",
       "overlayOpacity": 1
     },
     "canvasExpand": {
-      "enabled": false
+      "enabled": true
     },
-    "mode": "none"
+    "mode": "canvasExpand"
   },
   "info": {
     "overlayEffect": "none",
@@ -163,11 +163,11 @@
     "defaultMode": "canvas"
   },
   "typography": {
-    "fontMode": "archivo",
+    "fontMode": "monospace",
     "googleEmbedCode": "",
     "localFontUrl": "",
     "baseSize": "14px",
-    "textColor": "#001eff",
+    "textColor": "#ffbb00",
     "gradientColor1": "#000000",
     "gradientColor2": "#e0e9f5",
     "gradientSpeed": 7,

@@ -11,3 +11,8 @@ Thumbs.db
 # GUI local setup temp / files
 admin/server/setup-server.log
 utilities/
+
+#Temporary files
+AUDIT.md
+INFINITE-PLAN.md
+CLEAN-UP-LIST.md

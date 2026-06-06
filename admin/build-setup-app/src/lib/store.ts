@@ -23,7 +23,8 @@ export interface SiteConfig {
     module_suffix?: string;
     modules: {
       title: { visible: boolean; position: string; mode: string; text: string; logoFile: string; logoScale?: number; icon: { enabled: boolean; file: string; position: string } };
-      email: { visible: boolean; position: string };
+      email: { visible: boolean; position: string; labelMode?: 'email' | 'custom'; customLabel?: string };
+      externalLinks: { visible: boolean; position: string; links: { id: string; url: string; label: string }[] };
       info: { visible: boolean; position: string; buttonStyle?: string; overlayEffect?: string; overlayColor?: string; overlayOpacity?: number; overlayBlendMode?: string; label?: string };
       categories: { visible: boolean; position: string; behaviour?: string; layout?: string; alignment?: string; separator?: string; spacing?: number };
       layouts: { visible: boolean; position: string; layout?: string; alignment?: string; separator?: string; spacing?: number };
@@ -80,6 +81,7 @@ export interface SiteConfig {
     duotoneColor1?: string;
     duotoneColor2?: string;
     enlargeOnHover?: boolean;
+    roundedCorners?: { enabled: boolean; radius: number };
     blendMode?: string;
     clickMode: string;
     clickStickyMode: string;

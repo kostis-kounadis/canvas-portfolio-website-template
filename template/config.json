@@ -24,17 +24,30 @@
       "title": {
         "visible": true,
         "position": "top-left",
-        "mode": "svg",
+        "mode": "text",
         "text": "My Portfolio",
         "logoFile": "assets/logo.svg",
         "logoScale": 2.5
       },
       "email": {
-        "visible": false,
-        "position": "bottom-center"
+        "visible": true,
+        "position": "top-right",
+        "labelMode": "custom",
+        "customLabel": "Contact"
+      },
+      "externalLinks": {
+        "visible": true,
+        "position": "top-right",
+        "links": [
+          {
+            "id": "ab06283d-4296-42a1-bd03-35dc5d57e9ca",
+            "url": "www.tester.com",
+            "label": "SHOP"
+          }
+        ]
       },
       "info": {
-        "visible": true,
+        "visible": false,
         "position": "middle-left",
         "buttonStyle": "x-close",
         "overlayEffect": "none",
@@ -44,7 +57,7 @@
         "label": "Info"
       },
       "categories": {
-        "visible": true,
+        "visible": false,
         "position": "middle-center",
         "behaviour": "focus-on-click",
         "layout": "vertical",
@@ -55,7 +68,7 @@
       "layouts": {
         "visible": true,
         "position": "middle-right",
-        "layout": "vertical",
+        "layout": "horizontal",
         "alignment": "left",
         "separator": " ",
         "spacing": 0
@@ -97,9 +110,11 @@
   "layouts": {
     "available": [
       "random",
+      "rows",
+      "stacks",
       "infinite"
     ],
-    "default": "random",
+    "default": "infinite",
     "draggable": true,
     "labels": [
       "▩▩▩ RRAANNDDOOMM",
@@ -108,8 +123,8 @@
       "▧▧▧ IINNNFFFIINN"
     ],
     "random": {
-      "scarcity": 520,
-      "overlapRatio": 0.2,
+      "scarcity": 230,
+      "overlapRatio": 0.4,
       "draggable": true
     },
     "rows": {
@@ -135,24 +150,28 @@
     "initialState": "colour",
     "duotoneColor1": "#000000",
     "duotoneColor2": "#ffffff",
-    "enlargeOnHover": true,
+    "enlargeOnHover": false,
     "blendMode": "normal",
     "clickMode": "none",
     "clickStickyMode": "multi",
-    "blurOthersOnClick": false
+    "blurOthersOnClick": false,
+    "roundedCorners": {
+      "enabled": true,
+      "radius": 64
+    }
   },
   "imageClick": {
     "lightbox": {
-      "enabled": false,
+      "enabled": true,
       "backdropEffect": "darken",
-      "overlayColor": "#ea9a9a",
-      "overlayBlendMode": "exclusion",
-      "overlayOpacity": 1
+      "overlayColor": "#0011ff",
+      "overlayBlendMode": "difference",
+      "overlayOpacity": 0.75
     },
     "canvasExpand": {
-      "enabled": true
+      "enabled": false
     },
-    "mode": "canvasExpand"
+    "mode": "lightbox"
   },
   "info": {
     "overlayEffect": "none",
@@ -163,7 +182,7 @@
     "defaultMode": "canvas"
   },
   "typography": {
-    "fontMode": "monospace",
+    "fontMode": "local",
     "googleEmbedCode": "",
     "localFontUrl": "",
     "baseSize": "14px",

@@ -1382,6 +1382,13 @@
       document.body.classList.add("fx-hover-enlarge");
     }
 
+    // Apply Rounded Corners
+    if (fx.roundedCorners && fx.roundedCorners.enabled) {
+      root.style.setProperty("--media-border-radius", `${fx.roundedCorners.radius}px`);
+    } else {
+      root.style.setProperty("--media-border-radius", "0px");
+    }
+
     // Apply Image Blend Mode
     const ibm = fx.blendMode || "normal";
     root.style.setProperty("--image-blend-mode", ibm);
@@ -1791,9 +1798,26 @@
         const emailEl   = document.createElement("a");
         emailEl.className = "nav-btn nav-email zone-email-module";
         emailEl.href = "mailto:" + email;
-        emailEl.textContent = email;
+        const displayLabel = emailCfg.labelMode === 'custom' ? (emailCfg.customLabel || 'Contact') : email;
+        emailEl.textContent = displayLabel;
         emailEl.style.pointerEvents = "auto";
         emailZone.appendChild(wrapModule(emailEl, siteConfig.module_prefix, siteConfig.module_suffix));
+      }
+
+      // External Links module
+      const externalLinksCfg = uiMods.externalLinks || { visible: false, links: [] };
+      if (externalLinksCfg.visible !== false && Array.isArray(externalLinksCfg.links) && externalLinksCfg.links.length > 0) {
+        const extZone = getZone(externalLinksCfg.position || "top-right");
+        externalLinksCfg.links.forEach(link => {
+          if (!link.url) return;
+          const extEl = document.createElement("a");
+          extEl.className = "nav-btn nav-external-link zone-external-link-module";
+          extEl.href = link.url;
+          extEl.target = "_blank";
+          extEl.textContent = link.label || link.url;
+          extEl.style.pointerEvents = "auto";
+          extZone.appendChild(wrapModule(extEl, siteConfig.module_prefix, siteConfig.module_suffix));
+        });
       }
 
       // Info module
@@ -1815,8 +1839,17 @@
         legacyRight.innerHTML = "";
         const navItems = [];
         if (email && siteConfig.show_email !== false) {
-          navItems.push({ type: "email", label: email });
+          const displayLabel = emailCfg.labelMode === 'custom' ? (emailCfg.customLabel || 'Contact') : email;
+          navItems.push({ type: "email", label: displayLabel });
         }
+        
+        const externalLinksCfg = uiMods.externalLinks || { visible: false, links: [] };
+        if (externalLinksCfg.visible !== false && Array.isArray(externalLinksCfg.links)) {
+          externalLinksCfg.links.forEach(link => {
+            if (link.url) navItems.push({ type: "externalLink", url: link.url, label: link.label || link.url });
+          });
+        }
+
         if (siteConfig.show_info !== false) {
           navItems.push({ type: "info", label: siteConfig.info_label || "INFO" });
         }
@@ -1835,6 +1868,12 @@
             el.id = "nav-info-btn";
             el.className = "nav-btn nav-info";
             el.addEventListener("click", toggleInfo);
+          } else if (item.type === "externalLink") {
+            el = document.createElement("a");
+            el.href = item.url;
+            el.target = "_blank";
+            el.className = "nav-btn nav-external-link";
+            el.textContent = item.label;
           } else {
             el = document.createElement("a");
             el.href = "mailto:" + email;
@@ -2230,7 +2269,7 @@
   stageWrapper.addEventListener("mousedown", (event) => {
     // Left click panning only. If your cursor is on an item, hold Space to pan anyway.
     if (event.button !== 0) return;
-    if (event.target.closest(".media-item") && !spaceDown) return;
+    if (currentLayout !== "infinite" && event.target.closest(".media-item") && !spaceDown) return;
 
     event.preventDefault();
     isPanning = true;
@@ -2256,6 +2295,26 @@
     isPanning = false;
     stageWrapper.classList.remove("is-dragging");
     stage.classList.remove("is-interacting");
+  });
+
+  // Delegated click handler specifically for Infinite Grid clones
+  stageWrapper.addEventListener("click", (event) => {
+    if (currentLayout !== "infinite") return;
+    
+    // Ignore if the user dragged the canvas (distance > 5px)
+    const dist = Math.hypot(event.clientX - panStartX, event.clientY - panStartY);
+    if (dist > 5) return;
+
+    // Check if they clicked an image clone
+    const cloneEl = event.target.closest(".media-item");
+    if (!cloneEl) return;
+
+    // Find the original media item and trigger its action
+    const originalEl = allMediaItems.find(e => e.dataset.id === cloneEl.dataset.id);
+    if (originalEl) {
+      handleItemClick(originalEl, window._siteConfigRaw);
+      handleItemInteraction(cloneEl, "single"); // Pass cloneEl so zoomToElement reads correct coordinates
+    }
   });
 
   // Touch handling for Mobile (Pan & Pinch-Zoom)
@@ -3480,7 +3539,9 @@
   function openLightbox(el) {
     visibleLightboxItems = allMediaItems
       .filter(item => item.style.display !== "none");
-    currentLightboxIndex = visibleLightboxItems.indexOf(el);
+    
+    // Find index by dataset.id so both master items and Infinite Grid clones work
+    currentLightboxIndex = visibleLightboxItems.findIndex(item => item.dataset.id === el.dataset.id);
 
     if (currentLightboxIndex === -1) {
       visibleLightboxItems = [el];

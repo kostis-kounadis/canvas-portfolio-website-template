@@ -5,11 +5,10 @@ import { Toaster } from "@/components/ui/sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   IdentityForm,
-  ThemeForm,
+  TypographyForm,
+  BackgroundForm,
   LayoutsForm,
   ModulesForm,
-  DeploymentForm,
-  FaviconForm,
   HelpForm,
   ImageSettingsForm
 } from "./components/Forms"
@@ -24,13 +23,11 @@ function App() {
   const renderActiveSection = () => {
     switch (activeSection) {
       case 'identity': return <IdentityForm />
-      case 'theme': return <ThemeForm />
+      case 'typography': return <TypographyForm />
+      case 'background': return <BackgroundForm />
       case 'layouts': return <LayoutsForm />
       case 'images': return <ImageSettingsForm />
       case 'modules': return <ModulesForm />
-
-      case 'favicon': return <FaviconForm />
-      case 'deployment': return <DeploymentForm />
       case 'help': return <HelpForm />
       default: return <div>Select a section from the sidebar.</div>
     }

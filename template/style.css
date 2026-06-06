@@ -234,7 +234,7 @@ a.zone-title-module:hover .nav-title-text {
   margin: 0;
   background: transparent;
   box-shadow: 0 var(--shadow-blur, 30px) calc(var(--shadow-blur, 30px) * 2) var(--shadow-color, rgba(0,0,0,0.06));
-  border-radius: 2px;
+  border-radius: var(--media-border-radius, 0px);
   overflow: hidden;
   cursor: grab;
   transition: box-shadow 0.15s ease-out;
@@ -796,7 +796,9 @@ body.text-fx-color-cycle .zone-container,
 body.text-fx-color-cycle .nav,
 body.text-fx-color-cycle .footer,
 body.text-fx-color-cycle #info-overlay,
-body.text-fx-color-cycle #preloader {
+body.text-fx-color-cycle #preloader ,
+body.text-fx-color-cycle .lightbox-close,
+body.text-fx-color-cycle .lightbox-nav {
   animation: text-color-cycle var(--text-cycle-speed, 8s) linear infinite;
 }
 
@@ -811,7 +813,9 @@ body.text-fx-gradient .zone-container *,
 body.text-fx-gradient .nav *,
 body.text-fx-gradient .footer *,
 body.text-fx-gradient #info-overlay *,
-body.text-fx-gradient #preloader * {
+body.text-fx-gradient #preloader * ,
+body.text-fx-gradient .lightbox-close,
+body.text-fx-gradient .lightbox-nav {
   background: linear-gradient(90deg, var(--text-gradient-1, var(--text-colour)), var(--text-gradient-2, hsl(30, 100%, 70%)), var(--text-gradient-1, var(--text-colour)));
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -830,7 +834,9 @@ body.text-fx-hue-rotate .zone-container,
 body.text-fx-hue-rotate .nav,
 body.text-fx-hue-rotate .footer,
 body.text-fx-hue-rotate #info-overlay,
-body.text-fx-hue-rotate #preloader {
+body.text-fx-hue-rotate #preloader ,
+body.text-fx-hue-rotate .lightbox-close,
+body.text-fx-hue-rotate .lightbox-nav {
   animation: text-hue-rotate var(--text-hue-speed, 6s) linear infinite;
 }
 
@@ -846,14 +852,18 @@ body.text-anim-hover.text-fx-color-cycle .zone-container,
 body.text-anim-hover.text-fx-color-cycle .nav,
 body.text-anim-hover.text-fx-color-cycle .footer,
 body.text-anim-hover.text-fx-color-cycle #info-overlay,
-body.text-anim-hover.text-fx-color-cycle #preloader {
+body.text-anim-hover.text-fx-color-cycle #preloader ,
+body.text-anim-hover.text-fx-color-cycle .lightbox-close,
+body.text-anim-hover.text-fx-color-cycle .lightbox-nav {
   animation: none;
 }
 body.text-anim-hover.text-fx-color-cycle .zone-container:hover,
 body.text-anim-hover.text-fx-color-cycle .nav:hover,
 body.text-anim-hover.text-fx-color-cycle .footer:hover,
 body.text-anim-hover.text-fx-color-cycle #info-overlay:hover,
-body.text-anim-hover.text-fx-color-cycle #preloader:hover {
+body.text-anim-hover.text-fx-color-cycle #preloader:hover ,
+body.text-anim-hover.text-fx-color-cycle .lightbox-close:hover,
+body.text-anim-hover.text-fx-color-cycle .lightbox-nav:hover {
   animation: text-color-cycle var(--text-cycle-speed, 8s) linear infinite;
 }
 
@@ -861,7 +871,9 @@ body.text-anim-hover.text-fx-gradient .zone-container *,
 body.text-anim-hover.text-fx-gradient .nav *,
 body.text-anim-hover.text-fx-gradient .footer *,
 body.text-anim-hover.text-fx-gradient #info-overlay *,
-body.text-anim-hover.text-fx-gradient #preloader * {
+body.text-anim-hover.text-fx-gradient #preloader * ,
+body.text-anim-hover.text-fx-gradient .lightbox-close,
+body.text-anim-hover.text-fx-gradient .lightbox-nav {
   background: none;
   -webkit-background-clip: unset;
   -webkit-text-fill-color: unset;
@@ -872,7 +884,9 @@ body.text-anim-hover.text-fx-gradient .zone-container:hover *,
 body.text-anim-hover.text-fx-gradient .nav:hover *,
 body.text-anim-hover.text-fx-gradient .footer:hover *,
 body.text-anim-hover.text-fx-gradient #info-overlay:hover *,
-body.text-anim-hover.text-fx-gradient #preloader:hover * {
+body.text-anim-hover.text-fx-gradient #preloader:hover * ,
+body.text-anim-hover.text-fx-gradient .lightbox-close:hover,
+body.text-anim-hover.text-fx-gradient .lightbox-nav:hover {
   background: linear-gradient(90deg, var(--text-gradient-1, var(--text-colour)), var(--text-gradient-2, hsl(30, 100%, 70%)), var(--text-gradient-1, var(--text-colour)));
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -885,7 +899,9 @@ body.text-anim-hover.text-fx-hue-rotate .zone-container,
 body.text-anim-hover.text-fx-hue-rotate .nav,
 body.text-anim-hover.text-fx-hue-rotate .footer,
 body.text-anim-hover.text-fx-hue-rotate #info-overlay,
-body.text-anim-hover.text-fx-hue-rotate #preloader {
+body.text-anim-hover.text-fx-hue-rotate #preloader ,
+body.text-anim-hover.text-fx-hue-rotate .lightbox-close,
+body.text-anim-hover.text-fx-hue-rotate .lightbox-nav {
   animation: none;
   filter: none;
 }
@@ -893,7 +909,9 @@ body.text-anim-hover.text-fx-hue-rotate .zone-container:hover,
 body.text-anim-hover.text-fx-hue-rotate .nav:hover,
 body.text-anim-hover.text-fx-hue-rotate .footer:hover,
 body.text-anim-hover.text-fx-hue-rotate #info-overlay:hover,
-body.text-anim-hover.text-fx-hue-rotate #preloader:hover {
+body.text-anim-hover.text-fx-hue-rotate #preloader:hover ,
+body.text-anim-hover.text-fx-hue-rotate .lightbox-close:hover,
+body.text-anim-hover.text-fx-hue-rotate .lightbox-nav:hover {
   animation: text-hue-rotate var(--text-hue-speed, 6s) linear infinite;
 }
 
@@ -917,7 +935,9 @@ body.text-anim-hover.text-fx-hue-rotate #preloader:hover {
   body.text-fx-hue-rotate .nav,
   body.text-fx-hue-rotate .footer,
   body.text-fx-hue-rotate #info-overlay,
-  body.text-fx-hue-rotate #preloader {
+  body.text-fx-hue-rotate #preloader ,
+  body.text-fx-hue-rotate .lightbox-close,
+  body.text-fx-hue-rotate .lightbox-nav {
     animation: none;
     filter: none;
     -webkit-text-fill-color: unset;
@@ -970,7 +990,7 @@ body.fx-hover-enlarge .media-item {
 }
 body.fx-hover-enlarge .media-item:hover,
 body.fx-hover-enlarge .media-item.is-dragging {
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 body.fx-hover-enlarge .media-item.is-dragging {
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease; /* preserve scale animation but remove box-shadow delay during drag */
@@ -1194,8 +1214,9 @@ dialog.lightbox-dialog.backdrop-blur {
   right: 32px;
   background: transparent;
   border: none;
-  color: inherit;
-font-family: inherit;
+  color: var(--text-colour, #111111);
+  mix-blend-mode: var(--text-blend-mode, normal);
+  font-family: inherit;
   font-size: 24px;
   cursor: pointer;
   z-index: 9100;
@@ -1208,8 +1229,9 @@ font-family: inherit;
   transform: translateY(-50%);
   background: transparent;
   border: none;
-  color: inherit;
-font-family: inherit;
+  color: var(--text-colour, #111111);
+  mix-blend-mode: var(--text-blend-mode, normal);
+  font-family: inherit;
   font-size: 32px;
   cursor: pointer;
   z-index: 9100;

@@ -1,6 +1,8 @@
 export { IdentityForm } from './forms/IdentityForm';
-export { ThemeForm } from './forms/ThemeForm';
+export { TypographyForm } from './forms/TypographyForm';
+export { BackgroundForm } from './forms/BackgroundForm';
 import { useConfigStore } from '@/lib/store';
+import { Plus, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -401,12 +403,13 @@ const ZONE_GRID = [
 ];
 
 const MODULE_LABELS: Record<string, string> = {
-  title: 'Title',
+  title: 'Site Title',
   email: 'Email',
-  info: 'Info',
-  categories: 'Categories',
-  layouts: 'Layouts',
-  zoom: 'Zoom Settings'
+  externalLinks: 'External Links',
+  info: 'Info Button',
+  categories: 'Category Filters',
+  layouts: 'Layout Modes',
+  zoom: 'Zoom Controls'
 };
 
 const ZONES = [
@@ -530,7 +533,7 @@ export function ModulesForm() {
       </Accordion>
 
       <Accordion multiple className="space-y-4">
-        {['title', 'email', 'info', 'categories', 'layouts', 'zoom'].map((modKey) => {
+        {['title', 'email', 'externalLinks', 'info', 'categories', 'layouts', 'zoom'].map((modKey) => {
           const mod = config.ui.modules[modKey as keyof typeof config.ui.modules];
           const isLayoutsForcedOff = modKey === 'layouts' && config.layouts.available.length <= 1;
 
@@ -651,6 +654,111 @@ export function ModulesForm() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+              {modKey === 'email' && (
+                <div className="pt-4 border-t border-zinc-100 space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Button Label</Label>
+                    <RadioGroup 
+                      value={config.ui.modules.email.labelMode || 'email'}
+                      onValueChange={(v) => updateConfig(c => { 
+                        if (!c.ui.modules.email.labelMode) c.ui.modules.email.labelMode = 'email';
+                        c.ui.modules.email.labelMode = v as 'email' | 'custom';
+                      })}
+                      className="flex flex-col gap-3 bg-zinc-50 p-4 rounded-lg border border-zinc-100"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <RadioGroupItem value="email" id="email-label-email" className="mt-0.5" />
+                        <div className="flex flex-col">
+                          <Label htmlFor="email-label-email" className="text-sm font-medium cursor-pointer">Email Address</Label>
+                          <span className="text-xs text-zinc-500">Shows your actual email address.</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <RadioGroupItem value="custom" id="email-label-custom" className="mt-0.5" />
+                        <div className="flex flex-col">
+                          <Label htmlFor="email-label-custom" className="text-sm font-medium cursor-pointer">Custom Word</Label>
+                          <span className="text-xs text-zinc-500">Shows a custom word (e.g. Contact).</span>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                  {config.ui.modules.email.labelMode === 'custom' && (
+                    <div className="space-y-3 p-4 bg-zinc-50 rounded-lg border border-zinc-100">
+                      <Label htmlFor="email-custom-label" className="text-sm font-medium text-zinc-900">Custom Word</Label>
+                      <Input 
+                        id="email-custom-label"
+                        value={config.ui.modules.email.customLabel || 'Contact'}
+                        onChange={(e) => updateConfig(c => { c.ui.modules.email.customLabel = e.target.value })}
+                        placeholder="Contact"
+                        className="bg-white max-w-[240px]"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+              {modKey === 'externalLinks' && (
+                <div className="pt-4 border-t border-zinc-100 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Links</Label>
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateConfig(c => {
+                          if (!c.ui.modules.externalLinks.links) c.ui.modules.externalLinks.links = [];
+                          c.ui.modules.externalLinks.links.push({ id: crypto.randomUUID(), url: '', label: '' });
+                        });
+                      }}
+                      className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 px-2 py-1 rounded transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Link
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {config.ui.modules.externalLinks.links?.length > 0 ? (
+                      config.ui.modules.externalLinks.links.map((link, idx) => (
+                        <div key={link.id} className="flex flex-col gap-2 p-3 bg-zinc-50 rounded-lg border border-zinc-100">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 space-y-3">
+                              <div className="space-y-1">
+                                <Label className="text-[10px] font-semibold text-zinc-500 uppercase">URL</Label>
+                                <Input 
+                                  className="h-8 text-xs bg-white" 
+                                  placeholder="https://example.com"
+                                  value={link.url}
+                                  onChange={(e) => updateConfig(c => { c.ui.modules.externalLinks.links[idx].url = e.target.value; })}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[10px] font-semibold text-zinc-500 uppercase">Label (Optional)</Label>
+                                <Input 
+                                  className="h-8 text-xs bg-white" 
+                                  placeholder="My Blog"
+                                  value={link.label}
+                                  onChange={(e) => updateConfig(c => { c.ui.modules.externalLinks.links[idx].label = e.target.value; })}
+                                />
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => updateConfig(c => { c.ui.modules.externalLinks.links.splice(idx, 1); })}
+                              className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors mt-5"
+                              title="Delete Link"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-6 text-xs text-zinc-500 border border-dashed border-zinc-200 rounded-lg">
+                        No external links added yet.
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               {modKey === 'info' && (
@@ -942,95 +1050,23 @@ export function ModulesForm() {
   );
 }
 
-export function DeploymentForm() {
+
+
+export function HelpForm() {
   const { buildSite, isBuilding } = useConfigStore();
 
   return (
     <div className="space-y-8 max-w-2xl">
       <div>
-        <h2 className="text-lg font-medium tracking-[-0.02em] text-zinc-900 mb-1">Deployment</h2>
-        <p className="text-sm text-zinc-500 mb-6">Build the static files for production.</p>
-      </div>
-      
-      <div className="p-6 border border-zinc-200 rounded-lg bg-zinc-50 space-y-4">
-        <h3 className="font-medium">Generate Production Build</h3>
-        <p className="text-sm text-zinc-600">
-          This runs the node script to generate the <code>data.js</code> file from your <code>assets/images</code> folder, and updates all static HTML meta tags.
-        </p>
-        <Button onClick={() => buildSite()} disabled={isBuilding}>
-          {isBuilding ? 'Building...' : 'Rebuild Now'}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-export function FaviconForm() {
-  return (
-    <div className="space-y-8 max-w-2xl">
-      <div>
-        <h2 className="text-lg font-medium tracking-[-0.02em] text-zinc-900 mb-1">Favicon & Social Assets</h2>
-        <p className="text-sm text-zinc-500 mb-6">Setup site icons and social sharing preview images.</p>
-      </div>
-
-      <div className="p-6 border border-zinc-200 rounded-lg bg-white space-y-4 shadow-sm">
-        <h3 className="font-semibold text-zinc-900 flex items-center gap-2 text-sm">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-[11px] font-bold">1</span>
-          Favicon Setup
-        </h3>
-        <p className="text-sm text-zinc-600 leading-relaxed">
-          Use the free online tool <a href="https://realfavicongenerator.net" target="_blank" rel="noopener noreferrer" className="text-zinc-900 underline font-medium hover:text-zinc-600">realfavicongenerator.net</a> to generate all favicon formats from a single master icon:
-        </p>
-        <ol className="list-decimal pl-5 space-y-3 text-sm text-zinc-600">
-          <li className="leading-relaxed">
-            <strong className="text-zinc-900">Prepare your source image:</strong> Create a square image (PNG/SVG) at least 512×512px. Transparent background is recommended.
-          </li>
-          <li className="leading-relaxed">
-            <strong className="text-zinc-900">Generate packages:</strong> Upload it to <a href="https://realfavicongenerator.net" target="_blank" rel="noopener noreferrer" className="text-zinc-900 underline font-medium hover:text-zinc-600">realfavicongenerator.net</a>, set choices, and download the favicon zip package.
-          </li>
-          <li className="leading-relaxed">
-            <strong className="text-zinc-900">Extract to project:</strong> Extract all files directly into your project's <code className="bg-zinc-100 px-1 rounded text-xs font-mono">favicon/</code> directory, replacing the existing files.
-          </li>
-          <li className="leading-relaxed">
-            <strong className="text-zinc-900">Rebuild the website:</strong> Rebuilding the site dynamically injects the site metadata into the manifest.
-          </li>
-        </ol>
-      </div>
-
-      <div className="p-6 border border-zinc-200 rounded-lg bg-white space-y-4 shadow-sm">
-        <h3 className="font-semibold text-zinc-900 flex items-center gap-2 text-sm">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-[11px] font-bold">2</span>
-          Social Sharing / Open Graph Image
-        </h3>
-        <p className="text-sm text-zinc-600 leading-relaxed">
-          The Open Graph image appears automatically when you share your portfolio on platforms like Twitter/X, LinkedIn, Slack, etc.
-        </p>
-        <ol className="list-decimal pl-5 space-y-3 text-sm text-zinc-600">
-          <li className="leading-relaxed">
-            Create a <strong className="text-zinc-900">1200×630px</strong> JPEG/PNG image depicting your portfolio or logo.
-          </li>
-          <li className="leading-relaxed">
-            Save it as <code className="bg-zinc-100 px-1 rounded text-xs font-mono">og-image.jpg</code> directly in the project's root folder.
-          </li>
-          <li className="leading-relaxed">
-            Update the "OG Image filename" in the <strong className="text-zinc-900">SEO</strong> tab, click <strong className="text-zinc-900">Save Config</strong>, and then <strong className="text-zinc-900">Rebuild Site</strong>.
-          </li>
-        </ol>
-      </div>
-    </div>
-  );
-}
-
-export function HelpForm() {
-  return (
-    <div className="space-y-8 max-w-2xl">
-      <div>
-        <h2 className="text-lg font-medium tracking-[-0.02em] text-zinc-900 mb-1">Help & Guide</h2>
+        <h2 className="text-lg font-medium tracking-[-0.02em] text-zinc-900 mb-1">Setup Guide</h2>
         <p className="text-sm text-zinc-500 mb-6">Learn how to manage, populate and deploy your new portfolio.</p>
       </div>
 
       <div className="p-6 border border-zinc-200 rounded-lg bg-white space-y-4 shadow-sm">
-        <h3 className="font-semibold text-zinc-900 text-sm">How to Add Your Images</h3>
+        <h3 className="font-semibold text-zinc-900 text-sm flex items-center gap-2">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-[11px] font-bold">1</span>
+          How to Add Your Images & Videos
+        </h3>
         <p className="text-sm text-zinc-600 leading-relaxed">
           Adding your projects to the visual canvas is completely file-based:
         </p>
@@ -1039,35 +1075,51 @@ export function HelpForm() {
             Navigate to the <code className="bg-zinc-100 px-1 rounded text-xs font-mono">assets/images/</code> folder.
           </li>
           <li className="leading-relaxed">
-            Create folders. Each folder name automatically becomes a category on the canvas (e.g. <code className="bg-zinc-100 px-1 rounded text-xs font-mono">assets/images/branding/</code> creates a "branding" category).
+            Create folders. Each folder name automatically becomes a category.
           </li>
           <li className="leading-relaxed">
-            Drop your project files inside. Supports standard images (<code className="bg-zinc-100 px-1 rounded text-xs font-mono">.jpg</code>, <code className="bg-zinc-100 px-1 rounded text-xs font-mono">.png</code>, <code className="bg-zinc-100 px-1 rounded text-xs font-mono">.webp</code>, <code className="bg-zinc-100 px-1 rounded text-xs font-mono">.avif</code>) and video reels (<code className="bg-zinc-100 px-1 rounded text-xs font-mono">.mp4</code>). You can also add a <code className="bg-zinc-100 px-1 rounded text-xs font-mono">videos.txt</code> file in any folder and paste YouTube or Vimeo URLs (one per line) to embed external videos.
+            Drop your project files inside (<code className="bg-zinc-100 px-1 rounded text-xs font-mono">.jpg</code>, <code className="bg-zinc-100 px-1 rounded text-xs font-mono">.png</code>, <code className="bg-zinc-100 px-1 rounded text-xs font-mono">.webp</code>, <code className="bg-zinc-100 px-1 rounded text-xs font-mono">.avif</code>, <code className="bg-zinc-100 px-1 rounded text-xs font-mono">.mp4</code>).
           </li>
           <li className="leading-relaxed">
-            Go to the <strong className="text-zinc-900">Deployment</strong> tab or click <strong className="text-zinc-900">Rebuild Site</strong> in the top header. This scans all files and updates the visual database!
+            <strong className="font-semibold text-zinc-900">External Videos:</strong> You can also create a <code className="bg-zinc-100 px-1 rounded text-xs font-mono">videos.txt</code> file in any category folder. Paste YouTube or Vimeo URLs inside it (one URL per line) to embed them.
           </li>
         </ol>
       </div>
 
       <div className="p-6 border border-zinc-200 rounded-lg bg-white space-y-4 shadow-sm">
-        <h3 className="font-semibold text-zinc-900 text-sm">Deploying to Cloudflare Pages (Free)</h3>
-        <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-600">
-          <li className="leading-relaxed">Push your project to GitHub.</li>
-          <li className="leading-relaxed">Sign up / Log in to <a href="https://pages.cloudflare.com" target="_blank" rel="noopener noreferrer" className="text-zinc-900 underline font-medium hover:text-zinc-600">pages.cloudflare.com</a>.</li>
-          <li className="leading-relaxed">Click "Create a project" &rarr; "Connect git repository".</li>
-          <li className="leading-relaxed"><strong className="text-zinc-900">Build settings:</strong> Leave the Build Command completely empty, and specify the root directory <code className="bg-zinc-100 px-1 rounded text-xs font-mono">/</code> as the Output directory.</li>
-          <li className="leading-relaxed">Deploy! Any push to GitHub will automatically trigger a clean static deploy!</li>
-        </ul>
+        <h3 className="font-semibold text-zinc-900 text-sm flex items-center gap-2">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-[11px] font-bold">2</span>
+          Favicon & Social Assets
+        </h3>
+        <p className="text-sm text-zinc-600 leading-relaxed">
+          Use the free online tool <a href="https://realfavicongenerator.net" target="_blank" rel="noopener noreferrer" className="text-zinc-900 underline font-medium hover:text-zinc-600">realfavicongenerator.net</a> to generate favicons from a square 512×512px image, and extract them to the <code className="bg-zinc-100 px-1 rounded text-xs font-mono">favicon/</code> directory. For social sharing, place a 1200×630px image named <code className="bg-zinc-100 px-1 rounded text-xs font-mono">og-image.jpg</code> in the project's root folder.
+        </p>
       </div>
 
       <div className="p-6 border border-zinc-200 rounded-lg bg-white space-y-4 shadow-sm">
-        <h3 className="font-semibold text-zinc-900 text-sm">Deploying to Netlify (Free)</h3>
+        <h3 className="font-semibold text-zinc-900 text-sm flex items-center gap-2">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-[11px] font-bold">3</span>
+          Generate Production Build
+        </h3>
+        <p className="text-sm text-zinc-600 leading-relaxed">
+          Before deploying, you must build the static files. This generates the <code>data.js</code> file from your <code>assets/images</code> folder, and updates all HTML meta tags.
+        </p>
+        <Button onClick={() => buildSite()} disabled={isBuilding}>
+          {isBuilding ? 'Building...' : 'Rebuild Now'}
+        </Button>
+      </div>
+
+      <div className="p-6 border border-zinc-200 rounded-lg bg-white space-y-4 shadow-sm">
+        <h3 className="font-semibold text-zinc-900 text-sm flex items-center gap-2">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-[11px] font-bold">4</span>
+          Deploy to Any Static Host
+        </h3>
+        <p className="text-sm text-zinc-600 leading-relaxed">
+          Upload your project folder to any static hosting provider (e.g., Cloudflare Pages, Netlify, Vercel, or GitHub Pages). 
+        </p>
         <ul className="list-disc pl-5 space-y-2 text-sm text-zinc-600">
-          <li className="leading-relaxed">Log in to <a href="https://netlify.com" target="_blank" rel="noopener noreferrer" className="text-zinc-900 underline font-medium hover:text-zinc-600">netlify.com</a>.</li>
-          <li className="leading-relaxed">Click "Add new site" &rarr; "Import from Git".</li>
-          <li className="leading-relaxed">Select your repo. Set Build Command as empty, and Publish Directory as <code className="bg-zinc-100 px-1 rounded text-xs font-mono">.</code> (current directory).</li>
-          <li className="leading-relaxed">Deploy!</li>
+          <li className="leading-relaxed">No build command is required on the server.</li>
+          <li className="leading-relaxed">Set the Publish/Output Directory to the root directory (<code className="bg-zinc-100 px-1 rounded text-xs font-mono">/</code> or <code className="bg-zinc-100 px-1 rounded text-xs font-mono">.</code>) depending on your host.</li>
         </ul>
       </div>
     </div>
@@ -1234,6 +1286,44 @@ export function ImageSettingsForm() {
               c.imageEffects.enlargeOnHover = checked;
             })}
           />
+        </div>
+
+        {/* 3.5 Rounded Corners */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-zinc-200 rounded-lg bg-white shadow-sm hover:border-zinc-300 transition-colors gap-4">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-medium text-sm text-zinc-900">Rounded Corners</span>
+            <span className="text-xs text-zinc-500">Apply a border radius to images and videos</span>
+          </div>
+          <div className="flex items-center gap-4">
+            {config.imageEffects?.roundedCorners?.enabled && (
+              <div className="flex items-center gap-3 bg-zinc-50 py-1.5 px-3 rounded border border-zinc-100">
+                <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider w-8">RAD</span>
+                <Slider 
+                  value={[config.imageEffects.roundedCorners.radius]}
+                  min={2}
+                  max={64}
+                  step={1}
+                  onValueChange={(v) => updateConfig(c => {
+                    if (!c.imageEffects) c.imageEffects = { ...DEFAULT_IMAGE_EFFECTS };
+                    if (!c.imageEffects.roundedCorners) c.imageEffects.roundedCorners = { ...DEFAULT_IMAGE_EFFECTS.roundedCorners };
+                    c.imageEffects.roundedCorners.radius = Array.isArray(v) ? v[0] : v;
+                  })}
+                  className="w-24"
+                />
+                <span className="text-xs font-medium text-zinc-600 w-6 text-right">
+                  {config.imageEffects.roundedCorners.radius}px
+                </span>
+              </div>
+            )}
+            <Switch 
+              checked={config.imageEffects?.roundedCorners?.enabled || false} 
+              onCheckedChange={(checked) => updateConfig(c => { 
+                if (!c.imageEffects) c.imageEffects = { ...DEFAULT_IMAGE_EFFECTS };
+                if (!c.imageEffects.roundedCorners) c.imageEffects.roundedCorners = { ...DEFAULT_IMAGE_EFFECTS.roundedCorners };
+                c.imageEffects.roundedCorners.enabled = checked;
+              })}
+            />
+          </div>
         </div>
 
         {/* 4. Image Blend Mode Card */}

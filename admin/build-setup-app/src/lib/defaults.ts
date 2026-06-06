@@ -18,6 +18,7 @@ export const DEFAULT_IMAGE_EFFECTS = {
   clickMode: 'none',
   clickStickyMode: 'multi',
   blurOthersOnClick: false,
+  roundedCorners: { enabled: false, radius: 8 },
 } as const;
 
 export const DEFAULT_IMAGE_CLICK = {

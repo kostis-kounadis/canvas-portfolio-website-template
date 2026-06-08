@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin/
 Disallow: /temp/
 
-Sitemap: https://kostiskounadis.xyz/sitemap.xml
+Sitemap: https://example.com/sitemap.xml

@@ -19,9 +19,7 @@ A fully interactive, drag-and-drop portfolio website you can set up without touc
 
 A non-scrolling, pan-and-zoom canvas that you fill with your own images. Multiple layout modes (random scatter, rows, stacks, infinite grid), category filtering, custom typography, animated backgrounds, and full mobile support.
 
-| | |
-|---|---|
-| ![](readme-assets/screenshot-template.png) | ![](readme-assets/screenshot-template-infinite.png) |
+<table><tr><td><img src="readme-assets/screenshot-template.png"></td><td><img src="readme-assets/screenshot-template-infinite.png"></td></tr></table>
 
 **Stack:** Zero dependencies. Vanilla HTML, CSS, and JavaScript. No framework, no build step, no node_modules. The output is a folder of static files.
 
@@ -31,9 +29,7 @@ A non-scrolling, pan-and-zoom canvas that you fill with your own images. Multipl
 
 A local web app that lets you configure everything visually — site identity, typography, backgrounds, image effects, layout modes, modules, and mobile settings. Changes hot-reload into the portfolio preview instantly. When you're done, hit **Rebuild** to generate a fresh `data.js` from your images, then deploy.
 
-| | |
-|---|---|
-| ![](readme-assets/screenshot-admin-identity.png) | ![](readme-assets/screenshot-admin-modules.png) |
+<table><tr><td><img src="readme-assets/screenshot-admin-identity.png"></td><td><img src="readme-assets/screenshot-admin-modules.png"></td></tr></table>
 
 **Stack:** React 19, Vite, Tailwind CSS, shadcn/ui, Zustand. Served locally by a lightweight Node.js server (no cloud, no accounts, no subscriptions).
 

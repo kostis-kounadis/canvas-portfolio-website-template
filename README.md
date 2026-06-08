@@ -81,7 +81,8 @@ Drop your images into the `template/assets/images/` folder. Organise them into s
 template/assets/images/
 ├── work/
 │   ├── project-1.jpg
-│   └── project-2.jpg
+│   ├── project-2.jpg
+│   └── videos.txt        ← (Optional) paste YouTube/Vimeo links here
 ├── personal/
 │   └── vacation.jpg
 └── experiments/
@@ -89,14 +90,23 @@ template/assets/images/
 ```
 
 Supported formats: `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`, `.gif`, `.mp4`
+*(To add external YouTube or Vimeo embeds, simply create a text file named `videos.txt` inside any category folder and paste the video URLs inside it, one per line).*
 
 ---
 
 ### Step 4 — Launch the Setup GUI
 
+**Automated (Double-click):**
 - **Mac:** Double-click `start-setup.command`
   > If macOS blocks it, right-click → Open → Open anyway.
 - **Windows / Linux:** Right-click `start-setup.sh` → Open with → Git Bash (or run `bash start-setup.sh` in any terminal)
+
+**Manual (Terminal):**
+If you prefer not to use the launcher scripts, simply open a terminal in the project folder and run:
+```bash
+npm install --prefix admin/build-setup-app
+node admin/server/setup-server.js
+```
 
 Your browser will open at `http://localhost:3000/admin/` automatically.
 

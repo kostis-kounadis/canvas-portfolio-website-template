@@ -11,6 +11,7 @@ A fully interactive, drag-and-drop portfolio website you can set up without touc
 ## See it live
 
 🔗 **[Live Demo](https://kostis-kounadis.github.io/canvas-portfolio-website-template/)** — interactive preview, try before you clone  
+🔗 **[Setup GUI Demo](https://kostis-kounadis.github.io/canvas-portfolio-website-template/admin/)** — explore the configurator  
 🔗 **[kostiskounadis.xyz](https://kostiskounadis.xyz)** — a real portfolio built with this template
 
 ---

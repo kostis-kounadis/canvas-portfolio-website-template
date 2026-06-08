@@ -10,9 +10,15 @@ A fully interactive, drag-and-drop portfolio website you can set up without touc
 
 ## See it live
 
-🔗 **[Live Demo](https://kostis-kounadis.github.io/canvas-portfolio-website-template/)** — interactive preview, try before you clone  
-🔗 **[Setup GUI Demo](https://kostis-kounadis.github.io/canvas-portfolio-website-template/admin/)** — explore the configurator  
-🔗 **[kostiskounadis.xyz](https://kostiskounadis.xyz)** — a real portfolio built with this template
+The best way to understand this template is to play with it. We've deployed a live, interactive playground where you can test the **Setup GUI** and watch it update the **Portfolio Template** in real-time.
+
+🔗 **[1. Open the Setup GUI](https://kostis-kounadis.github.io/canvas-portfolio-website-template/admin/)**  
+🔗 **[2. Open the Portfolio Template](https://kostis-kounadis.github.io/canvas-portfolio-website-template/)**  
+
+> [!TIP]  
+> **Try this:** Open both links side-by-side using your browser's built-in Split View feature (supported by Edge, Arc, Safari, etc.) or just snap two windows together. Tweak a slider in the Setup GUI and watch the portfolio react instantly. *(Note: The demo is read-only so changes won't save permanently).*
+
+🔗 **[kostiskounadis.xyz](https://kostiskounadis.xyz)** — see a real portfolio built with this template
 
 ---
 

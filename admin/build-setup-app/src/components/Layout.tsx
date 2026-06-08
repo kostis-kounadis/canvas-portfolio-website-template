@@ -68,7 +68,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   variant="outline" 
                   size="sm" 
                   className="h-8 text-xs font-semibold border-zinc-200 hover:bg-zinc-50 text-zinc-700 hover:text-zinc-900 transition-colors"
-                  onClick={() => window.open('/', '_blank')}
+                  onClick={() => window.open(import.meta.env.BASE_URL.replace(/\/admin\/$/, '/'), '_blank')}
                   title="Open the live portfolio website in a new tab"
                 >
                   <ExternalLink className="mr-1.5 h-3.5 w-3.5 stroke-[2px]" />

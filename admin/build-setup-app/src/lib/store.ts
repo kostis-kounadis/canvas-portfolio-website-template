@@ -144,7 +144,11 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   fetchConfig: async () => {
     set({ isLoading: true, error: null });
     try {
-      const res = await fetch('/api/config');
+      // In demo mode there is no Node backend — fetch the static config.json directly.
+      const url = import.meta.env.VITE_DEMO_MODE
+        ? `${import.meta.env.BASE_URL.replace(/\/admin\/$/, '')}/config.json`
+        : '/api/config';
+      const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       set({ config: data, isLoading: false, isDirty: false });
@@ -163,16 +167,17 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     
     set({ config: newConfig, isDirty: true });
 
-    // Debounced auto-save
-    if (_saveTimeout) clearTimeout(_saveTimeout);
-    _saveTimeout = setTimeout(() => {
-      // Surface save failures so the UI can warn the user rather than silently losing changes.
-      get().saveConfig().catch((err: any) => {
-        set({ error: err?.message || 'Auto-save failed. Check that the setup server is running.' });
-      });
-    }, 400);
+    // Demo mode: skip the auto-save debounce — there is no backend to write to.
+    if (!import.meta.env.VITE_DEMO_MODE) {
+      if (_saveTimeout) clearTimeout(_saveTimeout);
+      _saveTimeout = setTimeout(() => {
+        get().saveConfig().catch((err: any) => {
+          set({ error: err?.message || 'Auto-save failed. Check that the setup server is running.' });
+        });
+      }, 400);
+    }
 
-    // Hot-reload
+    // Hot-reload (works in both modes)
     if (_guiChannel) {
       try {
         _guiChannel.postMessage({ type: 'config-update', config: newConfig });
@@ -181,6 +186,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   },
 
   saveConfig: async () => {
+    // Demo mode: no backend — silently succeed so callers don't crash.
+    if (import.meta.env.VITE_DEMO_MODE) {
+      set({ isSaving: false, isDirty: false });
+      return;
+    }
+
     const { config } = get();
     if (!config) return;
     
@@ -212,12 +223,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   },
 
   buildSite: async () => {
+    // Demo mode: no backend — no-op.
+    if (import.meta.env.VITE_DEMO_MODE) return;
+
     set({ isBuilding: true, error: null });
     try {
       const res = await fetch('/api/build', { method: 'POST' });
-      // Here we could implement the streaming log reader if we want,
-      // or just wait for the promise to resolve. 
-      // For the UI, we can just await the fetch if the server streams or returns OK.
       if (!res.ok) throw new Error(`Build failed`);
       set({ isBuilding: false });
     } catch (e: any) {

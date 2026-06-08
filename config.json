@@ -1,16 +1,15 @@
 {
   "site": {
-    "title": "Site Title",
+    "title": "Demo",
     "email": "email@address.com",
-    "url": "https://example.com",
-    "infoText": "This is a longer **text**. To try out a _few_ things and [links](test.com).",
-    "author": "Your Name"
+    "url": "https://kostis-kounadis.github.io/canvas-portfolio-website-template/",
+    "infoText": "A fully customisable, brutalist canvas portfolio template along with a local CMS. _Give it a [go](https://kostis-kounadis.github.io/canvas-portfolio-website-template/admin)._  Available on [Github](https://github.com/kostis-kounadis/canvas-portfolio-website-template).",
+    "author": ""
   },
   "seo": {
-    "metaDescription": "Portfolio of projects, experiments and media.",
+    "metaDescription": "",
     "keywords": [
-      "portfolio",
-      "design"
+      ""
     ],
     "ogImage": "og-image.jpg",
     "twitterHandle": "@handle",
@@ -41,8 +40,8 @@
         "links": [
           {
             "id": "ab06283d-4296-42a1-bd03-35dc5d57e9ca",
-            "url": "www.tester.com",
-            "label": "SHOP"
+            "url": "github.com",
+            "label": "External Link"
           }
         ]
       },
@@ -74,7 +73,7 @@
         "spacing": 0
       },
       "zoom": {
-        "visible": false,
+        "visible": true,
         "position": "bottom-center",
         "layout": "full-width",
         "spacing": 0,
@@ -92,12 +91,12 @@
     "blendMode": true,
     "textAnimation": "none",
     "textAnimationTrigger": "always",
-    "backgroundEffect": "solid",
-    "backgroundGradientFrom": "#ff4d9a",
-    "backgroundGradientTo": "#fde5ff",
+    "backgroundEffect": "gradient-animated",
+    "backgroundGradientFrom": "#f2e8a6",
+    "backgroundGradientTo": "#ffffff",
     "noiseGrain": {
       "enabled": true,
-      "opacity": 0.03,
+      "opacity": 0.1,
       "size": 1
     },
     "imageShadow": {
@@ -117,13 +116,13 @@
     "default": "random",
     "draggable": true,
     "labels": [
-      "▩▩▩ RRAANNDDOOMM",
-      "▤▤▤ RRROOOWWWSSS",
-      "▧▧▧",
-      "▧▧▧ IINNNFFFIINN"
+      "Canvas",
+      "Masonry",
+      "Stacks",
+      "Infinite Grid"
     ],
     "random": {
-      "scarcity": 170,
+      "scarcity": 250,
       "overlapRatio": 0.05,
       "draggable": true
     },
@@ -138,7 +137,7 @@
     "infinite": {
       "columnWidth": 1000,
       "gap": 60,
-      "numCols": 8
+      "numCols": 7
     }
   },
   "categories": {
@@ -179,8 +178,9 @@
     "closeStyle": "x-only"
   },
   "mobile": {
-    "defaultMode": "slideshow",
+    "defaultMode": "canvas",
     "availableModes": [
+      "canvas",
       "slideshow",
       "masonry"
     ]
@@ -191,7 +191,7 @@
     "localFontUrl": "",
     "baseSize": "18px",
     "textColor": "#7ccaa5",
-    "gradientColor1": "#000000",
+    "gradientColor1": "#f0e6a5",
     "gradientColor2": "#e0e9f5",
     "gradientSpeed": 7,
     "cycleColor1": "#000000",
@@ -203,7 +203,7 @@
     "blendMode": "exclusion",
     "textAnimation": "none",
     "textAnimationTrigger": "always",
-    "fontWeight": 500,
+    "fontWeight": 300,
     "fontWidth": 101,
     "textCase": "uppercase"
   }

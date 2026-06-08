@@ -1,6 +1,6 @@
 {
-  "name": "Site Title",
-  "short_name": "Site Title",
+  "name": "Demo",
+  "short_name": "Demo",
   "icons": [
     {
       "src": "/favicon/web-app-manifest-192x192.png",

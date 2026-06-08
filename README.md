@@ -10,10 +10,8 @@ A fully interactive, drag-and-drop portfolio website you can set up without touc
 
 ## See it live
 
-| | |
-|---|---|
-| 🔗 **[Live Demo →](https://kostis-kounadis.github.io/canvas-portfolio-website-template/)** | Interactive preview. Poke around. |
-| 🔗 **[kostiskounadis.xyz](https://kostiskounadis.xyz)** | A real portfolio built with this template. |
+🔗 **[Live Demo](https://kostis-kounadis.github.io/canvas-portfolio-website-template/)** — interactive preview, try before you clone  
+🔗 **[kostiskounadis.xyz](https://kostiskounadis.xyz)** — a real portfolio built with this template
 
 ---
 
@@ -23,7 +21,7 @@ A non-scrolling, pan-and-zoom canvas that you fill with your own images. Multipl
 
 | | |
 |---|---|
-| ![](readme-assets/screenshot-template.png) | ![](readme-assets/screenshot-admin-identity.png) |
+| ![](readme-assets/screenshot-template.png) | ![](readme-assets/screenshot-template-infinite.png) |
 
 **Stack:** Zero dependencies. Vanilla HTML, CSS, and JavaScript. No framework, no build step, no node_modules. The output is a folder of static files.
 

@@ -272,6 +272,18 @@ async function main() {
     fs.writeFileSync(sitemapXmlPath, sitemapContent, 'utf8');
     console.log(`Successfully updated sitemap.xml with canonical URL: ${canonicalUrl} and date: ${today}`);
 
+    // robots.txt update
+    const robotsTxtPath = path.join(rootDir, 'robots.txt');
+    const robotsContent = `User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /temp/
+
+Sitemap: ${canonicalUrl.endsWith('/') ? canonicalUrl : canonicalUrl + '/'}sitemap.xml\n`;
+    fs.writeFileSync(robotsTxtPath, robotsContent, 'utf8');
+    console.log(`Successfully generated robots.txt pointing to ${canonicalUrl.endsWith('/') ? canonicalUrl : canonicalUrl + '/'}sitemap.xml`);
+
+
   } catch (err) {
     console.error('Error during static SEO or sitemap generation:', err);
   }

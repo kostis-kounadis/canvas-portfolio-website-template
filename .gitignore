@@ -13,6 +13,7 @@ admin/server/setup-server.log
 utilities/
 
 #Temporary files
+template/robots.txt
 AUDIT.md
 INFINITE-PLAN.md
 CLEAN-UP-LIST.md

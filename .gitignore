@@ -1,0 +1,20 @@
+# Node & Dependency files
+node_modules/
+admin/build-setup-app/node_modules/
+package-lock.json
+admin/build-setup-app/package-lock.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# GUI local setup temp / files
+admin/server/setup-server.log
+utilities/
+
+#Temporary files
+AUDIT.md
+INFINITE-PLAN.md
+CLEAN-UP-LIST.md
+GITHUB-DEMO-MODE.md
+MOBILE.md

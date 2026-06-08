@@ -1,0 +1,210 @@
+{
+  "site": {
+    "title": "Site Title",
+    "email": "email@address.com",
+    "url": "https://example.com",
+    "infoText": "This is a longer **text**. To try out a _few_ things and [links](test.com).",
+    "author": "Your Name"
+  },
+  "seo": {
+    "metaDescription": "Portfolio of projects, experiments and media.",
+    "keywords": [
+      "portfolio",
+      "design"
+    ],
+    "ogImage": "og-image.jpg",
+    "twitterHandle": "@handle",
+    "canonicalUrl": "https://example.com/",
+    "schemaType": "Person",
+    "jobTitle": "Designer",
+    "sameAs": []
+  },
+  "ui": {
+    "modules": {
+      "title": {
+        "visible": true,
+        "position": "top-left",
+        "mode": "text",
+        "text": "My Portfolio",
+        "logoFile": "assets/logo.svg",
+        "logoScale": 2.5
+      },
+      "email": {
+        "visible": true,
+        "position": "top-right",
+        "labelMode": "custom",
+        "customLabel": "Contact"
+      },
+      "externalLinks": {
+        "visible": true,
+        "position": "top-right",
+        "links": [
+          {
+            "id": "ab06283d-4296-42a1-bd03-35dc5d57e9ca",
+            "url": "www.tester.com",
+            "label": "SHOP"
+          }
+        ]
+      },
+      "info": {
+        "visible": true,
+        "position": "top-right",
+        "buttonStyle": "x-close",
+        "overlayEffect": "none",
+        "overlayColor": "#000000",
+        "overlayOpacity": 0.75,
+        "overlayBlendMode": "normal",
+        "label": "Info"
+      },
+      "categories": {
+        "visible": true,
+        "position": "middle-left",
+        "behaviour": "focus-on-click",
+        "layout": "vertical",
+        "alignment": "left",
+        "separator": " —",
+        "spacing": 2
+      },
+      "layouts": {
+        "visible": true,
+        "position": "middle-right",
+        "layout": "vertical",
+        "alignment": "right",
+        "separator": " ",
+        "spacing": 0
+      },
+      "zoom": {
+        "visible": false,
+        "position": "bottom-center",
+        "layout": "full-width",
+        "spacing": 0,
+        "separator": " "
+      }
+    },
+    "textSize": "18px",
+    "fontEmbedCode": "",
+    "module_prefix": "[",
+    "module_suffix": "]"
+  },
+  "theme": {
+    "backgroundColor": "#f2e8a6",
+    "textColor": "#f7d918",
+    "blendMode": true,
+    "textAnimation": "none",
+    "textAnimationTrigger": "always",
+    "backgroundEffect": "solid",
+    "backgroundGradientFrom": "#ff4d9a",
+    "backgroundGradientTo": "#fde5ff",
+    "noiseGrain": {
+      "enabled": true,
+      "opacity": 0.03,
+      "size": 1
+    },
+    "imageShadow": {
+      "enabled": false,
+      "opacity": 0.17,
+      "blur": 31,
+      "color": "#000000"
+    }
+  },
+  "layouts": {
+    "available": [
+      "random",
+      "rows",
+      "stacks",
+      "infinite"
+    ],
+    "default": "random",
+    "draggable": true,
+    "labels": [
+      "▩▩▩ RRAANNDDOOMM",
+      "▤▤▤ RRROOOWWWSSS",
+      "▧▧▧",
+      "▧▧▧ IINNNFFFIINN"
+    ],
+    "random": {
+      "scarcity": 170,
+      "overlapRatio": 0.05,
+      "draggable": true
+    },
+    "rows": {
+      "rowHeight": 280,
+      "gap": 24
+    },
+    "stacks": {
+      "spacing": 1000,
+      "depthOrder": "front-to-back"
+    },
+    "infinite": {
+      "columnWidth": 1000,
+      "gap": 60,
+      "numCols": 8
+    }
+  },
+  "categories": {
+    "behaviour": "hide-on-click",
+    "focusEffect": "hide",
+    "viewAllLabel": "ALL"
+  },
+  "imageEffects": {
+    "initialState": "colour",
+    "duotoneColor1": "#000000",
+    "duotoneColor2": "#ffffff",
+    "enlargeOnHover": false,
+    "blendMode": "normal",
+    "clickMode": "none",
+    "clickStickyMode": "multi",
+    "blurOthersOnClick": false,
+    "roundedCorners": {
+      "enabled": true,
+      "radius": 64
+    }
+  },
+  "imageClick": {
+    "lightbox": {
+      "enabled": true,
+      "backdropEffect": "darken",
+      "overlayColor": "#000000",
+      "overlayBlendMode": "darken",
+      "overlayOpacity": 0.9
+    },
+    "canvasExpand": {
+      "enabled": false
+    },
+    "mode": "lightbox"
+  },
+  "info": {
+    "overlayEffect": "none",
+    "buttonStyle": "arrow",
+    "closeStyle": "x-only"
+  },
+  "mobile": {
+    "defaultMode": "slideshow",
+    "availableModes": [
+      "slideshow",
+      "masonry"
+    ]
+  },
+  "typography": {
+    "fontMode": "monospace",
+    "googleEmbedCode": "",
+    "localFontUrl": "",
+    "baseSize": "18px",
+    "textColor": "#7ccaa5",
+    "gradientColor1": "#000000",
+    "gradientColor2": "#e0e9f5",
+    "gradientSpeed": 7,
+    "cycleColor1": "#000000",
+    "cycleColor2": "#ffff00",
+    "cycleColor3": "#00ff00",
+    "cycleSpeed": 4,
+    "hueRotateBase": "#0066ff",
+    "hueRotateSpeed": 7,
+    "blendMode": "exclusion",
+    "textAnimation": "none",
+    "textAnimationTrigger": "always",
+    "fontWeight": 500,
+    "fontWidth": 101,
+    "textCase": "uppercase"
+  }
+}

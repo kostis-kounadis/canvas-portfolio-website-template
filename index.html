@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- TEMPLATE: canonical URL is written by admin/generate-data.js from config.json -->
+    <link rel="canonical" href="https://example.com/" />
+
+    <!-- TEMPLATE: title, description, keywords written by admin/generate-data.js -->
+    <title>Site Title</title>
+    <meta name="description" content="Portfolio of projects, experiments and media." />
+    <meta name="keywords" content="portfolio, design" />
+    <meta name="author" content="Your Name" />
+
+    <!-- Open Graph / Facebook / LinkedIn -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://example.com/" />
+    <meta property="og:title" content="Site Title" />
+    <meta property="og:description" content="Portfolio of projects, experiments and media." />
+    <meta property="og:image" content="https://example.com/og-image.jpg" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://example.com/" />
+    <meta name="twitter:title" content="Site Title" />
+    <meta name="twitter:description" content="Portfolio of projects, experiments and media." />
+    <meta name="twitter:image" content="https://example.com/og-image.jpg" />
+    <meta name="twitter:site" content="@handle" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./favicon/favicon-96x96.png?v=2" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="./favicon/favicon.svg?v=2" />
+    <link rel="shortcut icon" href="./favicon/favicon.ico?v=2" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./favicon/apple-touch-icon.png?v=2" />
+    <meta name="apple-mobile-web-app-title" content="Site Title" />
+    <link rel="manifest" href="./favicon/site.webmanifest?v=2" />
+
+    <!-- Typography: dynamic Google Font preconnects for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="./style.css" />
+
+    <!-- TEMPLATE: Schema.org JSON-LD written by admin/generate-data.js from config.json -->
+    <script type="application/ld+json">
+{
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Your Name",
+        "url": "https://example.com/",
+        "jobTitle": "Designer"
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Brutalist Preloader -->
+    <div id="preloader" aria-hidden="true">
+      <div id="preloader-bar"></div>
+      <div id="preloader-counter"></div>
+    </div>
+
+    <!-- Fixed Navigation (ignores canvas dragging) -->
+    <nav class="nav">
+      <div class="nav-left">Site Title</div>
+      <div class="nav-right" id="nav-right">
+        <!-- Categories, [INFO], and [EMAIL] injected by main.js at runtime -->
+      </div>
+    </nav>
+
+    <!-- Main viewport wrapper (prevents native scroll, hosts virtual canvas) -->
+    <main class="viewport">
+      <section
+        id="stage-wrapper"
+        aria-label="Project Gallery Canvas"
+      >
+        <!--
+          The stage is our "virtual canvas" that we pan/zoom via transforms.
+          All media items will be absolutely positioned inside this element.
+        -->
+        <div id="stage"></div>
+      </section>
+    </main>
+
+    <!-- Fixed Footer removed: Zoom is now a dynamic module -->
+
+    <script src="./data.js?1780910293"></script>
+    <script src="./main.js?1780910293"></script>
+
+    <!-- Info Overlay — populated and toggled by main.js -->
+    <div id="info-overlay" role="dialog" aria-modal="true" aria-label="About">
+      <div id="info-text" lang="en"></div>
+    </div>
+  </body>
+</html>

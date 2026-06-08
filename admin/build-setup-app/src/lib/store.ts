@@ -105,6 +105,7 @@ export interface SiteConfig {
   };
   mobile: {
     defaultMode: string;
+    availableModes?: string[];
   };
 }
 

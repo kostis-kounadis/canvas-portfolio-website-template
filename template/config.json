@@ -47,8 +47,8 @@
         ]
       },
       "info": {
-        "visible": false,
-        "position": "middle-left",
+        "visible": true,
+        "position": "top-right",
         "buttonStyle": "x-close",
         "overlayEffect": "none",
         "overlayColor": "#000000",
@@ -57,8 +57,8 @@
         "label": "Info"
       },
       "categories": {
-        "visible": false,
-        "position": "middle-center",
+        "visible": true,
+        "position": "middle-left",
         "behaviour": "focus-on-click",
         "layout": "vertical",
         "alignment": "left",
@@ -68,8 +68,8 @@
       "layouts": {
         "visible": true,
         "position": "middle-right",
-        "layout": "horizontal",
-        "alignment": "left",
+        "layout": "vertical",
+        "alignment": "right",
         "separator": " ",
         "spacing": 0
       },
@@ -87,7 +87,7 @@
     "module_suffix": "]"
   },
   "theme": {
-    "backgroundColor": "#ffffff",
+    "backgroundColor": "#f2e8a6",
     "textColor": "#f7d918",
     "blendMode": true,
     "textAnimation": "none",
@@ -114,7 +114,7 @@
       "stacks",
       "infinite"
     ],
-    "default": "infinite",
+    "default": "random",
     "draggable": true,
     "labels": [
       "▩▩▩ RRAANNDDOOMM",
@@ -123,8 +123,8 @@
       "▧▧▧ IINNNFFFIINN"
     ],
     "random": {
-      "scarcity": 230,
-      "overlapRatio": 0.4,
+      "scarcity": 170,
+      "overlapRatio": 0.05,
       "draggable": true
     },
     "rows": {
@@ -136,9 +136,9 @@
       "depthOrder": "front-to-back"
     },
     "infinite": {
-      "columnWidth": 670,
-      "gap": 40,
-      "numCols": 3
+      "columnWidth": 1000,
+      "gap": 60,
+      "numCols": 8
     }
   },
   "categories": {
@@ -164,9 +164,9 @@
     "lightbox": {
       "enabled": true,
       "backdropEffect": "darken",
-      "overlayColor": "#0011ff",
-      "overlayBlendMode": "difference",
-      "overlayOpacity": 0.75
+      "overlayColor": "#000000",
+      "overlayBlendMode": "darken",
+      "overlayOpacity": 0.9
     },
     "canvasExpand": {
       "enabled": false
@@ -179,14 +179,18 @@
     "closeStyle": "x-only"
   },
   "mobile": {
-    "defaultMode": "canvas"
+    "defaultMode": "slideshow",
+    "availableModes": [
+      "slideshow",
+      "masonry"
+    ]
   },
   "typography": {
-    "fontMode": "local",
+    "fontMode": "monospace",
     "googleEmbedCode": "",
     "localFontUrl": "",
-    "baseSize": "14px",
-    "textColor": "#ffbb00",
+    "baseSize": "18px",
+    "textColor": "#7ccaa5",
     "gradientColor1": "#000000",
     "gradientColor2": "#e0e9f5",
     "gradientSpeed": 7,
@@ -196,10 +200,10 @@
     "cycleSpeed": 4,
     "hueRotateBase": "#0066ff",
     "hueRotateSpeed": 7,
-    "blendMode": "difference",
+    "blendMode": "exclusion",
     "textAnimation": "none",
     "textAnimationTrigger": "always",
-    "fontWeight": 200,
+    "fontWeight": 500,
     "fontWidth": 101,
     "textCase": "uppercase"
   }

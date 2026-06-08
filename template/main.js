@@ -132,6 +132,7 @@
     infinite_num_cols: 6,
     // misc
     mobile_mode:     "canvas",
+    mobile_available_modes: ["canvas", "slideshow"],
     ui_text_size:    "18px",
     // categories defaults (Phase 7)
     categories_behaviour: "hide-on-click",
@@ -211,6 +212,18 @@
   window.addEventListener("keyup", (e) => {
     if (e.code === "Space") spaceDown = false;
   });
+
+  // FIX-2: Orientation change — reload if viewport crosses the mobile breakpoint.
+  // isMobile is a module-level constant set at load time; rebuilding all branched
+  // DOM paths on rotation is not worth it. A 200ms reload is clean and correct.
+  window.addEventListener("orientationchange", () => {
+    setTimeout(() => {
+      const isNowMobile = window.innerWidth < 768;
+      if (isMobile !== isNowMobile) {
+        window.location.reload();
+      }
+    }, 300);
+  });
   
   // Only prevent context menu if we are actively dragging/panning
   stageWrapper.addEventListener("contextmenu", (e) => {
@@ -231,6 +244,17 @@
   }
 
   function updateStageTransform() {
+    // M9: Clamp stage position on mobile so content never fully exits the viewport
+    if (isMobile && currentLayout !== "infinite") {
+      const safeMargin = 80;
+      const minX = -(STAGE_WIDTH  * zoomLevel) + safeMargin;
+      const maxX =  stageWrapper.clientWidth   - safeMargin;
+      const minY = -(STAGE_HEIGHT * zoomLevel) + safeMargin;
+      const maxY =  stageWrapper.clientHeight  - safeMargin;
+      stageX = Math.max(minX, Math.min(maxX, stageX));
+      stageY = Math.max(minY, Math.min(maxY, stageY));
+    }
+
     const translateX = stageX;
     const translateY = stageY;
     stage.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${zoomLevel})`;
@@ -720,8 +744,11 @@
     }
 
     // mobile
-    if (cfg.mobile && cfg.mobile.defaultMode) {
-      siteConfig.mobile_mode = cfg.mobile.defaultMode;
+    if (cfg.mobile) {
+      if (cfg.mobile.defaultMode) siteConfig.mobile_mode = cfg.mobile.defaultMode;
+      if (Array.isArray(cfg.mobile.availableModes)) {
+        siteConfig.mobile_available_modes = cfg.mobile.availableModes;
+      }
     }
   }
 
@@ -2327,6 +2354,14 @@
   let initialPinchDistance = 0;
   let startZoomLevel = 1;
 
+  // M8: Velocity tracking for momentum inertia
+  let _touchVelX    = 0;
+  let _touchVelY    = 0;
+  let _lastMoveX    = 0;
+  let _lastMoveY    = 0;
+  let _lastMoveT    = 0;
+  let _inertiaRAF   = null;
+
   function getDistance(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
@@ -2341,8 +2376,15 @@
   }
 
   stageWrapper.addEventListener("touchstart", (e) => {
-    // If in slideshow mode, allow native scrolling
-    if (document.body.classList.contains("is-slideshow")) return;
+    // If in slideshow or masonry mode, allow native scrolling
+    if (document.body.classList.contains("is-slideshow") ||
+        document.body.classList.contains("is-masonry")) return;
+
+    // M8: Cancel any in-progress inertia when user touches again
+    if (_inertiaRAF !== null) {
+      cancelAnimationFrame(_inertiaRAF);
+      _inertiaRAF = null;
+    }
 
     // If 1 finger, start panning (even if on an item, since drag is disabled on mobile)
     if (e.touches.length === 1) {
@@ -2355,6 +2397,13 @@
       touchStartY = e.touches[0].clientY;
       touchStartStageX = stageX;
       touchStartStageY = stageY;
+
+      // M8: Reset velocity tracking on new touch
+      _touchVelX = 0;
+      _touchVelY = 0;
+      _lastMoveX = touchStartX;
+      _lastMoveY = touchStartY;
+      _lastMoveT = performance.now();
     }
     // If 2 fingers, start pinch zoom
     else if (e.touches.length === 2) {
@@ -2369,18 +2418,32 @@
   }, { passive: false });
 
   window.addEventListener("touchmove", (e) => {
-    if (document.body.classList.contains("is-slideshow")) return;
+    if (document.body.classList.contains("is-slideshow") ||
+        document.body.classList.contains("is-masonry")) return;
     if (!isTouchPanning && !isPinchZooming) return;
     
     // Prevent native scroll/zoom
     if (e.cancelable) e.preventDefault();
 
     if (isTouchPanning && e.touches.length === 1) {
-      const dx = e.touches[0].clientX - touchStartX;
-      const dy = e.touches[0].clientY - touchStartY;
+      const currentX = e.touches[0].clientX;
+      const currentY = e.touches[0].clientY;
+      const dx = currentX - touchStartX;
+      const dy = currentY - touchStartY;
       stageX = touchStartStageX + dx;
       stageY = touchStartStageY + dy;
       scheduleStageTransform();
+
+      // M8: Record velocity (px per ms), clamped to avoid wild values after frame drops
+      const now = performance.now();
+      const dt  = now - _lastMoveT;
+      if (dt > 0 && dt < 80) {
+        _touchVelX = Math.min(8, Math.max(-8, (currentX - _lastMoveX) / dt));
+        _touchVelY = Math.min(8, Math.max(-8, (currentY - _lastMoveY) / dt));
+      }
+      _lastMoveX = currentX;
+      _lastMoveY = currentY;
+      _lastMoveT = now;
     }
     else if (isPinchZooming && e.touches.length === 2) {
       const currentDist = getDistance(e.touches);
@@ -2435,6 +2498,25 @@
   window.addEventListener("touchend", (e) => {
     // If we lifted all fingers, stop everything
     if (e.touches.length === 0) {
+      // M8: Launch inertia when finger lifts (canvas pan only, not infinite grid)
+      if (isTouchPanning && currentLayout !== "infinite" &&
+          (Math.abs(_touchVelX) > 0.15 || Math.abs(_touchVelY) > 0.15)) {
+        const decay = 0.92;
+        const step = () => {
+          _touchVelX *= decay;
+          _touchVelY *= decay;
+          stageX += _touchVelX * 16;
+          stageY += _touchVelY * 16;
+          scheduleStageTransform();
+          if (Math.abs(_touchVelX) > 0.05 || Math.abs(_touchVelY) > 0.05) {
+            _inertiaRAF = requestAnimationFrame(step);
+          } else {
+            _inertiaRAF = null;
+          }
+        };
+        _inertiaRAF = requestAnimationFrame(step);
+      }
+
       isTouchPanning = false;
       isPinchZooming = false;
       stage.classList.remove("is-interacting");
@@ -2661,6 +2743,8 @@
       if (el._originalWidth !== undefined) {
         el.style.width = el._originalWidth + "px";
         delete el._originalWidth;
+        // Remove locally scaled border-radius override applied by ROWS
+        el.style.removeProperty("--media-border-radius");
       }
       // Remove stacks rotation
       el.style.transform = "";
@@ -2734,6 +2818,15 @@
         el.style.top   = curY + "px";
         el.style.width = displayW + "px";
 
+        // Scale border-radius proportionally to prevent it from looking disproportionately large
+        // when Rows mode visually shrinks the image's physical width. (Base width is ~520px).
+        const rawCfg = window._siteConfigRaw || {};
+        const roundedCorners = rawCfg.imageEffects?.roundedCorners || {};
+        if (roundedCorners.enabled && (roundedCorners.radius || 0) > 0) {
+          const scaleFactor = displayW / 520;
+          el.style.setProperty("--media-border-radius", (roundedCorners.radius * scaleFactor) + "px");
+        }
+
         curX += displayW + COL_GAP;
       });
 
@@ -2769,6 +2862,8 @@
       if (el._originalWidth !== undefined) {
         el.style.width = el._originalWidth + "px";
         delete el._originalWidth;
+        // Remove locally scaled border-radius override applied by ROWS
+        el.style.removeProperty("--media-border-radius");
       }
     });
 
@@ -3323,63 +3418,228 @@
   }
 
   function toggleMobileMode() {
-    const isCurrentlySlideshow = document.body.classList.contains("is-slideshow");
+    // M10: Cycle strictly through availableModes — no hardcoded canvas fallback
+    const modes = siteConfig.mobile_available_modes || ["canvas", "slideshow"];
+
+    // Determine current mode from body classes
+    const isMasonryNow  = document.body.classList.contains("is-masonry");
+    const isSlideshowNow = document.body.classList.contains("is-slideshow");
+    const currentMode   = isMasonryNow ? "masonry" : (isSlideshowNow ? "slideshow" : "canvas");
+
+    // Advance to next mode in the available list (wraps around)
+    const currentIndex = modes.indexOf(currentMode);
+    // If current mode isn't in the list (e.g. canvas was disabled), start from 0
+    const nextMode = modes[(currentIndex + 1) % modes.length] ?? modes[0];
+
+    // Clean up before switching
+    cleanupScrollProgress();
+    if (initSlideshowObserver._obs) {
+      initSlideshowObserver._obs.disconnect();
+      initSlideshowObserver._obs = null;
+    }
+
+    if (nextMode === "canvas")    enterCanvasMode();
+    else if (nextMode === "slideshow") enterSlideshowMode();
+    else if (nextMode === "masonry")   enterMasonryMode();
+  }
+
+  // ── M5: Slideshow scroll-driven fade-in (IntersectionObserver) ──────────────
+  function initSlideshowObserver() {
+    if (initSlideshowObserver._obs) {
+      initSlideshowObserver._obs.disconnect();
+      initSlideshowObserver._obs = null;
+    }
+    const isSlideshowOrMasonry = document.body.classList.contains("is-slideshow") ||
+                                  document.body.classList.contains("is-masonry");
+    if (!isSlideshowOrMasonry) return;
+
+    const wrapper = document.getElementById("stage-wrapper");
+    if (!wrapper) return;
+
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("slide-visible");
+          obs.unobserve(entry.target);
+        }
+      });
+    }, { root: wrapper, threshold: 0.12 });
+
+    allMediaItems.forEach(el => {
+      el.classList.remove("slide-visible");
+      obs.observe(el);
+    });
+
+    initSlideshowObserver._obs = obs;
+  }
+
+  // ── M6: Scroll progress bar ───────────────────────────────────────────────────
+  function initScrollProgress() {
+    let bar = document.getElementById("mobile-scroll-bar");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "mobile-scroll-bar";
+      document.body.appendChild(bar);
+    }
+
+    const wrapper = document.getElementById("stage-wrapper");
+    if (!wrapper) return;
+
+    if (bar._scrollHandler) {
+      wrapper.removeEventListener("scroll", bar._scrollHandler);
+    }
+
+    bar._scrollHandler = () => {
+      const scrollTop = wrapper.scrollTop;
+      const scrollMax = wrapper.scrollHeight - wrapper.clientHeight;
+      const pct = scrollMax > 0 ? (scrollTop / scrollMax) * 100 : 0;
+      bar.style.width = pct + "%";
+    };
+
+    wrapper.addEventListener("scroll", bar._scrollHandler, { passive: true });
+    // Trigger once on entry so bar starts at correct position
+    bar._scrollHandler();
+  }
+
+  function cleanupScrollProgress() {
+    const bar = document.getElementById("mobile-scroll-bar");
+    const wrapper = document.getElementById("stage-wrapper");
+    if (bar?._scrollHandler && wrapper) {
+      wrapper.removeEventListener("scroll", bar._scrollHandler);
+      bar._scrollHandler = null;
+    }
+    if (bar) bar.style.width = "0%";
+  }
+
+  // ── Mobile border-radius scaling (mirrors desktop Rows-mode approach) ─────────
+  // The global --media-border-radius is set once at applyImageEffects() as a raw
+  // pixel value based on the canvas base width (~520px). On mobile items are much
+  // narrower so we scale it per-item exactly as Rows mode does on desktop.
+  function applyMobileRadius(renderedWidth) {
+    const rawCfg = window._siteConfigRaw || {};
+    const rc = rawCfg.imageEffects?.roundedCorners || {};
+    if (!rc.enabled || !(rc.radius > 0)) return;
+
+    const BASE_WIDTH = 520;
+    const scaleFactor = renderedWidth / BASE_WIDTH;
+    const scaled = (rc.radius * scaleFactor) + "px";
+
+    allMediaItems.forEach(el => {
+      el.style.setProperty("--media-border-radius", scaled);
+    });
+  }
+
+  function clearMobileRadius() {
+    // Back in canvas mode — remove per-item overrides so the global root var applies
+    allMediaItems.forEach(el => {
+      el.style.removeProperty("--media-border-radius");
+    });
+  }
+
+  // ── M10: Mobile mode entry/exit helpers ──────────────────────────────────────
+  function enterCanvasMode() {
     const switcher = document.getElementById("mode-switcher");
     const zoomPanel = document.getElementById("zoom-panel");
 
-    if (isCurrentlySlideshow) {
-      // Switch to Canvas
-      document.body.classList.remove("is-slideshow");
-      if (switcher) switcher.textContent = "[SCROLL]";
-      if (zoomPanel) zoomPanel.style.display = (siteConfig.show_zoom !== false) ? "flex" : "none";
-      
-      // Setup stage for canvas mode
-      stage.style.width = STAGE_WIDTH + "px";
-      stage.style.height = STAGE_HEIGHT + "px";
-      
-      // Apply saved random positions
-      allMediaItems.forEach(el => {
-        if (el._randomPos) {
-          el.style.left = el._randomPos.x + "px";
-          el.style.top  = el._randomPos.y + "px";
-        }
-      });
-      
-      wireItemDragging();
-      resetView();
-      
+    document.body.classList.remove("is-slideshow", "is-masonry");
+
+    stage.style.width  = STAGE_WIDTH + "px";
+    stage.style.height = STAGE_HEIGHT + "px";
+
+    allMediaItems.forEach(el => {
+      if (el._randomPos) {
+        el.style.left = el._randomPos.x + "px";
+        el.style.top  = el._randomPos.y + "px";
+      }
+    });
+
+    if (zoomPanel) zoomPanel.style.display = (siteConfig.show_zoom !== false) ? "flex" : "none";
+    wireItemDragging();
+    resetView();
+    clearMobileRadius(); // restore global root var
+    updateModeSwitcherLabel();
+    announce("CANVAS MODE ACTIVE");
+  }
+
+  function enterSlideshowMode() {
+    const zoomPanel = document.getElementById("zoom-panel");
+
+    document.body.classList.remove("is-masonry");
+    document.body.classList.add("is-slideshow");
+
+    stage.style.transform = "none";
+    stage.style.width  = "100%";
+    stage.style.height = "auto";
+
+    allMediaItems.forEach(el => {
+      el.style.left = "auto";
+      el.style.top  = "auto";
+    });
+
+    if (zoomPanel) zoomPanel.style.display = "none";
+    initSlideshowObserver();
+    initScrollProgress();
+    // Slideshow items are 90vw wide — scale radius relative to base 520px width
+    applyMobileRadius(window.innerWidth * 0.90);
+    updateModeSwitcherLabel();
+    announce("SLIDESHOW MODE ACTIVE");
+  }
+
+  function enterMasonryMode() {
+    const zoomPanel = document.getElementById("zoom-panel");
+
+    document.body.classList.remove("is-slideshow");
+    document.body.classList.add("is-masonry");
+
+    stage.style.transform = "none";
+    stage.style.width  = "100%";
+    stage.style.height = "auto";
+
+    allMediaItems.forEach(el => {
+      el.style.left = "auto";
+      el.style.top  = "auto";
+    });
+
+    if (zoomPanel) zoomPanel.style.display = "none";
+    initSlideshowObserver(); // reuses the same fade-in observer
+    initScrollProgress();
+    // Masonry items are ~half the viewport minus the column gap (8px) and outer padding (8px each side)
+    applyMobileRadius((window.innerWidth - 24) / 2);
+    updateModeSwitcherLabel();
+    announce("MASONRY MODE ACTIVE");
+  }
+
+  function updateModeSwitcherLabel() {
+    const switcher = document.getElementById("mode-switcher");
+    if (!switcher) return;
+    const pfx = siteConfig.module_prefix || "[";
+    const sfx = siteConfig.module_suffix || "]";
+    const modes = siteConfig.mobile_available_modes || ["canvas", "slideshow"];
+    const isCanvas    = !document.body.classList.contains("is-slideshow") &&
+                        !document.body.classList.contains("is-masonry");
+    const isMasonryNow = document.body.classList.contains("is-masonry");
+    // Button label = what the NEXT tap will switch TO
+    if (isCanvas) {
+      const nextMode = modes.includes("masonry") ? "GRID" : "SCROLL";
+      switcher.textContent = `${pfx}${nextMode}${sfx}`;
+    } else if (isMasonryNow) {
+      switcher.textContent = `${pfx}SCROLL${sfx}`;
     } else {
-      // Switch to Slideshow
-      document.body.classList.add("is-slideshow");
-      if (switcher) switcher.textContent = "[DRAG]";
-      if (zoomPanel) zoomPanel.style.display = "none";
-      
-      // Reset transforms and layout
-      stage.style.transform = "none";
-      stage.style.width = "100%";
-      stage.style.height = "auto";
-      
-      allMediaItems.forEach(el => {
-        el.style.left = "auto";
-        el.style.top  = "auto";
-      });
+      // slideshow
+      switcher.textContent = `${pfx}DRAG${sfx}`;
     }
-    
-    announce(isCurrentlySlideshow ? "CANVAS MODE ACTIVE" : "SLIDESHOW MODE ACTIVE");
   }
 
   function buildModeSwitcher() {
     if (!isMobile) return;
-    
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.id = "mode-switcher";
-    
-    const isInitiallySlideshow = document.body.classList.contains("is-slideshow");
-    btn.textContent = isInitiallySlideshow ? "DRAG" : "SCROLL";
-    
+
     btn.addEventListener("click", toggleMobileMode);
     document.body.appendChild(btn);
+    updateModeSwitcherLabel(); // set initial label
   }
 
   // ── Phase 6: Lightbox & Canvas Expand Helpers ──────────────────────────────
@@ -3631,17 +3891,12 @@
     }
 
     if (type === "single") {
+      // M4: No lightbox or canvas-expand on mobile in any mode
+      if (isMobile) return;
+
       if (mode === "lightbox") {
         openLightbox(el);
       } else if (mode === "canvasExpand" || mode === "canvas-expand") {
-        // Canvas expand is desktop-only; on mobile fall back to lightbox or no-op.
-        if (isMobile) {
-          // If lightbox is also available, open it instead. Otherwise silently do nothing.
-          if (cfg?.imageClick?.lightbox?.enabled) {
-            openLightbox(el);
-          }
-          return;
-        }
         if (expandedEl === el) {
           resetViewSmooth();
         } else {
@@ -3718,7 +3973,44 @@
     buildNav();
     buildCategoryPanel();
     buildLayoutPanel();
+
+    // Apply defaultMode on startup — set body class BEFORE buildModeSwitcher reads it
+    if (isMobile) {
+      const startMode = siteConfig.mobile_mode || "canvas";
+      const available = siteConfig.mobile_available_modes || ["canvas", "slideshow"];
+      // Resolve: if configured defaultMode is not available, pick first available
+      const resolvedMode = available.includes(startMode) ? startMode : (available[0] ?? "canvas");
+
+      if (resolvedMode === "slideshow") {
+        document.body.classList.add("is-slideshow");
+        stage.style.transform = "none";
+        stage.style.width  = "100%";
+        stage.style.height = "auto";
+        allMediaItems.forEach(el => { el.style.left = "auto"; el.style.top = "auto"; });
+      } else if (resolvedMode === "masonry") {
+        document.body.classList.add("is-masonry");
+        stage.style.transform = "none";
+        stage.style.width  = "100%";
+        stage.style.height = "auto";
+        allMediaItems.forEach(el => { el.style.left = "auto"; el.style.top = "auto"; });
+      }
+      // canvas: no body class needed, already the natural state
+    }
+
     buildModeSwitcher();
+
+    // M5+M6: Initialise slideshow/masonry helpers for the resolved starting mode
+    if (isMobile) {
+      if (document.body.classList.contains("is-slideshow")) {
+        initSlideshowObserver();
+        initScrollProgress();
+        applyMobileRadius(window.innerWidth * 0.90);
+      } else if (document.body.classList.contains("is-masonry")) {
+        initSlideshowObserver();
+        initScrollProgress();
+        applyMobileRadius((window.innerWidth - 24) / 2);
+      }
+    }
 
     // Wrap zoom buttons in DOM
     document.querySelectorAll('.zoom-btn').forEach(btn => {

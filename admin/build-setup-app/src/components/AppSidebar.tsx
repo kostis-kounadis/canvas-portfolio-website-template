@@ -1,4 +1,4 @@
-import { Fingerprint, Type, PaintBucket, LayoutTemplate, Layers, Image as ImageIcon, HelpCircle } from "lucide-react"
+import { Fingerprint, Type, PaintBucket, LayoutTemplate, Layers, Image as ImageIcon, HelpCircle, Smartphone } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,7 @@ const navItems = [
   { id: "layouts", title: "Layouts", icon: LayoutTemplate },
   { id: "images", title: "Image Settings", icon: ImageIcon },
   { id: "modules", title: "Modules", icon: Layers },
+  { id: "mobile", title: "Mobile", icon: Smartphone },
   { id: "help", title: "Setup Guide", icon: HelpCircle },
 ]
 

@@ -1,6 +1,7 @@
 export { IdentityForm } from './forms/IdentityForm';
 export { TypographyForm } from './forms/TypographyForm';
 export { BackgroundForm } from './forms/BackgroundForm';
+export { MobileForm } from './forms/MobileForm';
 import { useConfigStore } from '@/lib/store';
 import { Plus, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';

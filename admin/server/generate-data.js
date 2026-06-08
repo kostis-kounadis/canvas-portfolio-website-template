@@ -237,8 +237,13 @@ async function main() {
     html = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/is, 
       `<script type="application/ld+json">\n${jsonLdStr.split('\n').map(line => '      ' + line).join('\n').trim()}\n    </script>`);
 
+    // Update cache-busters for data.js and main.js so the browser automatically fetches the new files
+    const timestamp = Math.floor(Date.now() / 1000);
+    html = html.replace(/<script src="\.\/data\.js\?[^"]*"><\/script>/, `<script src="./data.js?${timestamp}"></script>`);
+    html = html.replace(/<script src="\.\/main\.js\?[^"]*"><\/script>/, `<script src="./main.js?${timestamp}"></script>`);
+
     fs.writeFileSync(indexHtmlPath, html, 'utf8');
-    console.log('Successfully updated index.html with static SEO tags.');
+    console.log(`Successfully updated index.html with static SEO tags and cache-busters (?${timestamp}).`);
 
     // 7. Phase 10: Update favicon/site.webmanifest from config.site.title
     const manifestPath = path.join(rootDir, 'favicon', 'site.webmanifest');

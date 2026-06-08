@@ -100,7 +100,8 @@ function corsHeaders() {
 }
 
 const server = http.createServer(async (req, res) => {
-  const url    = req.url.split('?')[0];
+  let url = req.url.split('?')[0];
+  try { url = decodeURIComponent(url); } catch (e) {}
   const method = req.method.toUpperCase();
 
   // CORS preflight

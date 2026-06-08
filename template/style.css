@@ -551,7 +551,7 @@ body.info-open.info-colour-overlay::after {
 
 #preloader-counter {
   position: fixed;
-  bottom: 56px; /* sits just above the footer */
+  bottom: calc(56px + env(safe-area-inset-bottom)); /* clears footer + iOS home indicator */
   left: 32px;
   font-size: 14px;
   letter-spacing: 0.08em;
@@ -613,7 +613,7 @@ body.info-open.info-colour-overlay::after {
   /* Info Overlay Mobile Tweaks */
   #info-overlay {
     top: 0; /* Cover more area on mobile */
-    bottom: 0;
+    bottom: env(safe-area-inset-bottom); /* clear iOS home indicator */
     padding: 100px 20px 40px 20px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -1072,8 +1072,8 @@ body.is-slideshow #stage {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10vh;
-  padding: 15vh 0;
+  gap: 6vh; /* M7: tighter than original 10vh */
+  padding: 12vh 5vw calc(20vh + env(safe-area-inset-bottom)); /* M7: extra bottom clears mode-switcher */
   transform: none !important;
   will-change: auto;
 }
@@ -1084,10 +1084,10 @@ body.is-slideshow .media-item {
   left: auto !important;
   top: auto !important;
   transform: none !important;
-  width: 94vw !important;
+  width: 90vw !important; /* M7: was 94vw — slightly narrower, next item peeks at bottom */
   height: auto !important;
   aspect-ratio: auto !important;
-  max-height: 80vh;
+  max-height: 75vh; /* M7: was 80vh */
   scroll-snap-align: center;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   will-change: auto;
@@ -1098,8 +1098,101 @@ body.is-slideshow .media-item img,
 body.is-slideshow .media-item video {
   width: 100% !important;
   height: auto !important;
-  max-height: 80vh !important;
+  max-height: 75vh !important;
   object-fit: contain;
+}
+
+/* M5: Scroll-driven fade-in for slideshow and masonry items ─────────────── */
+body.is-slideshow .media-item,
+body.is-masonry .media-item {
+  opacity: 0;
+  transform: translateY(20px) !important;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+body.is-slideshow .media-item.slide-visible,
+body.is-masonry .media-item.slide-visible {
+  opacity: 1;
+  transform: translateY(0) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.is-slideshow .media-item,
+  body.is-masonry .media-item {
+    opacity: 1;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* M6: Scroll progress bar ───────────────────────────────────────────────── */
+#mobile-scroll-bar {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: currentColor;
+  mix-blend-mode: var(--text-blend-mode, normal);
+  z-index: 1200;
+  pointer-events: none;
+  transition: width 0.1s linear;
+}
+
+@media (max-width: 768px) {
+  body.is-slideshow #mobile-scroll-bar,
+  body.is-masonry #mobile-scroll-bar {
+    display: block;
+  }
+}
+
+/* =========================================================================
+   M10: Mobile Masonry Strip Mode
+   ========================================================================= */
+
+body.is-masonry #stage-wrapper {
+  overflow-y: auto;
+  overflow-x: hidden;
+  cursor: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.is-masonry #stage {
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  /* CSS column-based masonry — no JS layout engine */
+  columns: 2;
+  column-gap: 8px;
+  padding: 80px 8px calc(60px + env(safe-area-inset-bottom));
+  transform: none !important;
+  will-change: auto;
+  display: block !important; /* override any flex from slideshow */
+}
+
+body.is-masonry .media-item {
+  position: relative !important;
+  display: block !important;
+  left: auto !important;
+  top: auto !important;
+  transform: translateY(20px) !important; /* reset by slide-visible — keep the fade-in above */
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  margin-bottom: 8px;
+  break-inside: avoid; /* prevents single item splitting across columns */
+  scroll-snap-align: unset;
+  will-change: auto;
+}
+
+body.is-masonry .media-item img,
+body.is-masonry .media-item video {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  object-fit: cover;
 }
 /* ── Mobile Mode Switcher ────────────────────────────────────────────────── */
 
@@ -1131,14 +1224,16 @@ background: transparent;
   #mode-switcher {
     display: block;
     left: 20px; /* matching .nav padding-left */
-    bottom: 16px; /* matching .nav padding-top */
+    bottom: 16px; /* fallback */
     bottom: calc(16px + env(safe-area-inset-bottom));
   }
 
-  /* When canvas mode is active on mobile, we hide layout selection (if any) 
-     and category filters as requested for a cleaner 'only canvas' experience. */
-  body:not(.is-slideshow) #category-panel,
-  body:not(.is-slideshow) #layout-panel {
+  /* Hide layout panel on all mobile modes; hide category panel on canvas mode only */
+  body #layout-panel {
+    display: none !important;
+  }
+  /* Category panel stays hidden unless a future option enables it */
+  body:not(.is-slideshow):not(.is-masonry) #category-panel {
     display: none !important;
   }
 }

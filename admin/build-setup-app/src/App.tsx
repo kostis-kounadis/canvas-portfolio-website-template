@@ -10,7 +10,8 @@ import {
   LayoutsForm,
   ModulesForm,
   HelpForm,
-  ImageSettingsForm
+  ImageSettingsForm,
+  MobileForm
 } from "./components/Forms"
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
       case 'layouts': return <LayoutsForm />
       case 'images': return <ImageSettingsForm />
       case 'modules': return <ModulesForm />
+      case 'mobile': return <MobileForm />
       case 'help': return <HelpForm />
       default: return <div>Select a section from the sidebar.</div>
     }

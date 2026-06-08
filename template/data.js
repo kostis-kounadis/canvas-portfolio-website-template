@@ -10,147 +10,147 @@
 
 window.mediaItems = [
   {
-    "id": "expe-experiments-landscape-1",
+    "id": "gree-DIGITAL-POTTERYArtboard-1",
     "type": "image",
-    "src": "assets/images/experiments/experiments-landscape-1.png",
+    "src": "assets/images/green/DIGITAL-POTTERYArtboard 1.jpg",
     "width": 520,
-    "height": 325,
-    "group": "experiments"
+    "height": 924,
+    "group": "green"
   },
   {
-    "id": "expe-experiments-landscape-4",
+    "id": "gree-DIGITAL-POTTERYArtboard-2",
     "type": "image",
-    "src": "assets/images/experiments/experiments-landscape-4.png",
+    "src": "assets/images/green/DIGITAL-POTTERYArtboard 2.jpg",
     "width": 520,
-    "height": 325,
-    "group": "experiments"
+    "height": 924,
+    "group": "green"
   },
   {
-    "id": "expe-experiments-portrait-2",
+    "id": "gree-DIGITAL-POTTERYArtboard-3",
     "type": "image",
-    "src": "assets/images/experiments/experiments-portrait-2.png",
+    "src": "assets/images/green/DIGITAL-POTTERYArtboard 3.jpg",
     "width": 520,
-    "height": 780,
-    "group": "experiments"
+    "height": 924,
+    "group": "green"
   },
   {
-    "id": "expe-experiments-portrait-5",
+    "id": "gree-DIGITAL-POTTERYArtboard-4",
     "type": "image",
-    "src": "assets/images/experiments/experiments-portrait-5.png",
+    "src": "assets/images/green/DIGITAL-POTTERYArtboard 4.jpg",
     "width": 520,
-    "height": 780,
-    "group": "experiments"
+    "height": 924,
+    "group": "green"
   },
   {
-    "id": "expe-experiments-square-3",
+    "id": "gree-DIGITAL-POTTERYArtboard-5",
     "type": "image",
-    "src": "assets/images/experiments/experiments-square-3.png",
+    "src": "assets/images/green/DIGITAL-POTTERYArtboard 5.jpg",
     "width": 520,
-    "height": 520,
-    "group": "experiments"
+    "height": 924,
+    "group": "green"
   },
   {
-    "id": "expe-experiments-square-6",
+    "id": "gree-DIGITAL-POTTERYArtboard-6",
     "type": "image",
-    "src": "assets/images/experiments/experiments-square-6.png",
+    "src": "assets/images/green/DIGITAL-POTTERYArtboard 6.jpg",
     "width": 520,
-    "height": 520,
-    "group": "experiments"
+    "height": 924,
+    "group": "green"
   },
   {
-    "id": "pers-personal-landscape-1",
+    "id": "grey-DIGITAL-POTTERYArtboard-10",
     "type": "image",
-    "src": "assets/images/personal/personal-landscape-1.png",
+    "src": "assets/images/grey/DIGITAL-POTTERYArtboard 10.jpg",
     "width": 520,
-    "height": 325,
-    "group": "personal"
+    "height": 924,
+    "group": "grey"
   },
   {
-    "id": "pers-personal-landscape-4",
+    "id": "grey-DIGITAL-POTTERYArtboard-11",
     "type": "image",
-    "src": "assets/images/personal/personal-landscape-4.png",
+    "src": "assets/images/grey/DIGITAL-POTTERYArtboard 11.jpg",
     "width": 520,
-    "height": 325,
-    "group": "personal"
+    "height": 924,
+    "group": "grey"
   },
   {
-    "id": "pers-personal-portrait-2",
+    "id": "grey-DIGITAL-POTTERYArtboard-12",
     "type": "image",
-    "src": "assets/images/personal/personal-portrait-2.png",
+    "src": "assets/images/grey/DIGITAL-POTTERYArtboard 12.jpg",
     "width": 520,
-    "height": 780,
-    "group": "personal"
+    "height": 924,
+    "group": "grey"
   },
   {
-    "id": "pers-personal-portrait-5",
+    "id": "grey-DIGITAL-POTTERYArtboard-7",
     "type": "image",
-    "src": "assets/images/personal/personal-portrait-5.png",
+    "src": "assets/images/grey/DIGITAL-POTTERYArtboard 7.jpg",
     "width": 520,
-    "height": 780,
-    "group": "personal"
+    "height": 924,
+    "group": "grey"
   },
   {
-    "id": "pers-personal-square-3",
+    "id": "grey-DIGITAL-POTTERYArtboard-8",
     "type": "image",
-    "src": "assets/images/personal/personal-square-3.png",
+    "src": "assets/images/grey/DIGITAL-POTTERYArtboard 8.jpg",
     "width": 520,
-    "height": 520,
-    "group": "personal"
+    "height": 924,
+    "group": "grey"
   },
   {
-    "id": "pers-personal-square-6",
+    "id": "grey-DIGITAL-POTTERYArtboard-9",
     "type": "image",
-    "src": "assets/images/personal/personal-square-6.png",
+    "src": "assets/images/grey/DIGITAL-POTTERYArtboard 9.jpg",
     "width": 520,
-    "height": 520,
-    "group": "personal"
+    "height": 924,
+    "group": "grey"
   },
   {
-    "id": "work-work-landscape-1",
+    "id": "whit-DIGITAL-POTTERYArtboard-13",
     "type": "image",
-    "src": "assets/images/work/work-landscape-1.png",
+    "src": "assets/images/white/DIGITAL-POTTERYArtboard 13.jpg",
     "width": 520,
-    "height": 325,
-    "group": "work"
+    "height": 924,
+    "group": "white"
   },
   {
-    "id": "work-work-landscape-4",
+    "id": "whit-DIGITAL-POTTERYArtboard-14",
     "type": "image",
-    "src": "assets/images/work/work-landscape-4.png",
+    "src": "assets/images/white/DIGITAL-POTTERYArtboard 14.jpg",
     "width": 520,
-    "height": 325,
-    "group": "work"
+    "height": 924,
+    "group": "white"
   },
   {
-    "id": "work-work-portrait-2",
+    "id": "whit-DIGITAL-POTTERYArtboard-15",
     "type": "image",
-    "src": "assets/images/work/work-portrait-2.png",
+    "src": "assets/images/white/DIGITAL-POTTERYArtboard 15.jpg",
     "width": 520,
-    "height": 780,
-    "group": "work"
+    "height": 924,
+    "group": "white"
   },
   {
-    "id": "work-work-portrait-5",
+    "id": "whit-DIGITAL-POTTERYArtboard-16",
     "type": "image",
-    "src": "assets/images/work/work-portrait-5.png",
+    "src": "assets/images/white/DIGITAL-POTTERYArtboard 16.jpg",
     "width": 520,
-    "height": 780,
-    "group": "work"
+    "height": 924,
+    "group": "white"
   },
   {
-    "id": "work-work-square-3",
+    "id": "whit-DIGITAL-POTTERYArtboard-17",
     "type": "image",
-    "src": "assets/images/work/work-square-3.png",
+    "src": "assets/images/white/DIGITAL-POTTERYArtboard 17.jpg",
     "width": 520,
-    "height": 520,
-    "group": "work"
+    "height": 924,
+    "group": "white"
   },
   {
-    "id": "work-work-square-6",
+    "id": "whit-DIGITAL-POTTERYArtboard-18",
     "type": "image",
-    "src": "assets/images/work/work-square-6.png",
+    "src": "assets/images/white/DIGITAL-POTTERYArtboard 18.jpg",
     "width": 520,
-    "height": 520,
-    "group": "work"
+    "height": 924,
+    "group": "white"
   }
 ];
